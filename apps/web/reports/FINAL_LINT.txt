@@ -1,0 +1,271 @@
+
+> @onehub/web@0.1.0 lint
+> eslint .
+
+
+/Users/marlon/OneHub/apps/web/scripts/verifyLinks.ts
+   32:12  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+   62:12  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  102:17  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/(app)/events/[eventSlug]/budget/page.tsx
+  9:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/(app)/events/[eventSlug]/milestones/page.tsx
+  8:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/(app)/events/[eventSlug]/page.tsx
+  31:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/(app)/events/[eventSlug]/tasks/page.tsx
+  21:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/(app)/messages/[threadId]/page.tsx
+  14:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/(app)/proposals/[id]/page.tsx
+  41:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/(app)/vault/[eventSlug]/page.tsx
+  367:73  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  370:73  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  373:77  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/(auth)/signin/page.tsx
+  35:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/api/events/create/route.ts
+    6:10  warning  'buildPlannerPayload' is defined but never used  @typescript-eslint/no-unused-vars
+  137:38  error    Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/api/google/calendar/create-or-use/route.ts
+   5:28  warning  'request' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  15:19  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/api/google/callback/route.ts
+  1:23  warning  'NextResponse' is defined but never used                                   @typescript-eslint/no-unused-vars
+  6:27  warning  'request' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/app/api/google/connect/route.ts
+   3:10  warning  'signIn' is defined but never used                                         @typescript-eslint/no-unused-vars
+   5:28  warning  'request' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  23:27  warning  'request' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/app/api/google/events/overlay/route.ts
+  23:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/api/google/status/route.ts
+  5:27  warning  'request' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/app/api/google/sync/push/route.ts
+   9:28  warning  'request' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  29:54  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  63:19  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/api/orgs/create/route.ts
+  42:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/api/stripe/webhook/route.ts
+  14:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/event-dreamer/create/page.tsx
+  55:6   warning  React Hook useEffect has a missing dependency: 'handleCreateDream'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  68:46  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/events/new/page.tsx
+  92:6  warning  React Hook useEffect has a missing dependency: 'handleCreateEvent'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/marlon/OneHub/apps/web/src/app/marketplace/[slug]/page.tsx
+  51:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/professional-planner/setup/page.tsx
+   54:6   warning  React Hook useEffect has a missing dependency: 'handleCreateOrg'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   66:17  warning  'slug' is assigned a value but never used                                                                           @typescript-eslint/no-unused-vars
+  155:77  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/app/vendor-venue/setup/page.tsx
+  56:6   warning  React Hook useEffect has a missing dependency: 'handleCreateOrg'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  68:17  warning  'orgId' is assigned a value but never used                                                                          @typescript-eslint/no-unused-vars
+  68:24  warning  'slug' is assigned a value but never used                                                                           @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/components/ContractPreviewModal.tsx
+  59:16  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/marlon/OneHub/apps/web/src/components/EventActionBar.tsx
+  8:69  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/components/ProposalPreviewModal.tsx
+  82:16  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/marlon/OneHub/apps/web/src/components/diy-planner/DIYSidebar.tsx
+  16:3  warning  'Menu' is defined but never used                                            @typescript-eslint/no-unused-vars
+  53:3  warning  'onCreate' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/components/diy-planner/Dashboard.tsx
+   84:14  warning  'err' is defined but never used                                        @typescript-eslint/no-unused-vars
+  122:42  warning  'tab' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/components/layout/Sidebar.tsx
+  52:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/components/overview/EventVaultMini.tsx
+  14:42  warning  'currentEventId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  48:17  warning  'daysToGo' is assigned a value but never used                                     @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/components/overview/Overview.tsx
+  30:3  warning  'onNavigateToRoute' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  33:9  warning  'upcomingEvents' is assigned a value but never used                                  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/components/panes/BudgetPane.tsx
+  10:55  warning  React Hook useMemo has a missing dependency: 'event'. Either include it or remove the dependency array                                                                                                                                                   react-hooks/exhaustive-deps
+  19:6   warning  React Hook useEffect has a missing dependency: 'event'. Either include it or remove the dependency array. If 'setSuggestions' needs the current value of 'event', you can also switch to useReducer instead of useState and read 'event' in the reducer  react-hooks/exhaustive-deps
+
+/Users/marlon/OneHub/apps/web/src/components/panes/CalendarPane.tsx
+    5:21  warning  'Task' is defined but never used                                            @typescript-eslint/no-unused-vars
+    5:27  warning  'Milestone' is defined but never used                                       @typescript-eslint/no-unused-vars
+   35:60  warning  'onUpdate' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   37:10  warning  'calendarId' is assigned a value but never used                             @typescript-eslint/no-unused-vars
+   39:10  warning  'loading' is assigned a value but never used                                @typescript-eslint/no-unused-vars
+   41:52  error    Unexpected any. Specify a different type                                    @typescript-eslint/no-explicit-any
+   42:42  error    Unexpected any. Specify a different type                                    @typescript-eslint/no-explicit-any
+   74:55  error    Unexpected any. Specify a different type                                    @typescript-eslint/no-explicit-any
+  131:21  error    Unexpected any. Specify a different type                                    @typescript-eslint/no-explicit-any
+  231:35  error    Unexpected any. Specify a different type                                    @typescript-eslint/no-explicit-any
+  235:15  error    'type' is missing in props validation                                       react/prop-types
+  243:20  error    'type' is missing in props validation                                       react/prop-types
+
+/Users/marlon/OneHub/apps/web/src/components/panes/GuestsPane.tsx
+  10:128  warning  React Hook useEffect has missing dependencies: 'event' and 'onUpdate'. Either include them or remove the dependency array. If 'onUpdate' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+  43:142  error    Unexpected any. Specify a different type                                                                                                                                                                                                       @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/components/panes/ProposalsPane.tsx
+  147:81   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  147:95   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  197:93   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  197:117  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+/Users/marlon/OneHub/apps/web/src/components/panes/TasksMilestonesPane.tsx
+  38:6  warning  React Hook useEffect has missing dependencies: 'event' and 'onUpdate'. Either include them or remove the dependency array. If 'onUpdate' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+/Users/marlon/OneHub/apps/web/src/components/panes/TasksPane.tsx
+  12:218  warning  React Hook useEffect has missing dependencies: 'event' and 'onUpdate'. Either include them or remove the dependency array. If 'onUpdate' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+/Users/marlon/OneHub/apps/web/src/components/panes/VendorsPane.tsx
+  66:74  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  66:83  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+/Users/marlon/OneHub/apps/web/src/components/tasks/TaskList.tsx
+  98:83  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/lib/ai.service.ts
+    3:10  warning  'buildPlannerPayload' is defined but never used                          @typescript-eslint/no-unused-vars
+    3:31  warning  'PLANNER_SYSTEM_PROMPT' is defined but never used                        @typescript-eslint/no-unused-vars
+  231:35  warning  'event' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/lib/aiAssist.ts
+  17:3  warning  'payload' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/lib/calendar.mapping.ts
+  2:38  warning  'Proposal' is defined but never used  @typescript-eslint/no-unused-vars
+  2:48  warning  'Contract' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/lib/email.service.ts
+  2:33  warning  'to' is defined but never used. Allowed unused args must match /^_/u       @typescript-eslint/no-unused-vars
+  2:45  warning  'subject' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  2:62  warning  'body' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  7:41  warning  'to' is defined but never used. Allowed unused args must match /^_/u       @typescript-eslint/no-unused-vars
+  7:53  warning  'subject' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  7:70  warning  'body' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/lib/esign.service.ts
+  2:44  warning  'counterpartyEmail' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/lib/eventAdapter.ts
+   10:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   57:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   58:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   59:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   69:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   70:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   79:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/lib/google.calendar.ts
+  160:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/lib/overview.selectors.ts
+   8:3  warning  'BudgetSnapshot' is defined but never used  @typescript-eslint/no-unused-vars
+   9:3  warning  'Proposal' is defined but never used        @typescript-eslint/no-unused-vars
+  10:3  warning  'Contract' is defined but never used        @typescript-eslint/no-unused-vars
+  11:3  warning  'Guest' is defined but never used           @typescript-eslint/no-unused-vars
+  12:3  warning  'Task' is defined but never used            @typescript-eslint/no-unused-vars
+  13:3  warning  'Milestone' is defined but never used       @typescript-eslint/no-unused-vars
+  14:3  warning  'Vendor' is defined but never used          @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/server/lib/activity.ts
+  18:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/server/lib/audit.ts
+  19:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/server/routers/activity.ts
+  9:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/server/routers/admin.ts
+  60:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/server/routers/ai.ts
+  38:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/server/routers/billing.ts
+   4:10  warning  'auth' is defined but never used                                         @typescript-eslint/no-unused-vars
+   8:92  warning  'input' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  19:88  warning  'input' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/server/routers/calendar.ts
+  15:18  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  81:13  warning  'id' is assigned a value but never used   @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/server/routers/contract.ts
+  71:11  warning  'contract' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/server/routers/event.ts
+  11:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  12:65  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  51:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/server/routers/guest.ts
+  59:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  90:94  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/server/routers/message.ts
+  19:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/server/routers/milestone.ts
+  7:7  warning  'base' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/server/routers/org.ts
+  11:78  warning  'ctx' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/server/routers/proposal.ts
+  81:11  warning  'contract' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/marlon/OneHub/apps/web/src/server/routers/search.ts
+  22:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/marlon/OneHub/apps/web/src/server/routers/seating.ts
+  117:13  warning  'seat' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 131 problems (66 errors, 65 warnings)
+
+npm error Lifecycle script `lint` failed with error:
+npm error code 1
+npm error path /Users/marlon/OneHub/apps/web
+npm error workspace @onehub/web@0.1.0
+npm error location /Users/marlon/OneHub/apps/web
+npm error command failed
+npm error command sh -c eslint .

@@ -1,0 +1,65 @@
+
+> @onehub/web@0.1.0 typecheck
+> tsc --noEmit
+
+scripts/verifyLinks.ts(3,19): error TS2307: Cannot find module 'axios' or its corresponding type declarations.
+src/app/(auth)/signin/page.tsx(34,13): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
+src/app/(auth)/signup/page.tsx(81,23): error TS2345: Argument of type 'string' is not assignable to parameter of type 'RouteImpl<string>'.
+src/app/api/events/[eventSlug]/route.ts(41,22): error TS2353: Object literal may only specify known properties, and 'payouts' does not exist in type 'ProposalInclude<DefaultArgs>'.
+src/app/api/events/[eventSlug]/route.ts(53,15): error TS2339: Property 'org' does not exist on type '{ status: EventStatus; name: string; objective: string | null; type: EventType; id: string; createdAt: Date; updatedAt: Date; slug: string; eventTypeRaw: string; ... 14 more ...; createdById: string; }'.
+src/app/app/page.tsx(191,27): error TS2322: Type '`/app/events/${string}`' is not assignable to type 'UrlObject | RouteImpl<`/app/events/${string}`>'.
+src/app/event-vault/[eventSlug]/page.tsx(91,56): error TS2339: Property 'payouts' does not exist on type '{ milestones: { status: MilestoneStatus; id: string; amountCents: number; }[]; } & { status: ProposalStatus; id: string; createdAt: Date; updatedAt: Date; ... 10 more ...; terms: string | null; }'.
+src/app/event-vault/[eventSlug]/page.tsx(91,72): error TS7006: Parameter 'pay' implicitly has an 'any' type.
+src/app/event-vault/[eventSlug]/page.tsx(92,61): error TS2339: Property 'payouts' does not exist on type '{ milestones: { status: MilestoneStatus; id: string; amountCents: number; }[]; } & { status: ProposalStatus; id: string; createdAt: Date; updatedAt: Date; ... 10 more ...; terms: string | null; }'.
+src/app/event-vault/[eventSlug]/page.tsx(92,77): error TS7006: Parameter 'pay' implicitly has an 'any' type.
+src/app/event-vault/[eventSlug]/page.tsx(204,78): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number'.
+src/app/event-vault/[eventSlug]/page.tsx(289,53): error TS2339: Property 'done' does not exist on type '{ items: { id: string; title: string; done: boolean; }[]; } & { id: string; eventId: string; title: string; templateId: string | null; }'.
+src/app/event-vault/[eventSlug]/page.tsx(367,23): error TS2322: Type '`/app/events/${string}/guests`' is not assignable to type 'UrlObject | RouteImpl<`/app/events/${string}/guests`>'.
+src/app/event-vault/[eventSlug]/page.tsx(370,23): error TS2322: Type '`/app/events/${string}/budget`' is not assignable to type 'UrlObject | RouteImpl<`/app/events/${string}/budget`>'.
+src/app/event-vault/[eventSlug]/page.tsx(373,23): error TS2322: Type '`/app/events/${string}/checklists`' is not assignable to type 'UrlObject | RouteImpl<`/app/events/${string}/checklists`>'.
+src/app/not-found.tsx(11,12): error TS2578: Unused '@ts-expect-error' directive.
+src/app/vendor-venue/setup/page.tsx(70,21): error TS2345: Argument of type '"/app/marketplace/manage"' is not assignable to parameter of type 'RouteImpl<"/app/marketplace/manage">'.
+src/components/diy-planner/SidebarLink.tsx(30,7): error TS2322: Type 'string' is not assignable to type 'UrlObject | RouteImpl<string>'.
+src/components/layout/Footer.tsx(50,25): error TS2322: Type 'string' is not assignable to type 'UrlObject | RouteImpl<string>'.
+src/components/layout/Topbar.tsx(19,16): error TS2578: Unused '@ts-expect-error' directive.
+src/components/layout/Topbar.tsx(24,14): error TS2578: Unused '@ts-expect-error' directive.
+src/components/LinkGuard.tsx(31,11): error TS2322: Type 'string' is not assignable to type 'UrlObject | RouteImpl<string>'.
+src/lib/ai.service.ts(228,99): error TS2322: Type '({ category: string; planned: number; actual: undefined; } | { category: string; planned: number; actual?: undefined; })[]' is not assignable to type 'BudgetAllocation[]'.
+  Type '{ category: string; planned: number; actual: undefined; } | { category: string; planned: number; actual?: undefined; }' is not assignable to type 'BudgetAllocation'.
+    Type '{ category: string; planned: number; actual: undefined; }' is not assignable to type 'BudgetAllocation'.
+      Types of property 'category' are incompatible.
+        Type 'string' is not assignable to type 'VendorCategory'.
+src/lib/auth.ts(23,64): error TS2322: Type '{}' is not assignable to type 'string'.
+src/lib/auth.ts(35,43): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(s: string, hash: string): Promise<boolean>', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string'.
+  Overload 2 of 2, '(s: string, hash: string, callback?: ((err: Error | null, success: boolean) => void) | undefined, progressCallback?: ((percent: number) => void) | undefined): void', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string'.
+src/lib/auth.ts(82,7): error TS2322: Type 'unknown' is not assignable to type 'Role | undefined'.
+src/lib/eventAdapter.ts(64,9): error TS2322: Type '{ id: string; title: string; targetDate: any; status: "draft" | "sent" | "accepted" | "rejected" | "signed" | "planned" | "achieved"; linkedTaskIds: any; critical: any; }[]' is not assignable to type 'Milestone[]'.
+  Type '{ id: string; title: string; targetDate: any; status: "draft" | "sent" | "accepted" | "rejected" | "signed" | "planned" | "achieved"; linkedTaskIds: any; critical: any; }' is not assignable to type 'Milestone'.
+    Types of property 'status' are incompatible.
+      Type '"draft" | "sent" | "accepted" | "rejected" | "signed" | "planned" | "achieved"' is not assignable to type '"planned" | "at risk" | "achieved" | "slipped" | undefined'.
+        Type '"draft"' is not assignable to type '"planned" | "at risk" | "achieved" | "slipped" | undefined'.
+src/lib/eventAdapter.ts(79,37): error TS2339: Property 'map' does not exist on type '{}'.
+src/lib/eventAdapter.ts(174,5): error TS2322: Type '{ id: string; title: string; due: string; status: string; }[]' is not assignable to type 'Milestone[]'.
+  Type '{ id: string; title: string; due: string; status: string; }' is not assignable to type 'Milestone'.
+    Types of property 'status' are incompatible.
+      Type 'string' is not assignable to type 'Status'.
+src/server/lib/rateLimit.ts(72,3): error TS2322: Type '(req: Request) => string | undefined' is not assignable to type '(req: Request) => string'.
+  Type 'string | undefined' is not assignable to type 'string'.
+    Type 'undefined' is not assignable to type 'string'.
+src/server/lib/stripe.ts(8,3): error TS2322: Type '"2024-11-20.acacia"' is not assignable to type '"2025-02-24.acacia"'.
+src/server/routers/event.ts(30,7): error TS2322: Type '{ orgId: string; createdById: string; name: string; slug: string; type: "WEDDING" | "CORPORATE_GALA" | "FUNDRAISER" | "BIRTHDAY" | "CONFERENCE" | "FESTIVAL" | "SPORTS" | "OTHER"; objective: string | undefined; ... 5 more ...; guestTarget: number | undefined; }' is not assignable to type '(Without<EventCreateInput, EventUncheckedCreateInput> & EventUncheckedCreateInput) | (Without<...> & EventCreateInput)'.
+  Type '{ orgId: string; createdById: string; name: string; slug: string; type: "WEDDING" | "CORPORATE_GALA" | "FUNDRAISER" | "BIRTHDAY" | "CONFERENCE" | "FESTIVAL" | "SPORTS" | "OTHER"; objective: string | undefined; ... 5 more ...; guestTarget: number | undefined; }' is not assignable to type 'Without<EventCreateInput, EventUncheckedCreateInput> & EventUncheckedCreateInput'.
+    Property 'eventTypeRaw' is missing in type '{ orgId: string; createdById: string; name: string; slug: string; type: "WEDDING" | "CORPORATE_GALA" | "FUNDRAISER" | "BIRTHDAY" | "CONFERENCE" | "FESTIVAL" | "SPORTS" | "OTHER"; objective: string | undefined; ... 5 more ...; guestTarget: number | undefined; }' but required in type 'EventUncheckedCreateInput'.
+src/server/routers/guest.ts(65,138): error TS2353: Object literal may only specify known properties, and 'metadata' does not exist in type '{ orgId: string; eventId?: string | null | undefined; actorId?: string | null | undefined; action: string; target?: string | null | undefined; meta?: unknown; }'.
+src/server/routers/guest.ts(142,139): error TS2353: Object literal may only specify known properties, and 'metadata' does not exist in type '{ orgId: string; eventId?: string | null | undefined; actorId?: string | null | undefined; action: string; target?: string | null | undefined; meta?: unknown; }'.
+src/server/routers/seating.ts(119,165): error TS2353: Object literal may only specify known properties, and 'metadata' does not exist in type '{ orgId: string; eventId?: string | null | undefined; actorId?: string | null | undefined; action: string; target?: string | null | undefined; meta?: unknown; }'.
+src/server/routers/seating.ts(149,137): error TS2353: Object literal may only specify known properties, and 'metadata' does not exist in type '{ orgId: string; eventId?: string | null | undefined; actorId?: string | null | undefined; action: string; target?: string | null | undefined; meta?: unknown; }'.
+tests/rolebadge.test.tsx(8,39): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Assertion<HTMLElement>'.
+../../packages/ui/src/components/Button.tsx(28,13): error TS2339: Property 'asChild' does not exist on type '{ disabled?: boolean | undefined; form?: string | undefined; formAction?: string | ((formData: FormData) => void | Promise<void>) | undefined; formEncType?: string | undefined; ... 281 more ...; onTransitionStartCapture?: TransitionEventHandler<...> | undefined; }'.

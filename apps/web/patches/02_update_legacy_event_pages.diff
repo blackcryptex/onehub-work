@@ -1,0 +1,75 @@
+--- a/apps/web/src/app/events/new/page.tsx
++++ b/apps/web/src/app/events/new/page.tsx
+@@ -10,7 +10,6 @@ import Link from "next/link";
+ 
+-type EventType = "WEDDING" | "CORPORATE_GALA" | "FUNDRAISER" | "BIRTHDAY" | "CONFERENCE" | "FESTIVAL" | "SPORTS" | "OTHER";
+-
+ export default function EventWizardPage() {
+   const router = useRouter();
+   const { data: session, status } = useSession();
+   const [formData, setFormData] = useState({
+     name: "",
+-    type: "" as EventType | "",
++    event_type_raw: "", // Updated to free-text
+     date: "",
+     city: "",
+     state: "",
+     zipCode: "",
+     headcount: "",
+-    budgetRange: "",
++    budget_raw: "", // Updated to free-text
+     venue: "",
+     objective: "",
+     style: "",
+@@ -41,7 +41,18 @@ export default function EventWizardPage() {
+         body: JSON.stringify({
++          name: formData.name,
++          event_type_raw: formData.event_type_raw,
++          budget_raw: formData.budget_raw,
++          date: formData.date,
++          city: formData.city,
++          state: formData.state,
++          zipCode: formData.zipCode,
++          headcount: formData.headcount,
++          venue: formData.venue,
++          objective: formData.objective,
++          style: formData.style,
+-          ...formData,
+         }),
+       });
+
+--- a/apps/web/src/app/event-dreamer/create/page.tsx
++++ b/apps/web/src/app/event-dreamer/create/page.tsx
+@@ -14,7 +14,9 @@ export default function EventDreamerCreatePage() {
+   const [formData, setFormData] = useState({
+     title: "",
+     eventType: "", // Legacy - kept for backward compatibility
++    event_type_raw: "", // New free-text field
+     inspiration: "",
+     style: "",
+     budget: "", // Legacy
++    budget_raw: "", // New free-text field
+     timeline: "",
+     mustHaves: "",
+@@ -147,7 +149,12 @@ export default function EventDreamerCreatePage() {
+                 <Input
+                   id="event_type_raw"
+-                  value={formData.eventType}
++                  value={formData.event_type_raw || formData.eventType}
+                   onChange={(e) => {
++                    updateField("event_type_raw", e.target.value);
+                     updateField("eventType", e.target.value);
+                   }}
+                   placeholder="e.g., black-tie wedding, company retreat"
+@@ -180,7 +187,11 @@ export default function EventDreamerCreatePage() {
+         body: JSON.stringify({
+           title: formData.title,
+           eventType: formData.eventType, // Legacy
++          event_type_raw: formData.event_type_raw || formData.eventType, // New field
+           inspiration: formData.inspiration,
+           style: formData.style,
+           budget: formData.budget, // Legacy
++          budget_raw: formData.budget_raw || formData.budget, // New field
+           timeline: formData.timeline,
+           mustHaves: formData.mustHaves ? formData.mustHaves.split("\n").filter((l) => l.trim()) : [],
+

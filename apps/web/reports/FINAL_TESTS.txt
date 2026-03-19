@@ -1,0 +1,20 @@
+
+> onehub@0.1.0 test
+> vitest run
+
+✘ [ERROR] Cannot start service: Host version "0.21.5" does not match binary version "0.25.12"
+
+1 error
+failed to load config from /Users/marlon/OneHub/vitest.config.ts
+
+⎯⎯⎯⎯⎯⎯⎯ Startup Error ⎯⎯⎯⎯⎯⎯⎯⎯
+Error: The service was stopped
+    at /Users/marlon/OneHub/node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:968:34
+    at responseCallbacks.<computed> (/Users/marlon/OneHub/node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:622:9)
+    at Socket.afterClose (/Users/marlon/OneHub/node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:613:28)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+
+

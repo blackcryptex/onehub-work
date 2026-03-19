@@ -1,0 +1,70 @@
+{
+  "name": "onehub",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "pnpm -C apps/web dev",
+    "build": "pnpm -C apps/web build",
+    "start": "pnpm -C apps/web start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:ui": "vitest",
+    "e2e": "playwright test",
+    "db:migrate": "prisma migrate dev --schema apps/web/prisma/schema.prisma",
+    "db:generate": "prisma generate --schema apps/web/prisma/schema.prisma",
+    "db:seed": "ts-node --project tsconfig.json scripts/seed.ts",
+    "list:user-emails": "ts-node --project tsconfig.json scripts/list-user-emails.ts",
+    "prepare": "husky install",
+    "stabilize": "bash scripts/stabilization/checks.sh"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "pnpm": {
+    "overrides": {
+      "esbuild": "0.27.0"
+    }
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.12.7",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.21",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "fast-glob": "^3.3.3",
+    "husky": "^9.0.10",
+    "lint-staged": "^15.2.2",
+    "playwright": "^1.48.2",
+    "postcss": "^8.4.47",
+    "prettier": "^3.3.3",
+    "prisma": "^5.20.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,js,jsx,md,css}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "dependencies": {
+    "@fullcalendar/core": "^6.1.19",
+    "@prisma/client": "^5.20.0",
+    "bcryptjs": "^2.4.3"
+  }
+}

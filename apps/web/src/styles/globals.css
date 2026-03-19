@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* FullCalendar styles - will be imported dynamically if needed */
+
+@layer base {
+  /* OneHub Brand Palette CSS Variables */
+  :root {
+    --oh-primary: #2563EB;
+    --oh-primary-700: #1D4ED8;
+    --oh-accent: #7C3AED;
+    --oh-bg: #F8FAFC;
+    --oh-surface: #FFFFFF;
+    --oh-sidebar: #0F172A;
+    --oh-muted: #475569;
+    color-scheme: light dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  }
+
+  *, *::before, *::after {
+    @apply box-border;
+  }
+  html, body {
+    @apply h-full w-full m-0 p-0;
+  }
+  body {
+    @apply bg-[color:var(--oh-bg)] text-slate-900;
+  }
+
+  html.dark body {
+    background-color: #0b1220;
+    color: #e2e8f0;
+  }
+}

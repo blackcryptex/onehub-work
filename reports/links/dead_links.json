@@ -1,0 +1,115 @@
+{
+  "summary": {
+    "totalLinksChecked": 50,
+    "deadLinks": 1,
+    "unverifiedRoutes": 0,
+    "intentionalPlaceholders": 11,
+    "externalLinks": 2,
+    "hashAnchors": 1
+  },
+  "deadLinks": [
+    {
+      "sourceFile": "components/layout/Footer.tsx",
+      "line": 30,
+      "linkText": "Terms of Service",
+      "href": "/privacy",
+      "type": "internal",
+      "failure": "Wrong route (should be /terms)",
+      "suggestedFix": "Create /terms page or fix href to /terms",
+      "priority": "high"
+    }
+  ],
+  "verifiedWorkingLinks": [
+    {
+      "sourceFile": "components/layout/Footer.tsx",
+      "line": 22,
+      "linkText": "AI Contracts",
+      "href": "/app/contracts",
+      "type": "internal",
+      "status": "verified"
+    },
+    {
+      "sourceFile": "components/layout/Footer.tsx",
+      "line": 23,
+      "linkText": "Proposals",
+      "href": "/app/proposals",
+      "type": "internal",
+      "status": "verified"
+    },
+    {
+      "sourceFile": "components/layout/LandingHeader.tsx",
+      "line": 46,
+      "linkText": "Features",
+      "href": "/features",
+      "type": "internal",
+      "status": "verified"
+    },
+    {
+      "sourceFile": "components/layout/LandingHeader.tsx",
+      "line": 105,
+      "linkText": "Marketplace",
+      "href": "/marketplace",
+      "type": "internal",
+      "status": "verified"
+    },
+    {
+      "sourceFile": "components/layout/LandingHeader.tsx",
+      "line": 113,
+      "linkText": "Support",
+      "href": "/support",
+      "type": "internal",
+      "status": "verified"
+    },
+    {
+      "sourceFile": "components/layout/LandingHeader.tsx",
+      "line": 121,
+      "linkText": "Help",
+      "href": "/help",
+      "type": "internal",
+      "status": "verified"
+    },
+    {
+      "sourceFile": "components/layout/LandingHeader.tsx",
+      "line": 129,
+      "linkText": "Privacy",
+      "href": "/privacy",
+      "type": "internal",
+      "status": "verified"
+    },
+    {
+      "sourceFile": "components/layout/Footer.tsx",
+      "line": 11,
+      "linkText": "Event Wizard",
+      "href": "/events/new",
+      "type": "internal",
+      "status": "verified"
+    },
+    {
+      "sourceFile": "components/layout/LandingHeader.tsx",
+      "line": 73,
+      "linkText": "Event Wizard",
+      "href": "/events/new",
+      "type": "internal",
+      "status": "verified"
+    }
+  ],
+  "externalLinks": [
+    {
+      "sourceFile": "components/layout/Footer.tsx",
+      "line": 69,
+      "linkText": "support@onehub.events",
+      "href": "mailto:support@onehub.events",
+      "type": "external",
+      "status": "valid"
+    },
+    {
+      "sourceFile": "components/layout/Footer.tsx",
+      "line": 76,
+      "linkText": "1-800-ONEHUB",
+      "href": "tel:+1-800-ONEHUB",
+      "type": "external",
+      "status": "valid"
+    }
+  ]
+}
+

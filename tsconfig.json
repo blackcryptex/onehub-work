@@ -1,0 +1,30 @@
+{
+  "extends": "./packages/config/tsconfig/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@onehub/ui": ["./packages/ui/src"],
+      "@onehub/ui/*": ["./packages/ui/src/*"],
+      "@onehub/types": ["./packages/types/src"],
+      "@onehub/types/*": ["./packages/types/src/*"],
+      "@/*": ["./apps/web/src/*"]
+    },
+    "noEmit": true,
+    "moduleResolution": "Node",
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "scripts/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/node_modules",
+    "**/dist",
+    "**/.next",
+    "**/build",
+    "**/*.d.ts",
+    "apps/web/scripts/codemods"
+  ]
+}
+

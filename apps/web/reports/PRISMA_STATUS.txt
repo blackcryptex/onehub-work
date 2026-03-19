@@ -1,0 +1,31 @@
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schema "public" at "db.atwadsbamfjtxuogtyts.supabase.co:5432"
+
+3 migrations found in prisma/migrations
+Following migrations have not yet been applied:
+20251105173110_add_freetext_event_type_budget
+manual_add_freetext_event_type_budget
+
+To apply migrations in development run prisma migrate dev.
+To apply migrations in production run prisma migrate deploy.
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schema "public" at "db.atwadsbamfjtxuogtyts.supabase.co:5432"
+
+3 migrations found in prisma/migrations
+
+Error: P3015
+
+Could not find the migration file at prisma/migrations/20251105173110_add_freetext_event_type_budget/migration.sql. Please delete the directory or restore the migration file.
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schema "public" at "db.atwadsbamfjtxuogtyts.supabase.co:5432"
+
+2 migrations found in prisma/migrations
+Following migration have not yet been applied:
+manual_add_freetext_event_type_budget
+
+To apply migrations in development run prisma migrate dev.
+To apply migrations in production run prisma migrate deploy.

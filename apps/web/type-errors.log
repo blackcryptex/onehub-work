@@ -1,0 +1,66 @@
+
+> @onehub/web@0.1.0 typecheck
+> tsc --noEmit --pretty false
+
+scripts/codemods/fix-unused-vars.ts(8,34): error TS1005: ')' expected.
+scripts/verifyLinks.ts(114,25): error TS18046: 'e' is of type 'unknown'.
+scripts/verifyLinks.ts(114,35): error TS18046: 'e' is of type 'unknown'.
+src/app/(app)/events/[eventSlug]/tasks/page.tsx(21,41): error TS18046: 't' is of type 'unknown'.
+src/app/api/google/calendar/create-or-use/route.ts(18,16): error TS18046: 'error' is of type 'unknown'.
+src/app/api/google/events/overlay/route.ts(26,16): error TS18046: 'error' is of type 'unknown'.
+src/app/api/google/sync/push/route.ts(66,16): error TS18046: 'error' is of type 'unknown'.
+src/app/api/orgs/create/route.ts(44,9): error TS18046: 'error' is of type 'unknown'.
+src/app/api/stripe/webhook/route.ts(15,81): error TS18046: 'err' is of type 'unknown'.
+src/components/EventActionBar.tsx(17,8): error TS2604: JSX element type 'Icon' does not have any construct or call signatures.
+src/components/EventActionBar.tsx(17,8): error TS2786: 'Icon' cannot be used as a JSX component.
+  Its type 'unknown' is not a valid JSX element type.
+src/components/panes/CalendarPane.tsx(133,32): error TS18046: 'error' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(211,13): error TS18046: 'ge' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(211,36): error TS18046: 'ge' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(214,25): error TS18046: 'ge' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(215,18): error TS18046: 'ge' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(216,18): error TS18046: 'ge' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(216,40): error TS18046: 'ge' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(217,16): error TS18046: 'ge' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(217,36): error TS18046: 'ge' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(218,21): error TS18046: 'ge' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(222,26): error TS18046: 'ge' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(232,17): error TS18046: 'info' is of type 'unknown'.
+src/components/panes/CalendarPane.tsx(266,19): error TS2322: Type 'unknown[]' is not assignable to type 'PluginDef[]'.
+  Type 'unknown' is not assignable to type 'PluginDef'.
+src/components/panes/CalendarPane.tsx(320,13): error TS2322: Type 'unknown[]' is not assignable to type 'PluginDef[]'.
+  Type 'unknown' is not assignable to type 'PluginDef'.
+src/server/routers/activity.ts(10,24): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/activity.ts(11,52): error TS2322: Type 'unknown' is not assignable to type 'ActivityWhereInput | undefined'.
+src/server/routers/admin.ts(61,25): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/admin.ts(63,9): error TS2322: Type 'unknown' is not assignable to type 'AbuseReportWhereInput | undefined'.
+src/server/routers/ai.ts(40,7): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/ai.ts(43,7): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/ai.ts(46,7): error TS2322: Type 'unknown' is not assignable to type 'ListingWhereInput | undefined'.
+src/server/routers/calendar.ts(16,24): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/calendar.ts(18,7): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/calendar.ts(20,9): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/calendar.ts(21,9): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/calendar.ts(23,9): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/calendar.ts(25,9): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/calendar.ts(28,44): error TS2322: Type 'unknown' is not assignable to type 'CalendarEventWhereInput | undefined'.
+src/server/routers/event.ts(52,23): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/event.ts(53,18): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/event.ts(54,49): error TS2322: Type 'unknown' is not assignable to type 'EventWhereInput | undefined'.
+src/server/routers/search.ts(23,21): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(24,58): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(25,29): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(25,52): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(26,29): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(26,52): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(27,28): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(27,51): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(28,28): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(28,51): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(29,21): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(30,22): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(31,24): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(32,26): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(33,46): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(35,7): error TS18046: 'where' is of type 'unknown'.
+src/server/routers/search.ts(43,7): error TS2322: Type 'unknown' is not assignable to type 'ListingWhereInput | undefined'.

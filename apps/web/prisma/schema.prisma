@@ -1,0 +1,1212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String             @id @default(cuid())
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  email                  String             @unique
+  name                   String?
+  image                  String?
+  password               String?            @db.Text
+  role                   Role               @default(CLIENT)
+  accounts               Account[]
+  sessions               Session[]
+  memberships            Membership[]
+  userSettings           UserSettings?
+  auditLogs              AuditLog[]         @relation("UserAuditLogs")
+  reviews                Review[]
+  calendarAccounts       CalendarAccount[]
+  ownedOrgs              Organization[]     @relation("OrganizationOwner")
+  createdEvents          Event[]
+  assignedTasks          Task[]
+  assignedChecklistItems ChecklistItem[]
+  activities             Activity[]
+  notifications          Notification[]
+  userFeatureFlags       UserFeatureFlag[]
+  paymentIntentsAsPayer  PaymentIntent[]    @relation("PaymentIntentPayer")
+  paymentIntentsAsPayee  PaymentIntent[]    @relation("PaymentIntentPayee")
+  transactionsAsPayer    Transaction[]      @relation("TransactionPayer")
+  transactionsAsPayee    Transaction[]      @relation("TransactionPayee")
+  eventStakeholders      EventStakeholder[] @relation("EventStakeholderUser")
+  addedEventStakeholders EventStakeholder[] @relation("EventStakeholderAddedBy")
+  eventSharesAsViewer    EventShare[]       @relation("EventShareViewer")
+  eventSharesAsCreator   EventShare[]       @relation("EventShareCreatedBy")
+  depositsAsClient       Deposit[]          @relation("DepositClient")
+}
+
+enum Role {
+  DIY_PLANNER
+  PRO_PLANNER
+  VENDOR
+  VENUE
+  CLIENT
+  EVENT_DREAMER
+  ADMIN
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Wave 2: Organizations, Teams, Memberships, Invites, Settings, Flags, Audit
+
+model Organization {
+  id              String           @id @default(cuid())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  name            String
+  slug            String           @unique
+  type            OrgType          @default(PLANNER)
+  ownerId         String
+  owner           User             @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members         Membership[]
+  teams           Team[]
+  settings        OrgSettings?
+  invites         Invite[]
+  auditLogs       AuditLog[]
+  listings        Listing[]
+  bookingRequests BookingRequest[]
+  proposals       Proposal[]
+  contracts       Contract[]
+  escrowAccounts  EscrowAccount[]
+  payouts         Payout[]
+  threads         Thread[]
+  disputes        Dispute[]
+  calendarEvents  CalendarEvent[]
+  events          Event[]
+  activities      Activity[]
+  notifications   Notification[]
+  orgFeatureFlags OrgFeatureFlag[]
+  deposits        Deposit[]
+
+  // Provider-specific fields (for VENDOR/VENUE organizations)
+  contactEmail String?
+  contactPhone String?
+  website      String?
+  instagram    String?
+  facebook     String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  country      String? @default("US")
+  about        String? @db.Text
+
+  // JSON fields for provider onboarding data
+  servicesJson      Json?
+  spacesJson        Json?
+  availabilityJson  Json?
+  paymentsJson      Json?
+  mediaJson         Json?
+  notificationsJson Json?
+
+  // Status for draft vs published profiles
+  profileStatus String? // "DRAFT" | "PUBLISHED"
+}
+
+enum OrgType {
+  PLANNER
+  VENDOR
+  VENUE
+  CLIENT_AGENCY
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum StaffRole {
+  COORDINATOR
+  ASSISTANT
+  SALES
+  FINANCE
+  TECH
+  OTHER
+}
+
+model Team {
+  id      String       @id @default(cuid())
+  name    String
+  orgId   String
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  members Membership[]
+}
+
+model Membership {
+  id        String       @id @default(cuid())
+  userId    String
+  orgId     String
+  teamId    String?
+  role      OrgRole      @default(MEMBER)
+  staffRole StaffRole?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  team      Team?        @relation(fields: [teamId], references: [id])
+
+  @@unique([userId, orgId])
+}
+
+model Invite {
+  id        String       @id @default(cuid())
+  orgId     String
+  email     String
+  role      OrgRole      @default(MEMBER)
+  expiresAt DateTime
+  token     String       @unique
+  accepted  Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model UserSettings {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  locale          String   @default("en-US")
+  timezone        String   @default("America/Chicago")
+  currency        String   @default("USD")
+  marketingEmails Boolean  @default(true)
+  smsAlerts       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OrgSettings {
+  id           String       @id @default(cuid())
+  orgId        String       @unique
+  locale       String       @default("en-US")
+  timezone     String       @default("America/Chicago")
+  currency     String       @default("USD")
+  legalEntity  String?
+  billingEmail String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model FeatureFlag {
+  key       String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  enabled   Boolean  @default(false)
+  rule      Json?
+}
+
+model UserFeatureFlag {
+  id      String  @id @default(cuid())
+  userId  String
+  key     String
+  enabled Boolean @default(false)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+}
+
+model OrgFeatureFlag {
+  id      String       @id @default(cuid())
+  orgId   String
+  key     String
+  enabled Boolean      @default(false)
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, key])
+}
+
+model AuditLog {
+  id       String        @id @default(cuid())
+  at       DateTime      @default(now())
+  actorId  String?
+  orgId    String?
+  ip       String?
+  action   String
+  target   String?
+  metadata Json?
+  actor    User?         @relation("UserAuditLogs", fields: [actorId], references: [id])
+  org      Organization? @relation(fields: [orgId], references: [id])
+
+  @@index([orgId, at])
+}
+
+// Wave 3: Event Domain Models
+
+model Event {
+  id                 String      @id @default(cuid())
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  orgId              String
+  createdById        String
+  name               String
+  slug               String      @unique
+  type               EventType // Legacy enum - kept for backward compatibility
+  eventTypeRaw       String? // Free-text event type from user (nullable for migration)
+  eventTypeCanonical String? // AI-normalized canonical label (e.g., "wedding", "conference")
+  objective          String?
+  description        String?
+  startAt            DateTime
+  endAt              DateTime
+  venueCity          String?
+  venueState         String?
+  venueCountry       String?     @default("US")
+  guestTarget        Int?
+  status             EventStatus @default(PLANNING)
+  budgetCents        Int         @default(0)
+  budgetRaw          String? // Free-text budget from user
+  budgetMin          Int? // Parsed min budget in cents
+  budgetMax          Int? // Parsed max budget in cents
+  budgetCurrency     String?     @db.VarChar(3) // ISO 4217 currency code (e.g., "USD", "EUR")
+
+  org             Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdBy       User               @relation(fields: [createdById], references: [id])
+  tasks           Task[]
+  checklists      Checklist[]
+  milestones      Milestone[]
+  budgetLines     BudgetLine[]
+  activities      Activity[]
+  media           Media[]
+  bookingRequests BookingRequest[]
+  proposals       Proposal[]
+  contracts       Contract[]
+  escrowAccounts  EscrowAccount[]
+  threads         Thread[]
+  disputes        Dispute[]
+  calendarEvents  CalendarEvent[]
+  guestLists      GuestList[]
+  seatingPlans    SeatingPlan[]
+  invitations     Invitation[]
+  shortlistItems  ShortlistItem[]
+  stakeholders    EventStakeholder[]
+  shares          EventShare[]
+  deposits        Deposit[]
+}
+
+model ShortlistItem {
+  id        String   @id @default(cuid())
+  eventId   String
+  listingId String // Links to Listing (vendor or venue)
+  createdAt DateTime @default(now())
+  notes     String? // Optional user notes about why this vendor/venue was shortlisted
+
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, listingId])
+  @@index([eventId])
+}
+
+enum EventType {
+  WEDDING
+  CORPORATE_GALA
+  FUNDRAISER
+  BIRTHDAY
+  CONFERENCE
+  FESTIVAL
+  SPORTS
+  OTHER
+}
+
+enum EventStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELED
+}
+
+enum EventStakeholderRole {
+  CLIENT
+  STAKEHOLDER
+}
+
+// Phase 1: Event-scoped client relationship model
+// Clients are NOT org members by default. They are event-scoped stakeholders only.
+model EventStakeholder {
+  id            String               @id @default(cuid())
+  eventId       String
+  userId        String
+  role          EventStakeholderRole
+  addedByUserId String
+  createdAt     DateTime             @default(now())
+
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User  @relation("EventStakeholderUser", fields: [userId], references: [id], onDelete: Cascade)
+  addedBy User  @relation("EventStakeholderAddedBy", fields: [addedByUserId], references: [id])
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+enum EventShareScope {
+  SUMMARY
+}
+
+// Phase 2: Minimal sharing/forwarding
+// Clients can only view content explicitly shared by the Pro Planner
+model EventShare {
+  id              String          @id @default(cuid())
+  eventId         String
+  viewerUserId    String
+  scope           EventShareScope @default(SUMMARY)
+  createdByUserId String
+  createdAt       DateTime        @default(now())
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  viewer    User  @relation("EventShareViewer", fields: [viewerUserId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("EventShareCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@unique([eventId, viewerUserId, scope])
+  @@index([eventId])
+  @@index([viewerUserId])
+}
+
+model Milestone {
+  id      String   @id @default(cuid())
+  eventId String
+  title   String
+  dueAt   DateTime
+  done    Boolean  @default(false)
+  order   Int      @default(0)
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model ChecklistTemplate {
+  id         String      @id @default(cuid())
+  orgId      String?
+  title      String
+  type       EventType?
+  items      Json
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  checklists Checklist[]
+}
+
+model Checklist {
+  id         String             @id @default(cuid())
+  eventId    String
+  title      String
+  templateId String?
+  items      ChecklistItem[]
+  event      Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  template   ChecklistTemplate? @relation(fields: [templateId], references: [id])
+}
+
+model ChecklistItem {
+  id          String    @id @default(cuid())
+  checklistId String
+  title       String
+  description String?
+  assigneeId  String?
+  dueAt       DateTime?
+  done        Boolean   @default(false)
+  order       Int       @default(0)
+  checklist   Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  assignee    User?     @relation(fields: [assigneeId], references: [id])
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  eventId     String
+  title       String
+  description String?
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  assigneeId  String?
+  dueAt       DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assignee    User?        @relation(fields: [assigneeId], references: [id])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model BudgetLine {
+  id           String         @id @default(cuid())
+  eventId      String
+  category     BudgetCategory
+  label        String
+  plannedCents Int            @default(0)
+  actualCents  Int            @default(0)
+  vendorName   String?
+  notes        String?
+  event        Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+enum BudgetCategory {
+  VENUE
+  CATERING
+  DECOR
+  ENTERTAINMENT
+  PHOTO_VIDEO
+  TRANSPORT
+  STAFF
+  MARKETING
+  MISC
+}
+
+model Activity {
+  id      String       @id @default(cuid())
+  at      DateTime     @default(now())
+  orgId   String
+  eventId String?
+  actorId String?
+  action  String
+  target  String?
+  meta    Json?
+  org     Organization @relation(fields: [orgId], references: [id])
+  event   Event?       @relation(fields: [eventId], references: [id])
+  actor   User?        @relation(fields: [actorId], references: [id])
+
+  @@index([orgId, at])
+}
+
+model Notification {
+  id        String       @id @default(cuid())
+  userId    String
+  orgId     String
+  type      String
+  title     String
+  body      String?
+  read      Boolean      @default(false)
+  link      String?
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+// Wave 4: Marketplace & Booking
+
+model Listing {
+  id              String             @id @default(cuid())
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  orgId           String
+  slug            String             @unique
+  title           String
+  type            ListingType
+  category        ListingCategory
+  description     String?
+  website         String?
+  phone           String?
+  email           String?
+  minGuests       Int?
+  maxGuests       Int?
+  priceTier       Int?
+  street          String?
+  city            String?
+  state           String?
+  country         String?            @default("US")
+  postalCode      String?
+  latitude        Float?
+  longitude       Float?
+  coverImageUrl   String?
+  ratingAvg       Float              @default(0)
+  ratingCount     Int                @default(0)
+  org             Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  tags            ListingTag[]
+  gallery         Media[]
+  availSlots      AvailabilitySlot[]
+  offers          Offer[]
+  reviews         Review[]
+  bookingRequests BookingRequest[]
+  proposals       Proposal[]
+  threads         Thread[]
+  shortlistItems  ShortlistItem[]
+}
+
+enum ListingType {
+  VENDOR
+  VENUE
+}
+
+enum ListingCategory {
+  VENUE_SPACE
+  CATERING
+  DECOR_FLORAL
+  ENTERTAINMENT
+  PHOTO_VIDEO
+  TRANSPORT
+  STAFFING
+  PLANNING_SERVICES
+  RENTALS
+  OTHER
+}
+
+model ListingTag {
+  id        String  @id @default(cuid())
+  listingId String
+  value     String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([value])
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  listingId String?
+  eventId   String?
+  url       String
+  caption   String?
+  createdAt DateTime @default(now())
+  listing   Listing? @relation(fields: [listingId], references: [id])
+  event     Event?   @relation(fields: [eventId], references: [id])
+}
+
+model AvailabilitySlot {
+  id        String             @id @default(cuid())
+  listingId String
+  startAt   DateTime
+  endAt     DateTime
+  status    AvailabilityStatus @default(AVAILABLE)
+  note      String?
+  listing   Listing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, startAt, endAt])
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  HOLD
+  BOOKED
+  UNAVAILABLE
+}
+
+model Offer {
+  id          String  @id @default(cuid())
+  listingId   String
+  name        String
+  description String?
+  priceCents  Int?
+  unit        String?
+  listing     Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model BookingRequest {
+  id           String        @id @default(cuid())
+  createdAt    DateTime      @default(now())
+  orgId        String
+  eventId      String
+  listingId    String
+  contactName  String
+  contactEmail String
+  contactPhone String?
+  startAt      DateTime
+  endAt        DateTime
+  guests       Int?
+  message      String?
+  status       BookingStatus @default(PENDING)
+  quoteCents   Int?
+  notes        String?
+  org          Organization  @relation(fields: [orgId], references: [id])
+  event        Event         @relation(fields: [eventId], references: [id])
+  listing      Listing       @relation(fields: [listingId], references: [id])
+
+  @@index([listingId, createdAt])
+}
+
+enum BookingStatus {
+  PENDING
+  HOLD
+  QUOTED
+  DECLINED
+  EXPIRED
+  WITHDRAWN
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  authorId  String
+  listingId String
+  rating    Int
+  title     String?
+  body      String?
+  flagged   Boolean  @default(false)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+}
+
+// Wave 5: Contracts & Payments
+
+model Proposal {
+  id            String             @id @default(cuid())
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  orgId         String
+  eventId       String
+  listingId     String?
+  title         String
+  summary       String?
+  status        ProposalStatus     @default(DRAFT)
+  currency      String             @default("USD")
+  subtotalCents Int                @default(0)
+  taxCents      Int                @default(0)
+  totalCents    Int                @default(0)
+  validUntil    DateTime?
+  terms         String?
+  org           Organization       @relation(fields: [orgId], references: [id])
+  event         Event              @relation(fields: [eventId], references: [id])
+  listing       Listing?           @relation(fields: [listingId], references: [id])
+  lineItems     ProposalLineItem[]
+  milestones    PaymentMilestone[]
+  sections      ProposalSection[]
+  payouts       Payout[]
+  contract      Contract?
+  escrowAccount EscrowAccount?
+  threads       Thread[]
+  disputes      Dispute[]
+}
+
+enum ProposalStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CONVERTED
+}
+
+model ProposalLineItem {
+  id             String   @id @default(cuid())
+  proposalId     String
+  label          String
+  description    String?
+  qty            Float    @default(1)
+  unit           String?
+  unitPriceCents Int      @default(0)
+  totalCents     Int      @default(0)
+  proposal       Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+}
+
+model PaymentMilestone {
+  id             String           @id @default(cuid())
+  proposalId     String
+  title          String
+  description    String?
+  dueType        MilestoneDueType
+  dueDate        DateTime?
+  dueOffsetDays  Int?
+  amountCents    Int
+  status         MilestoneStatus  @default(PENDING)
+  proposal       Proposal         @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  paymentIntents PaymentIntent[]
+}
+
+model ProposalSection {
+  id         String   @id @default(cuid())
+  proposalId String
+  heading    String
+  body       String
+  order      Int      @default(0)
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId, order])
+}
+
+enum MilestoneDueType {
+  DATE_ABSOLUTE
+  OFFSET_FROM_EVENT_START
+}
+
+enum MilestoneStatus {
+  PENDING
+  HELD
+  IN_ESCROW
+  PARTIALLY_PAID
+  PAID
+  REFUNDED
+  OVERDUE
+}
+
+model Contract {
+  id                 String          @id @default(cuid())
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  proposalId         String          @unique
+  orgId              String
+  eventId            String
+  title              String
+  bodyMd             String
+  version            Int             @default(1)
+  status             ContractStatus  @default(OUT_FOR_SIGNATURE)
+  buyerId            String?
+  sellerId           String?
+  platformFeePercent Float           @default(5.0)
+  org                Organization    @relation(fields: [orgId], references: [id])
+  event              Event           @relation(fields: [eventId], references: [id])
+  proposal           Proposal        @relation(fields: [proposalId], references: [id])
+  signatures         Signature[]
+  changeOrders       ChangeOrder[]
+  paymentIntents     PaymentIntent[]
+}
+
+enum ContractStatus {
+  DRAFT
+  OUT_FOR_SIGNATURE
+  PARTIALLY_SIGNED
+  FULLY_SIGNED
+  ACCEPTED
+  IN_PAYMENT
+  ACTIVE
+  COMPLETED
+  CANCELED
+}
+
+model Signature {
+  id          String    @id @default(cuid())
+  contractId  String
+  signerId    String?
+  signerName  String
+  signerEmail String
+  ip          String?
+  ua          String?
+  signedAt    DateTime?
+  method      String?
+  imageUrl    String?
+  contract    Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+}
+
+model ChangeOrder {
+  id         String            @id @default(cuid())
+  contractId String
+  number     Int
+  title      String
+  bodyMd     String
+  deltaCents Int               @default(0)
+  status     ChangeOrderStatus @default(PENDING)
+  createdAt  DateTime          @default(now())
+  approvedAt DateTime?
+  contract   Contract          @relation(fields: [contractId], references: [id], onDelete: Cascade)
+}
+
+enum ChangeOrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model EscrowAccount {
+  id           String       @id @default(cuid())
+  orgId        String
+  eventId      String
+  proposalId   String       @unique
+  stripeIntent String?      @unique
+  status       EscrowStatus @default(OPEN)
+  balanceCents Int          @default(0)
+  currency     String       @default("USD")
+  org          Organization @relation(fields: [orgId], references: [id])
+  event        Event        @relation(fields: [eventId], references: [id])
+  proposal     Proposal     @relation(fields: [proposalId], references: [id])
+}
+
+enum EscrowStatus {
+  OPEN
+  FUNDED
+  PARTIALLY_RELEASED
+  RELEASED
+  REFUNDED
+  CLOSED
+}
+
+model Payout {
+  id             String       @id @default(cuid())
+  proposalId     String
+  milestoneId    String?      @unique
+  listingId      String?
+  orgId          String
+  amountCents    Int
+  stripeTransfer String?
+  status         PayoutStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+  proposal       Proposal     @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [orgId], references: [id])
+}
+
+enum PayoutStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELED
+}
+
+model MoneyTx {
+  id          String   @id @default(cuid())
+  at          DateTime @default(now())
+  type        String
+  proposalId  String?
+  milestoneId String?
+  amountCents Int
+  currency    String   @default("USD")
+  stripeId    String?  @unique
+  meta        Json?
+}
+
+model WebhookEvent {
+  id             String   @id @default(cuid())
+  eventId        String   @unique
+  type           String
+  stripeIntentId String?
+  processedAt    DateTime @default(now())
+  meta           Json?
+}
+
+model PaymentIntent {
+  id             String              @id @default(cuid())
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  contractId     String
+  milestoneId    String?
+  payerId        String
+  payeeId        String
+  amountCents    Int
+  currency       String              @default("USD")
+  status         PaymentIntentStatus @default(REQUIRES_PAYMENT)
+  stripeIntentId String?             @unique
+  paymentMethod  String?
+  contract       Contract            @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  milestone      PaymentMilestone?   @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  payer          User                @relation("PaymentIntentPayer", fields: [payerId], references: [id])
+  payee          User                @relation("PaymentIntentPayee", fields: [payeeId], references: [id])
+  transactions   Transaction[]
+}
+
+enum PaymentIntentStatus {
+  REQUIRES_PAYMENT
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model Transaction {
+  id               String        @id @default(cuid())
+  createdAt        DateTime      @default(now())
+  paymentIntentId  String        @unique
+  payerId          String
+  payeeId          String
+  netAmountCents   Int
+  platformFeeCents Int
+  totalAmountCents Int
+  currency         String        @default("USD")
+  stripeChargeId   String?       @unique
+  processedAt      DateTime?
+  paymentIntent    PaymentIntent @relation(fields: [paymentIntentId], references: [id], onDelete: Cascade)
+  payer            User          @relation("TransactionPayer", fields: [payerId], references: [id])
+  payee            User          @relation("TransactionPayee", fields: [payeeId], references: [id])
+}
+
+// Phase 7A: Event-scoped deposits for clients
+// Clients can make deposits for events where they are stakeholders
+model Deposit {
+  id                 String         @id @default(cuid())
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  eventId            String
+  clientUserId       String
+  proOrgId           String
+  amountCents        Int
+  currency           String         @default("USD")
+  status             DepositStatus  @default(PENDING)
+  stripePaymentIntentId String?     @unique
+  stripeChargeId     String?
+  notes              String?
+  event              Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  clientUser         User           @relation("DepositClient", fields: [clientUserId], references: [id])
+  proOrg             Organization   @relation(fields: [proOrgId], references: [id])
+
+  @@index([eventId])
+  @@index([clientUserId])
+  @@index([proOrgId])
+  @@index([status])
+}
+
+enum DepositStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model Thread {
+  id           String              @id @default(cuid())
+  createdAt    DateTime            @default(now())
+  orgId        String
+  eventId      String?
+  proposalId   String?
+  listingId    String?
+  subject      String
+  org          Organization        @relation(fields: [orgId], references: [id])
+  event        Event?              @relation(fields: [eventId], references: [id])
+  proposal     Proposal?           @relation(fields: [proposalId], references: [id])
+  listing      Listing?            @relation(fields: [listingId], references: [id])
+  participants ThreadParticipant[]
+  messages     Message[]
+}
+
+model ThreadParticipant {
+  id       String  @id @default(cuid())
+  threadId String
+  userId   String?
+  email    String
+  roleHint String?
+  thread   Thread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  threadId    String
+  senderId    String?
+  bodyMd      String
+  attachments Json?
+  createdAt   DateTime @default(now())
+  thread      Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+}
+
+model Dispute {
+  id          String        @id @default(cuid())
+  createdAt   DateTime      @default(now())
+  orgId       String
+  eventId     String?
+  proposalId  String
+  milestoneId String?
+  title       String
+  body        String?
+  status      DisputeStatus @default(OPEN)
+  resolution  String?
+  org         Organization  @relation(fields: [orgId], references: [id])
+  event       Event?        @relation(fields: [eventId], references: [id])
+  proposal    Proposal      @relation(fields: [proposalId], references: [id])
+}
+
+enum DisputeStatus {
+  OPEN
+  NEEDS_INFO
+  ESCALATED
+  RESOLVED
+  REJECTED
+}
+
+// Wave 6: Calendar, Guests, Seating, Admin
+
+model CalendarAccount {
+  id               String             @id @default(cuid())
+  userId           String
+  provider         String
+  email            String
+  accessToken      String?            @db.Text
+  refreshToken     String?            @db.Text
+  expiresAt        DateTime?
+  googleCalendarId String? // ID of the OneHub calendar in Google
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mappings         CalendarMapping[]
+  syncState        CalendarSyncState?
+
+  @@unique([userId, provider])
+}
+
+model CalendarMapping {
+  id                String          @id @default(cuid())
+  userId            String
+  calendarAccountId String
+  entityType        String // 'event'|'task'|'milestone'|'payment'|'other'
+  entityId          String
+  googleEventId     String
+  googleCalendarId  String
+  lastSyncedAt      DateTime        @default(now())
+  calendarAccount   CalendarAccount @relation(fields: [calendarAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityType, entityId])
+  @@index([googleEventId])
+}
+
+model CalendarSyncState {
+  id                String          @id @default(cuid())
+  userId            String          @unique
+  calendarAccountId String          @unique
+  googleCalendarId  String
+  syncMode          String          @default("one-way") // 'one-way'|'overlay'
+  watchResourceId   String?
+  watchChannelId    String?
+  watchExpiration   DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  calendarAccount   CalendarAccount @relation(fields: [calendarAccountId], references: [id], onDelete: Cascade)
+}
+
+model CalendarEvent {
+  id          String       @id @default(cuid())
+  orgId       String
+  eventId     String?
+  title       String
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+  allDay      Boolean      @default(false)
+  location    String?
+  source      String?
+  visibility  String?
+  createdById String?
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  event       Event?       @relation(fields: [eventId], references: [id])
+}
+
+model GuestList {
+  id      String       @id @default(cuid())
+  eventId String       @unique
+  title   String       @default("Guest List")
+  invited Int          @default(0)
+  rsvped  Int          @default(0)
+  event   Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guests  Guest[]
+  groups  GuestGroup[]
+}
+
+model GuestGroup {
+  id          String    @id @default(cuid())
+  guestListId String
+  name        String
+  notes       String?
+  guestList   GuestList @relation(fields: [guestListId], references: [id], onDelete: Cascade)
+  guests      Guest[]
+}
+
+model Guest {
+  id          String       @id @default(cuid())
+  guestListId String
+  groupId     String?
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  side        String?
+  plusOnes    Int          @default(0)
+  tags        Json?
+  status      RSVPStatus   @default(PENDING)
+  dietary     String?
+  notes       String?
+  seatId      String?      @unique
+  guestList   GuestList    @relation(fields: [guestListId], references: [id], onDelete: Cascade)
+  group       GuestGroup?  @relation(fields: [groupId], references: [id])
+  seat        Seat?        @relation(fields: [seatId], references: [id])
+  invitations Invitation[]
+
+  @@index([email])
+}
+
+enum RSVPStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WAITLIST
+}
+
+model Invitation {
+  id            String    @id @default(cuid())
+  eventId       String
+  guestId       String    @unique
+  token         String    @unique
+  sentAt        DateTime?
+  respondedAt   DateTime?
+  channel       String?
+  invitationUrl String?
+  event         Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guest         Guest     @relation(fields: [guestId], references: [id], onDelete: Cascade)
+}
+
+model SeatingPlan {
+  id      String  @id @default(cuid())
+  eventId String  @unique
+  title   String  @default("Main Floor")
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tables  Table[]
+}
+
+model Table {
+  id            String      @id @default(cuid())
+  seatingPlanId String
+  name          String
+  capacity      Int
+  x             Int         @default(0)
+  y             Int         @default(0)
+  seatingPlan   SeatingPlan @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
+  seats         Seat[]
+}
+
+model Seat {
+  id      String @id @default(cuid())
+  tableId String
+  number  Int
+  table   Table  @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  guest   Guest?
+}
+
+model MetricDaily {
+  date         DateTime @id
+  orgCount     Int      @default(0)
+  userCount    Int      @default(0)
+  eventsCount  Int      @default(0)
+  gmvInCents   Int      @default(0)
+  payoutsCents Int      @default(0)
+}
+
+model AbuseReport {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  reporterId String?
+  targetType String
+  targetId   String
+  reason     String
+  status     String   @default("OPEN")
+  notes      String?
+}

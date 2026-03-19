@@ -1,0 +1,36 @@
+"use client";
+
+import * as React from "react";
+import { Card, Button } from "./";
+
+type Filters = {
+  type?: string;
+  category?: string[];
+  priceTier?: { min?: number; max?: number };
+  city?: string;
+  ratingMin?: number;
+};
+
+export function ListingFilters({ onFilter }: { onFilter: (f: Filters) => void }) {
+  const [filters, setFilters] = React.useState<Filters>({});
+  return (
+    <Card className="p-4">
+      <div className="space-y-3">
+        <div>
+          <label className="text-sm font-medium">Type</label>
+          <select className="mt-1 w-full rounded-2xl border border-slate-300 px-3 py-2 text-sm" onChange={(e) => setFilters({ ...filters, type: e.target.value || undefined })}>
+            <option value="">All</option>
+            <option value="VENDOR">Vendor</option>
+            <option value="VENUE">Venue</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-sm font-medium">City</label>
+          <input type="text" className="mt-1 w-full rounded-2xl border border-slate-300 px-3 py-2 text-sm" onChange={(e) => setFilters({ ...filters, city: e.target.value || undefined })} />
+        </div>
+        <Button onClick={() => onFilter(filters)}>Apply Filters</Button>
+      </div>
+    </Card>
+  );
+}
+
