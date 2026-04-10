@@ -14,18 +14,20 @@ import { recordAudit } from "@/server/lib/audit";
 
 // Request validation schema
 const createEventSchema = z.object({
-  name: z.string().min(1, "Event name is required"),
-  event_type_raw: z.string().min(1, "Event type is required"),
-  budget_raw: z.string().min(1, "Budget is required"),
-  date: z.string().min(1, "Event date is required"),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zipCode: z.string().optional(),
-  headcount: z.string().optional(),
-  venue: z.string().optional(),
-  objective: z.string().optional(),
-  style: z.string().optional(),
-  // Phase 3: Client intake data
+  name: z.string().trim().min(1, "Event name is required"),
+  event_type_raw: z.string().trim().min(1, "Event type is required"),
+  budget_raw: z.string().trim().min(1, "Budget is required"),
+  date: z.string().trim().min(1, "Event date is required"),
+  city: z.string().trim().min(1, "City is required"),
+  state: z.string().trim().length(2, "State must be 2 characters (e.g., NY, CA)").transform((value) => value.toUpperCase()),
+  zipCode: z.string().trim().regex(/^\d{5}$/, "Zip code must be 5 digits"),
+  headcount: z.string().trim().refine((value) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0;
+  }, "Headcount must be a number greater than 0"),
+  venue: z.string().trim().optional(),
+  objective: z.string().trim().optional(),
+  style: z.string().trim().min(1, "Event style & theme is required"),
   clientIds: z.array(z.string()).optional().default([]),
   autoShareSummary: z.boolean().optional().default(false),
 });
@@ -218,7 +220,11 @@ export async function POST(request: NextRequest) {
     const validationResult = createEventSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: validationResult.error.errors },
+        {
+          error: "Validation failed",
+          fieldErrors: validationResult.error.flatten().fieldErrors,
+          details: validationResult.error.errors,
+        },
         { status: 400 }
       );
     }
@@ -227,7 +233,7 @@ export async function POST(request: NextRequest) {
 
     // Get or create a default org for DIY planner
     org = await prisma.organization.findFirst({
-      where: { ownerId: userId, type: "PLANNER" },
+      where: { ownerId: userId, type: { in: ["PLANNER", "CLIENT_AGENCY"] } },
     });
 
     if (!org) {

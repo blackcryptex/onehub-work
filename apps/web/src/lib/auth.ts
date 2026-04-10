@@ -95,6 +95,9 @@ export const authConfig: NextAuthConfig = {
       // When trigger === 'update', the session parameter contains the update data
       // This is triggered by calling update() from next-auth/react on the client
       if (trigger === "update" && session) {
+        // Never trust client-provided role updates. Roles must come from the database
+        // during sign-in or explicit server-controlled impersonation transitions only.
+
         // Update impersonation fields if provided
         if (session.actingUserId !== undefined) {
           token.actingUserId = session.actingUserId as string | undefined;
@@ -173,25 +176,29 @@ export const authConfig: NextAuthConfig = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Allow relative URLs
+      const liveBaseUrl = process.env.NEXTAUTH_URL || baseUrl;
+
       if (url.startsWith("/")) {
-        return `${baseUrl}${url}`;
+        return `${liveBaseUrl}${url}`;
       }
-      // Allow same-origin URLs
+
       try {
         const urlObj = new URL(url);
-        if (urlObj.origin === baseUrl) {
+        const base = new URL(liveBaseUrl);
+
+        if (urlObj.origin === base.origin) {
           return url;
         }
       } catch {
-        // Invalid URL, fallback to default
+        // ignore and fall through
       }
-      // Default redirect to app dashboard (will route based on role)
-      return `${baseUrl}/app`;
+
+      return `${liveBaseUrl}/app`;
     },
   },
   pages: {
     signIn: "/signin",
+    error: "/signin",
   },
   // Enable Google only when env is provided
   // Runtime guards are handled by provider configuration above

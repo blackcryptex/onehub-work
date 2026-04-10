@@ -1,9 +1,9 @@
 import { Card } from "@/components/ui";
-import { prisma } from "@/lib/prisma";
+import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
 export default async function EventSettings({ params }: { params: { eventSlug: string } }) {
-  const ev = await prisma.event.findFirst({ where: { slug: params.eventSlug } });
-  if (!ev) return null;
+  await requireAuthorizedEventBySlug(params.eventSlug, "edit");
+
   return (
     <Card className="p-4">
       <div className="text-sm text-slate-600">Edit event basics (coming soon).</div>

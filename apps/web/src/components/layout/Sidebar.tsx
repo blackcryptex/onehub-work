@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { Role } from "@onehub/types/src/roles";
 import type { Route } from "next";
+import { SignOutButton } from "./SignOutButton";
 
 function itemsForRole(role: Role | undefined) {
   switch (role) {
@@ -21,19 +22,20 @@ function itemsForRole(role: Role | undefined) {
       ];
     case "VENDOR":
       return [
-        { href: "/app", label: "Dashboard" },
+        { href: "/vendor/dashboard", label: "Dashboard" },
         { href: "/app/vault", label: "Event Vault" },
-        { href: "/app/marketplace/manage", label: "Listings" },
+        { href: "/marketplace/manage", label: "Listings" },
       ];
     case "VENUE":
       return [
-        { href: "/app", label: "Dashboard" },
+        { href: "/venue/dashboard", label: "Dashboard" },
         { href: "/app/vault", label: "Event Vault" },
-        { href: "/app/marketplace/manage", label: "Availability" },
+        { href: "/marketplace/manage", label: "Availability" },
       ];
     case "ADMIN":
       return [
-        { href: "/app", label: "Dashboard" },
+        { href: "/app/admin/overview", label: "Dashboard" },
+        { href: "/app/admin/verification", label: "Verification" },
         { href: "/app/admin/overview", label: "Admin" },
       ];
     default:
@@ -64,6 +66,9 @@ export function Sidebar() {
           );
         })}
       </nav>
+      <div className="mt-4 border-t border-slate-200 pt-4">
+        <SignOutButton />
+      </div>
     </aside>
   );
 }

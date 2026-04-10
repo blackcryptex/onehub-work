@@ -5,21 +5,28 @@ import { Card, Button, Input, Label } from "@/components/ui";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { isDemoMode } from "@/lib/demo-mode";
 import { useRouter } from "next/navigation";
+import { CURRENT_ACCEPTANCE_VERSIONS } from "@/lib/acceptance-versions";
 
 interface ContractSignatureFormProps {
   contractId: string;
   onSuccess: () => void;
+  prefilledSignerEmail?: string;
 }
 
-export function ContractSignatureForm({ contractId, onSuccess }: ContractSignatureFormProps) {
+export function ContractSignatureForm({
+  contractId,
+  onSuccess,
+  prefilledSignerEmail,
+}: ContractSignatureFormProps) {
   const router = useRouter();
   const demoMode = isDemoMode();
   const [loading, setLoading] = useState(false);
+  const [signed, setSigned] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     signerName: demoMode ? "Jane Planner" : "",
-    signerEmail: demoMode ? "pro@example.com" : "",
+    signerEmail: prefilledSignerEmail ?? (demoMode ? "pro@example.com" : ""),
     agreed: false,
   });
 
@@ -35,6 +42,10 @@ export function ContractSignatureForm({ contractId, onSuccess }: ContractSignatu
         body: JSON.stringify({
           signerName: formData.signerName,
           signerEmail: formData.signerEmail,
+          acceptance: {
+            accepted: true,
+            legalVersion: CURRENT_ACCEPTANCE_VERSIONS.contract,
+          },
         }),
       });
 
@@ -43,6 +54,7 @@ export function ContractSignatureForm({ contractId, onSuccess }: ContractSignatu
         throw new Error(data.error || "Failed to sign contract");
       }
 
+      setSigned(true);
       onSuccess();
       router.refresh();
     } catch (err) {
@@ -62,6 +74,15 @@ export function ContractSignatureForm({ contractId, onSuccess }: ContractSignatu
         </div>
       )}
 
+      {signed ? (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+          <div className="flex items-center gap-2 font-medium">
+            <CheckCircle2 className="w-4 h-4" />
+            Contract signed successfully.
+          </div>
+          <p className="mt-2">Refreshing signed state...</p>
+        </div>
+      ) : (
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Label htmlFor="signerName">Full Name *</Label>
@@ -108,7 +129,7 @@ export function ContractSignatureForm({ contractId, onSuccess }: ContractSignatu
         )}
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={loading || !formData.agreed}>
+          <Button type="submit" disabled={signed || loading || !formData.agreed}>
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -120,7 +141,7 @@ export function ContractSignatureForm({ contractId, onSuccess }: ContractSignatu
           </Button>
         </div>
       </form>
+      )}
     </Card>
   );
 }
-

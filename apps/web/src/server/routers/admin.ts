@@ -5,6 +5,12 @@ import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
 import type { Prisma } from "@prisma/client";
+import {
+  canAdminOverrideBookingClassification,
+  getBookingClassificationHooks,
+  resolveBookingClassification,
+} from "@/lib/booking-classification";
+import { reviewRefundRequest } from "@/lib/refund-request";
 
 // Centralized permission check: see apps/web/src/lib/rbac.ts
 async function requireAdmin() {
@@ -88,6 +94,75 @@ export const adminRouter = router({
         nextCursor = next?.id;
       }
       return { items: reports, nextCursor };
+    }),
+  }),
+
+  bookingClassification: router({
+    getProposalContext: publicProcedure.input(z.object({
+      proposalId: z.string(),
+    })).query(async ({ input }) => {
+      await requireAdmin();
+      const proposal = await prisma.proposal.findUnique({
+        where: { id: input.proposalId },
+        include: {
+          event: true,
+          contract: true,
+        },
+      });
+      if (!proposal) {
+        throw new Error("Proposal not found");
+      }
+      const bookingClassification = resolveBookingClassification({
+        proposal: {
+          bookingClassification: proposal.bookingClassification,
+          listingId: proposal.listingId,
+        },
+        event: proposal.event,
+      });
+      return {
+        proposalId: proposal.id,
+        bookingClassification,
+        hooks: getBookingClassificationHooks(bookingClassification),
+        adminCanOverride: canAdminOverrideBookingClassification(bookingClassification),
+        contractId: proposal.contract?.id ?? null,
+      };
+    }),
+  }),
+
+  refundRequests: router({
+    list: publicProcedure.input(z.object({
+      status: z.enum(["OPEN", "APPROVED", "DENIED", "CANCELED"]).optional(),
+    }).optional()).query(async ({ input }) => {
+      await requireAdmin();
+      return (prisma as any).refundRequest.findMany({
+        where: input?.status ? { status: input.status } : undefined,
+        orderBy: { createdAt: "desc" },
+      });
+    }),
+    review: publicProcedure.input(z.object({
+      refundRequestId: z.string(),
+      decision: z.enum(["APPROVED", "DENIED"]),
+      decisionReason: z.string().min(3),
+      processingFeeTreatment: z.enum(["BUYER_ABSORBS", "REFUND_TO_BUYER", "NON_REFUNDABLE"]).optional(),
+      platformFeeTreatment: z.enum(["BUYER_ABSORBS", "REFUND_TO_BUYER", "NON_REFUNDABLE"]).optional(),
+    })).mutation(async ({ input }) => {
+      const adminId = await requireAdmin();
+      return reviewRefundRequest({
+        refundRequestId: input.refundRequestId,
+        adminId,
+        decision: input.decision,
+        decisionReason: input.decisionReason,
+        processingFeeTreatment: input.processingFeeTreatment,
+        platformFeeTreatment: input.platformFeeTreatment,
+      });
+    }),
+    getVerification: publicProcedure.input(z.object({
+      refundRequestId: z.string(),
+    })).query(async ({ input }) => {
+      await requireAdmin();
+      return (prisma as any).refundRequest.findUnique({
+        where: { id: input.refundRequestId },
+      });
     }),
   }),
 

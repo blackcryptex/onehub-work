@@ -22,6 +22,7 @@ import { StakeholdersSectionClient } from "@/components/vault/StakeholdersSectio
 import { AiSourceVendorsVenuesPanel } from "@/components/vault/AiSourceVendorsVenuesPanel";
 import { DemoTour } from "@/components/vault/DemoTour";
 import { getVaultBasePath, eventBudget, eventGuests, eventChecklists, proposalDetail, vaultDetail } from "@/lib/routes";
+import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
 export default async function EventVaultDetailPage({ params }: { params: { eventSlug: string } }) {
   const user = await getCurrentUser();
@@ -49,19 +50,15 @@ export default async function EventVaultDetailPage({ params }: { params: { event
     redirect(roleSpecificVaultDetail);
   }
 
-  // Phase 0: Security hardening - Block CLIENT users from accessing planner vault
-  if (user.role === "CLIENT") {
-    console.warn("[Event Vault Detail] CLIENT user attempted to access planner vault, redirecting");
-    redirect("/app");
-  }
+  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "view");
 
   // Determine vault base path based on user role using centralized helper
   const vaultBasePath = getVaultBasePath(user.role);
 
   let event;
   try {
-    event = await prisma.event.findFirst({
-      where: { slug: params.eventSlug },
+    event = await prisma.event.findUnique({
+      where: { id: authorizedEvent.id },
       include: {
         createdBy: { select: { name: true, email: true } },
         org: {
@@ -139,8 +136,8 @@ export default async function EventVaultDetailPage({ params }: { params: { event
     // If it's a Prisma relation error (e.g., shortlistItems not in schema), try without it
     if (error instanceof Error && error.message.includes("shortlistItems")) {
       console.warn("[Vault] Retrying without shortlistItems relation...");
-      event = await prisma.event.findFirst({
-        where: { slug: params.eventSlug },
+      event = await prisma.event.findUnique({
+        where: { id: authorizedEvent.id },
         include: {
           createdBy: { select: { name: true, email: true } },
           org: {
@@ -213,7 +210,6 @@ export default async function EventVaultDetailPage({ params }: { params: { event
     createdById: event.createdById,
   });
 
-  // Check access using RBAC helpers
   const canManage = canManageEvent(user, event);
   const canEdit = canEditEvent(user, event);
   const canDelete = canDeleteEvent(user, event);
@@ -226,11 +222,6 @@ export default async function EventVaultDetailPage({ params }: { params: { event
     isAdmin: isAdmin(user),
     isPlanner: isPlanner(user),
   });
-  
-  if (!canManage) {
-    console.warn("[Event Vault Detail] Access denied for user:", userId);
-    return notFound();
-  }
 
   // Calculate stats
   const planned = event.budgetLines.reduce((a, l) => a + l.plannedCents, 0);
@@ -661,28 +652,42 @@ export default async function EventVaultDetailPage({ params }: { params: { event
                   <h4 className="text-sm font-medium mb-2 text-slate-700">Generate Proposals from Shortlist:</h4>
                   <div className="space-y-2">
                     {(event.shortlistItems as any[]).map((item: any) => (
-                      <div key={item.id} className="flex items-center justify-between rounded border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="text-sm font-medium">{item.listing.title}</div>
-                            {/* Verified badge - all shortlist items are verified (they reference Listing) */}
-                            <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Verified
-                            </span>
+                      <div key={item.id} className="rounded border border-slate-200 bg-slate-50 p-3">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="text-sm font-medium">{item.listing.title}</div>
+                              {/* Verified badge - all shortlist items are verified (they reference Listing) */}
+                              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Verified
+                              </span>
+                            </div>
+                            <div className="text-xs text-slate-500 mt-1">
+                              {item.listing.type === "VENUE" ? "Venue" : "Vendor"} • {item.listing.category}
+                              {item.listing.org.city && ` • ${item.listing.org.city}, ${item.listing.org.state}`}
+                            </div>
+                            {item.notes && (
+                              <div className="text-xs text-slate-400 mt-1 italic">{item.notes}</div>
+                            )}
+                            <div className="mt-2 text-xs text-slate-600">
+                              Ready to reach out? Open this listing with your event attached to request booking.
+                            </div>
                           </div>
-                          <div className="text-xs text-slate-500 mt-1">
-                            {item.listing.type === "VENUE" ? "Venue" : "Vendor"} • {item.listing.category}
-                            {item.listing.org.city && ` • ${item.listing.org.city}, ${item.listing.org.state}`}
+                          <div className="flex flex-wrap gap-2 lg:justify-end">
+                            <Button asChild size="sm" variant="secondary">
+                              <Link
+                                href={`/marketplace/${item.listing.slug}?eventId=${event.id}&eventSlug=${event.slug}&eventName=${encodeURIComponent(event.name)}&returnTo=${encodeURIComponent(`/app/vault/${event.slug}`)}`}
+                              >
+                                Request booking
+                              </Link>
+                            </Button>
+                            <GenerateProposalButton 
+                              eventId={event.id} 
+                              listingId={item.listingId}
+                            />
                           </div>
-                          {item.notes && (
-                            <div className="text-xs text-slate-400 mt-1 italic">{item.notes}</div>
-                          )}
                         </div>
-                        <GenerateProposalButton 
-                          eventId={event.id} 
-                          listingId={item.listingId}
-                        />
                       </div>
                     ))}
                   </div>
@@ -719,9 +724,19 @@ export default async function EventVaultDetailPage({ params }: { params: { event
                         <strong>💡 Tip:</strong> To generate vendor/venue-specific proposals, first add vendors or venues to your shortlist.
                       </p>
                       <p className="text-xs text-indigo-700">
-                        Browse the marketplace and add vendors/venues to your shortlist, then generate proposals from them. 
+                        Browse the marketplace with this event attached, shortlist a vendor or venue, then come back here to generate a proposal.
                         You can also generate a generic AI proposal for this event using the button above.
                       </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button asChild size="sm" variant="secondary">
+                          <Link href={`/marketplace?eventId=${event.id}&eventSlug=${event.slug}&eventName=${encodeURIComponent(event.name)}&returnTo=${encodeURIComponent(`/app/vault/${event.slug}`)}`}>
+                            Browse marketplace for this event
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm" variant="ghost">
+                          <Link href="/app/requests">View booking requests</Link>
+                        </Button>
+                      </div>
                     </div>
                   )}
                   <div className="text-sm text-slate-500">

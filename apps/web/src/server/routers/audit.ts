@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { router, publicProcedure } from "@/server/trpc";
+import { maskPaymentTerminology } from "@/lib/paymentTerminology";
 
 export const auditRouter = router({
   list: publicProcedure.input(z.object({ orgId: z.string().optional(), cursor: z.string().optional(), limit: z.number().min(1).max(100).default(20) }).optional()).query(async ({ input }) => {
@@ -12,6 +13,9 @@ export const auditRouter = router({
       const next = logs.pop();
       nextCursor = next?.id;
     }
-    return { items: logs, nextCursor };
+    return {
+      items: logs.map((log) => maskPaymentTerminology(log)),
+      nextCursor,
+    };
   }),
 });

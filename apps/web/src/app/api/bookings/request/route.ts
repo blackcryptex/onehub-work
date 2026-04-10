@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
+import { canManageEvent } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { isDemoMode } from "@/lib/demo-mode";
 
@@ -30,29 +31,98 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's org (for planner org)
-    const org = await prisma.organization.findFirst({
-      where: { members: { some: { userId: user.id } } },
+    if (!eventId) {
+      return NextResponse.json(
+        { error: "eventId is required" },
+        { status: 400 }
+      );
+    }
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        org: {
+          select: {
+            id: true,
+            ownerId: true,
+            members: {
+              select: {
+                userId: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
     });
 
-    if (!org) {
+    if (!event) {
       return NextResponse.json(
-        { error: "Organization not found" },
+        { error: "Event not found" },
+        { status: 404 }
+      );
+    }
+
+    if (!canManageEvent(user, event)) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    const listing = await prisma.listing.findUnique({
+      where: { id: listingId },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!listing) {
+      return NextResponse.json(
+        { error: "Listing not found" },
+        { status: 404 }
+      );
+    }
+
+    const parsedStartAt = new Date(startAt);
+    const parsedEndAt = new Date(endAt);
+
+    if (Number.isNaN(parsedStartAt.getTime()) || Number.isNaN(parsedEndAt.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid startAt or endAt" },
+        { status: 400 }
+      );
+    }
+
+    if (parsedEndAt <= parsedStartAt) {
+      return NextResponse.json(
+        { error: "endAt must be after startAt" },
+        { status: 400 }
+      );
+    }
+
+    const parsedGuests = guests === undefined || guests === null || guests === ""
+      ? null
+      : Number.parseInt(String(guests), 10);
+
+    if (parsedGuests !== null && (!Number.isFinite(parsedGuests) || parsedGuests < 1)) {
+      return NextResponse.json(
+        { error: "guests must be a whole number greater than 0" },
         { status: 400 }
       );
     }
 
     const bookingRequest = await prisma.bookingRequest.create({
       data: {
-        orgId: org.id,
-        eventId: eventId || null,
+        orgId: event.orgId,
+        eventId: event.id,
         listingId,
         contactName,
         contactEmail,
         contactPhone: contactPhone || null,
-        startAt: new Date(startAt),
-        endAt: new Date(endAt),
-        guests: guests ? parseInt(guests) : null,
+        startAt: parsedStartAt,
+        endAt: parsedEndAt,
+        guests: parsedGuests,
         message: message || null,
         status: "PENDING",
       },

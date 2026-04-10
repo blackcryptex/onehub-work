@@ -1,14 +1,15 @@
 import { SeatingCanvas, Card } from "@onehub/ui";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
 export default async function SeatingPage({ params }: { params: { eventSlug: string } }) {
-  const event = await prisma.event.findFirst({ where: { slug: params.eventSlug } });
-  if (!event) return notFound();
+  const { event } = await requireAuthorizedEventBySlug(params.eventSlug, "manage");
+
   const plan = await prisma.seatingPlan.findUnique({
     where: { eventId: event.id },
     include: { tables: { include: { seats: { include: { guest: true } } } } },
   });
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Seating Plan</h1>

@@ -106,7 +106,7 @@ export default function Page() {
 
             <Card className="p-6 text-center hover:shadow-lg transition-shadow">
               <h3 className="text-xl font-semibold mb-3">Reduce Stress</h3>
-              <p className="text-sm text-slate-600">Escrow and easy sign-in for peace of mind</p>
+              <p className="text-sm text-slate-600">Held funds pending release and easy sign-in for peace of mind</p>
             </Card>
           </div>
         </section>

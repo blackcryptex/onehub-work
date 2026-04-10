@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { VendorSearchFilters, VendorSearchResults, InternalVendorResult } from "@/lib/types.vendor-search";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const searchFiltersSchema = z.object({
   keyword: z.string().optional(),
   location: z.string().optional(),
@@ -221,4 +223,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

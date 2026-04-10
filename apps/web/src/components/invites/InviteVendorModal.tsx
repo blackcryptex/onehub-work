@@ -31,7 +31,7 @@ We are currently planning "${eventName}"${eventLocation ? ` in ${eventLocation}`
 - Connect with verified event planners
 - Streamline proposals, contracts, and payments
 - Build your reputation with client reviews
-- Access escrow protection for secure transactions
+- Access held funds protection for secure transactions
 
 **Next Steps:**
 1. Create your free OneHub account

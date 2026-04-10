@@ -12,6 +12,9 @@ interface ReceiptData {
   netAmountCents: number;
   releaseDate: Date;
   currency: string;
+  feeProfile?: {
+    platformFeePercent: number;
+  };
 }
 
 export function generateReceiptHTML(data: ReceiptData): string {
@@ -159,7 +162,7 @@ export function generateReceiptHTML(data: ReceiptData): string {
       <span>${formatCurrency(data.payoutAmountCents)}</span>
     </div>
     <div class="amount-row">
-      <span>Platform Fee (3%):</span>
+      <span>Platform Fee (${data.feeProfile?.platformFeePercent || 5}%):</span>
       <span>-${formatCurrency(data.platformFeeCents)}</span>
     </div>
     <div class="amount-row">

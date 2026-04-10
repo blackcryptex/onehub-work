@@ -84,11 +84,15 @@ export default function SignUpPage() {
           sessionStorage.removeItem("pendingDreamEvent");
           router.push(`/event-dreamer/create?createDream=true&data=${encodeURIComponent(pendingDream)}`);
         } else {
-          // Use the URL from response if available, otherwise use callbackUrl
           const targetUrl = signInResult.url ?? callbackUrl;
-          // router.push expects a RouteImpl<string>, but we get a string URL from signInResult/callbackUrl.
-          // The push method allows string anyway, but to avoid type error, cast as any.
-          router.push(targetUrl as any);
+          let relativeUrl: string;
+          try {
+            const urlObj = new URL(targetUrl, window.location.origin);
+            relativeUrl = urlObj.pathname + urlObj.search + urlObj.hash;
+          } catch {
+            relativeUrl = targetUrl;
+          }
+          router.push(relativeUrl as any);
         }
         router.refresh();
       } else {

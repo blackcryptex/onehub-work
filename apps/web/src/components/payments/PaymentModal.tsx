@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@onehub/ui";
-import { formatCurrency } from "@/lib/types.payment";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Button, Input } from "@/components/ui";
+
+declare global {
+  interface Window {
+    Stripe?: (publishableKey: string) => any;
+  }
+}
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -10,9 +15,74 @@ interface PaymentModalProps {
   amountCents: number;
   currency: string;
   milestoneLabel?: string;
-  onSuccess: () => void;
   paymentIntentId?: string;
   clientSecret?: string;
+  onSuccess?: () => void;
+}
+
+type PaymentUiState =
+  | "idle"
+  | "creating-intent"
+  | "awaiting-payment-input"
+  | "processing"
+  | "failed"
+  | "submitted";
+
+async function confirmPaymentPersistence(paymentIntentId: string) {
+  const response = await fetch("/api/payments/confirm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paymentIntentId }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(data?.error || "Failed to confirm payment receipt.");
+  }
+
+  if (data?.success) {
+    return data;
+  }
+
+  if (data?.status === "processing") {
+    throw new Error(data?.message || "Payment is still processing. Please wait a moment and try again.");
+  }
+
+  throw new Error(data?.message || "Failed to confirm payment receipt.");
+}
+
+const STRIPE_JS_SRC = "https://js.stripe.com/v3/";
+
+function formatMoney(amountCents: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(amountCents / 100);
+}
+
+async function loadStripeJs(): Promise<any> {
+  if (typeof window === "undefined") return null;
+  if (window.Stripe) return window.Stripe;
+
+  await new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector(`script[src=\"${STRIPE_JS_SRC}\"]`) as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Failed to load Stripe.js")), { once: true });
+      if ((window as any).Stripe) resolve();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = STRIPE_JS_SRC;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Stripe.js"));
+    document.head.appendChild(script);
+  });
+
+  return window.Stripe;
 }
 
 export function PaymentModal({
@@ -21,243 +91,207 @@ export function PaymentModal({
   amountCents,
   currency,
   milestoneLabel,
-  onSuccess,
   paymentIntentId,
   clientSecret,
+  onSuccess,
 }: PaymentModalProps) {
-  const [loading, setLoading] = useState(false);
+  const [uiState, setUiState] = useState<PaymentUiState>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvc, setCardCvc] = useState("");
-  const [cardName, setCardName] = useState("");
-  const [billingAddress, setBillingAddress] = useState("");
-  const [billingCity, setBillingCity] = useState("");
-  const [billingState, setBillingState] = useState("");
-  const [billingZip, setBillingZip] = useState("");
+  const [paymentIntentClientSecret, setPaymentIntentClientSecret] = useState<string | null>(clientSecret ?? null);
+  const [internalPaymentIntentId, setInternalPaymentIntentId] = useState<string | null>(paymentIntentId ?? null);
+  const [stripeReady, setStripeReady] = useState(false);
+  const [stripeInstance, setStripeInstance] = useState<any>(null);
+  const [elementsInstance, setElementsInstance] = useState<any>(null);
+  const paymentElementRef = useRef<HTMLDivElement | null>(null);
+  const mountedElementRef = useRef<any>(null);
+
+  const amountLabel = useMemo(() => formatMoney(amountCents, currency), [amountCents, currency]);
 
   useEffect(() => {
-    if (!isOpen) {
-      // Reset form when modal closes
-      setCardNumber("");
-      setCardExpiry("");
-      setCardCvc("");
-      setCardName("");
-      setBillingAddress("");
-      setBillingCity("");
-      setBillingState("");
-      setBillingZip("");
-      setError(null);
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    setPaymentIntentClientSecret(clientSecret ?? null);
+    setInternalPaymentIntentId(paymentIntentId ?? null);
+    setUiState(clientSecret ? "awaiting-payment-input" : "creating-intent");
+    setError(null);
+  }, [isOpen, clientSecret, paymentIntentId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Double-click protection: prevent concurrent submissions
-    if (isProcessing || loading) return;
-    
-    setIsProcessing(true);
-    setLoading(true);
+  useEffect(() => {
+    if (!isOpen || paymentIntentClientSecret || paymentIntentId) return;
+
+    let cancelled = false;
+
+    const createIntent = async () => {
+      setUiState("creating-intent");
+      setError(null);
+      try {
+        const response = await fetch("/api/payments/create-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amountCents }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(data?.error || "Failed to create payment intent");
+        }
+        if (!cancelled) {
+          setPaymentIntentClientSecret(data.clientSecret);
+          setInternalPaymentIntentId(data.paymentIntentId);
+          setUiState("awaiting-payment-input");
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to start payment");
+          setUiState("failed");
+        }
+      }
+    };
+
+    createIntent();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, paymentIntentClientSecret, paymentIntentId, amountCents]);
+
+  useEffect(() => {
+    if (!isOpen || !paymentIntentClientSecret || !paymentElementRef.current) return;
+
+    let cancelled = false;
+
+    const mountElements = async () => {
+      try {
+        const StripeCtor = await loadStripeJs();
+        const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+        if (!StripeCtor || !publishableKey) {
+          throw new Error("Stripe is not configured for client payment collection.");
+        }
+
+        const stripe = StripeCtor(publishableKey);
+        const elements = stripe.elements({ clientSecret: paymentIntentClientSecret });
+        const paymentElement = elements.create("payment");
+        paymentElement.mount(paymentElementRef.current);
+
+        if (cancelled) {
+          paymentElement.destroy();
+          return;
+        }
+
+        mountedElementRef.current = paymentElement;
+        setStripeInstance(stripe);
+        setElementsInstance(elements);
+        setStripeReady(true);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to initialize secure payment form.");
+          setUiState("failed");
+        }
+      }
+    };
+
+    mountElements();
+
+    return () => {
+      cancelled = true;
+      setStripeReady(false);
+      if (mountedElementRef.current) {
+        mountedElementRef.current.destroy();
+        mountedElementRef.current = null;
+      }
+    };
+  }, [isOpen, paymentIntentClientSecret]);
+
+  const handleConfirmPayment = async () => {
+    if (!stripeInstance || !elementsInstance) {
+      setError("Secure payment form is not ready yet.");
+      setUiState("failed");
+      return;
+    }
+
+    if (!internalPaymentIntentId) {
+      setError("Payment intent is missing. Please restart payment.");
+      setUiState("failed");
+      return;
+    }
+
+    setUiState("processing");
     setError(null);
 
     try {
-      if (!paymentIntentId) {
-        setError("Payment intent not initialized");
-        setLoading(false);
-        setIsProcessing(false);
+      const result = await stripeInstance.confirmPayment({
+        elements: elementsInstance,
+        redirect: "if_required",
+        confirmParams: {},
+      });
+
+      if (result.error) {
+        setError(result.error.message || "Payment could not be submitted.");
+        setUiState("failed");
         return;
       }
 
-      // TODO: Integrate with Stripe Elements for secure card processing
-      // For now, this is a placeholder that simulates payment confirmation
-      // In production, use Stripe.js and Elements to securely collect card details
+      await confirmPaymentPersistence(internalPaymentIntentId);
 
-      // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Confirm payment with backend
-      const response = await fetch("/api/payments/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentIntentId }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Payment failed");
-      }
-
-      onSuccess();
-      onClose();
+      setUiState("submitted");
+      onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment failed. Please try again.");
-    } finally {
-      setLoading(false);
-      setIsProcessing(false);
+      setError(err instanceof Error ? err.message : "Failed to confirm payment receipt.");
+      setUiState("failed");
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Complete Payment</h2>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600"
-            disabled={loading}
-          >
-            ✕
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">Secure payment</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              {milestoneLabel ? `Paying for ${milestoneLabel}` : "Complete payment securely with Stripe."}
+            </p>
+          </div>
+          <Button type="button" variant="ghost" onClick={onClose}>Close</Button>
         </div>
 
-        <div className="mb-6 p-4 bg-slate-50 rounded-lg">
-          <div className="text-sm text-slate-600">Amount</div>
-          <div className="text-2xl font-bold text-slate-900">
-            {formatCurrency(amountCents, currency)}
-          </div>
-          {milestoneLabel && (
-            <div className="text-sm text-slate-600 mt-1">Milestone: {milestoneLabel}</div>
-          )}
+        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="text-sm text-slate-500">Amount due</div>
+          <div className="text-2xl font-semibold text-slate-900">{amountLabel}</div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Card Number
-            </label>
-            <input
-              type="text"
-              value={cardNumber}
-              onChange={(e) => setCardNumber(e.target.value)}
-              placeholder="1234 5678 9012 3456"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              required
-              disabled={loading}
-            />
+        {error ? (
+          <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
           </div>
+        ) : null}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Expiry
-              </label>
-              <input
-                type="text"
-                value={cardExpiry}
-                onChange={(e) => setCardExpiry(e.target.value)}
-                placeholder="MM/YY"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                required
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                CVC
-              </label>
-              <input
-                type="text"
-                value={cardCvc}
-                onChange={(e) => setCardCvc(e.target.value)}
-                placeholder="123"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                required
-                disabled={loading}
-              />
-            </div>
+        {uiState === "creating-intent" ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
+            Preparing secure payment...
           </div>
+        ) : null}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Cardholder Name
-            </label>
-            <input
-              type="text"
-              value={cardName}
-              onChange={(e) => setCardName(e.target.value)}
-              placeholder="John Doe"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div className="border-t pt-4">
-            <div className="text-sm font-medium text-slate-700 mb-3">Billing Address</div>
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={billingAddress}
-                onChange={(e) => setBillingAddress(e.target.value)}
-                placeholder="Street address"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                disabled={loading}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  value={billingCity}
-                  onChange={(e) => setBillingCity(e.target.value)}
-                  placeholder="City"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  disabled={loading}
-                />
-                <input
-                  type="text"
-                  value={billingState}
-                  onChange={(e) => setBillingState(e.target.value)}
-                  placeholder="State"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  disabled={loading}
-                />
-              </div>
-              <input
-                type="text"
-                value={billingZip}
-                onChange={(e) => setBillingZip(e.target.value)}
-                placeholder="ZIP code"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                disabled={loading}
-              />
+        {(uiState === "awaiting-payment-input" || uiState === "processing" || uiState === "failed") ? (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-slate-200 p-4">
+              <div ref={paymentElementRef} />
             </div>
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-4">
             <Button
               type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={loading}
-              className="flex-1"
+              className="w-full"
+              disabled={!stripeReady || uiState === "processing" || !internalPaymentIntentId}
+              onClick={handleConfirmPayment}
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading || isProcessing}
-              className="flex-1"
-            >
-              {loading || isProcessing ? "Processing..." : `Pay ${formatCurrency(amountCents, currency)}`}
+              {uiState === "processing" ? "Processing..." : "Submit payment securely"}
             </Button>
           </div>
+        ) : null}
 
-          <p className="text-xs text-slate-500 text-center mt-4">
-            🔒 Your payment is secure. Funds will be held in escrow until the milestone is completed.
-          </p>
-        </form>
+        {uiState === "submitted" ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-800">
+            Payment received successfully. Held funds have been updated.
+          </div>
+        ) : null}
       </div>
     </div>
   );
 }
-

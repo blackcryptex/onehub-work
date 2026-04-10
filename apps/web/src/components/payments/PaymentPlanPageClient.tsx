@@ -100,7 +100,7 @@ interface PaymentPlanPageClientProps {
   isPlanner: boolean;
   demoModeActive: boolean;
   hasAcceptedProposals: boolean;
-  escrowBalance: number;
+  heldFundsBalance: number;
   fundedTotal: number;
   releasedTotal: number;
   pendingTotal: number;
@@ -122,7 +122,7 @@ export function PaymentPlanPageClient({
   isPlanner,
   demoModeActive,
   hasAcceptedProposals,
-  escrowBalance,
+  heldFundsBalance,
   fundedTotal,
   releasedTotal,
   pendingTotal,
@@ -284,10 +284,10 @@ export function PaymentPlanPageClient({
       <div>
         <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
           <DollarSign className="w-8 h-8 text-indigo-600" />
-          Payments & Escrow
+          Payments & Held Funds
         </h1>
         <p className="mt-2 text-slate-600 max-w-2xl">
-          Clients fund escrow. Planners allocate payouts to vendors. OneHub earns a fee on releases.
+          Clients fund held funds pending release. Planners allocate payouts to vendors. OneHub earns a fee on releases.
         </p>
       </div>
 
@@ -298,10 +298,10 @@ export function PaymentPlanPageClient({
         </div>
       )}
 
-      {/* Escrow Summary */}
+      {/* Held Funds Summary */}
       <Card className="p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Escrow Summary</h2>
+          <h2 className="text-xl font-semibold">Held Funds Summary</h2>
           {demoModeActive && (
             <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700">
               <Info className="w-3 h-3 mr-1" />
@@ -311,11 +311,11 @@ export function PaymentPlanPageClient({
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           <div>
-            <div className="text-sm text-slate-600">Escrow Balance</div>
+            <div className="text-sm text-slate-600">Held Funds Balance</div>
             <div className="mt-1 text-2xl font-semibold">
-              <Money cents={escrowBalance} currency="USD" />
+              <Money cents={heldFundsBalance} currency="USD" />
             </div>
-            <div className="mt-1 text-xs text-slate-500">Funds held in escrow</div>
+            <div className="mt-1 text-xs text-slate-500">Funds held pending release</div>
           </div>
           <div>
             <div className="text-sm text-slate-600">Funded Total</div>
@@ -334,7 +334,7 @@ export function PaymentPlanPageClient({
         </div>
         {!demoModeActive && (
           <p className="mt-4 text-xs text-slate-500">
-            Stripe Connect escrow coming next.
+            Stripe Connect held funds pending release coming next.
           </p>
         )}
       </Card>
@@ -356,7 +356,7 @@ export function PaymentPlanPageClient({
                     <Sparkles className="w-4 h-4" />
                     Auto-create deposit schedule
                   </Button>
-                  <p className="text-xs text-slate-500">Matches escrow deposits to your payout plan.</p>
+                  <p className="text-xs text-slate-500">Matches held-funds deposits to your payout plan.</p>
                 </div>
               )}
               <Button
@@ -381,7 +381,7 @@ export function PaymentPlanPageClient({
           <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <div className="text-sm font-medium text-slate-700">Escrow Coverage</div>
+                <div className="text-sm font-medium text-slate-700">Held Funds Coverage</div>
                 <div className="mt-1 text-xs text-slate-600">
                   Deposits total: <Money cents={depositsTotal} currency="USD" /> • Payouts total: <Money cents={payoutsTotal} currency="USD" />
                 </div>
@@ -596,7 +596,7 @@ export function PaymentPlanPageClient({
                             payoutId={payout.id}
                             currentStatus={payout.status}
                             amountCents={displayAmount}
-                            escrowBalanceCents={escrowBalance}
+                            heldFundsBalanceCents={heldFundsBalance}
                             onEdit={() => handleEdit(payout, "payout")}
                             onDelete={() => handleDelete(payout, "payout")}
                             isDemoMode={demoModeActive}
@@ -702,7 +702,7 @@ export function PaymentPlanPageClient({
             {demoModeActive && (
               <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
                 <p className="text-xs text-indigo-800">
-                  <strong>Demo simulation</strong> — Stripe Connect escrow in production. Platform fee of{" "}
+                  <strong>Demo simulation</strong> — Stripe Connect held funds pending release in production. Platform fee of{" "}
                   {PLATFORM_FEE_BPS / 100}% applies to all released payments.
                 </p>
               </div>

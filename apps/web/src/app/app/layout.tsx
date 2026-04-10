@@ -1,15 +1,20 @@
 import { ReactNode } from "react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/signin");
+  const session = await auth();
+  const sessionUser = session?.user;
+  const user = sessionUser ? await getCurrentUser() : null;
+
+  if (!sessionUser && !user) {
+    redirect("/signin?callbackUrl=/app");
   }
-  const role = user.role;
+
+  const role = user?.role || sessionUser?.role;
   return (
     <div className="min-h-screen">
       <Topbar role={role} />

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Route } from "next";
 
 interface VendorVenueFooterLinkProps {
@@ -12,54 +12,57 @@ interface VendorVenueFooterLinkProps {
 export function VendorVenueFooterLink({ label }: VendorVenueFooterLinkProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [isChecking, setIsChecking] = useState(false);
-  const [href, setHref] = useState("/providers/start");
+  const [isNavigating, setIsNavigating] = useState(false);
 
-  useEffect(() => {
-    if (status === "loading") return;
+  const signedOutHref = `/signin?callbackUrl=${encodeURIComponent("/providers/start")}`;
+  const fallbackHref = session?.user ? "/providers/start" : signedOutHref;
+
+  const handleClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+
+    if (isNavigating || status === "loading") return;
 
     if (!session?.user) {
-      // Not signed in - redirect to sign-in with callback
-      setHref(`/signin?callbackUrl=${encodeURIComponent("/providers/start")}`);
+      router.push(signedOutHref as Route);
       return;
     }
 
-    // Signed in - check profile and set appropriate href
-    const checkProfile = async () => {
-      setIsChecking(true);
-      try {
-        const response = await fetch("/api/vendor-venue/check-profile");
-        if (response.ok) {
-          const data = await response.json();
-          if (data.hasVendorOrg) {
-            setHref("/vendor/dashboard");
-          } else if (data.hasVenueOrg) {
-            setHref("/venue/dashboard");
-          } else {
-            // No org yet - go to provider start
-            setHref("/providers/start");
-          }
-        }
-      } catch (error) {
-        console.error("Error checking profile:", error);
-        setHref("/providers/start");
-      } finally {
-        setIsChecking(false);
+    setIsNavigating(true);
+
+    try {
+      const response = await fetch("/api/vendor-venue/check-profile", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        router.push("/providers/start");
+        return;
       }
-    };
 
-    checkProfile();
-  }, [session, status]);
+      const data = await response.json();
 
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    if (isChecking) return;
-    router.push(href as Route);
+      if (data.hasVendorOrg) {
+        router.push("/vendor/dashboard");
+        return;
+      }
+
+      if (data.hasVenueOrg) {
+        router.push("/venue/dashboard");
+        return;
+      }
+
+      router.push("/providers/start");
+    } catch {
+      router.push("/providers/start");
+    } finally {
+      setIsNavigating(false);
+    }
   };
 
   return (
     <a
-      href={href}
+      href={fallbackHref}
       onClick={handleClick}
       className="text-sm text-slate-600 hover:text-indigo-600 transition-colors"
     >
@@ -67,4 +70,3 @@ export function VendorVenueFooterLink({ label }: VendorVenueFooterLinkProps) {
     </a>
   );
 }
-

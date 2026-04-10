@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { listOverlayEvents } from '@/lib/google.calendar';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -32,4 +34,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

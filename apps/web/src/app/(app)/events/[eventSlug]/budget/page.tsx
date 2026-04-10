@@ -1,7 +1,6 @@
 import { BudgetTable, Card } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth-helpers";
-import { redirect } from "next/navigation";
+import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
 type BudgetLineData = {
   id: string;
@@ -12,18 +11,15 @@ type BudgetLineData = {
 };
 
 export default async function EventBudget({ params }: { params: { eventSlug: string } }) {
-  const user = await getCurrentUser();
-  
-  // Phase 0: Security hardening - Block CLIENT users from accessing planner event pages
-  if (!user) {
-    redirect("/signin");
-  }
-  if (user.role === "CLIENT") {
-    redirect("/app");
-  }
+  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "view");
 
-  const ev = await prisma.event.findFirst({ where: { slug: params.eventSlug }, include: { budgetLines: true } });
+  const ev = await prisma.event.findUnique({
+    where: { id: authorizedEvent.id },
+    include: { budgetLines: true },
+  });
+
   if (!ev) return null;
+
   const lines: BudgetLineData[] = ev.budgetLines.map((line) => ({
     id: line.id,
     category: line.category ?? "Other",

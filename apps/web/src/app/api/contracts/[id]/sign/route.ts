@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
+import { canManageEvent, isOrgMember } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { isDemoMode } from "@/lib/demo-mode";
+import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
+import { getLegalSurface } from "@/lib/legal-surface";
 
 export async function POST(
   request: NextRequest,
@@ -16,6 +19,10 @@ export async function POST(
     const resolvedParams = await params;
     const body = await request.json();
     const { signerName, signerEmail } = body;
+    const acceptance = acceptanceInputSchema.parse(body.acceptance);
+    if (acceptance.legalVersion !== CURRENT_ACCEPTANCE_VERSIONS.contract) {
+      return NextResponse.json({ error: "Contract acceptance version mismatch" }, { status: 400 });
+    }
 
     if (!signerName || !signerEmail) {
       return NextResponse.json(
@@ -24,13 +31,51 @@ export async function POST(
       );
     }
 
-    // Get contract with proposal and event
+    if (!user.email || signerEmail.toLowerCase() !== user.email.toLowerCase()) {
+      return NextResponse.json(
+        { error: "Signer email must match the authenticated user" },
+        { status: 403 }
+      );
+    }
+
+    // Get contract with proposal, event, buyer org, and seller org context
     const contract = await prisma.contract.findUnique({
       where: { id: resolvedParams.id },
       include: {
         proposal: {
           include: {
-            event: true,
+            event: {
+              include: {
+                org: {
+                  select: {
+                    id: true,
+                    ownerId: true,
+                    members: {
+                      select: {
+                        userId: true,
+                        role: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            listing: {
+              include: {
+                org: {
+                  select: {
+                    id: true,
+                    ownerId: true,
+                    members: {
+                      select: {
+                        userId: true,
+                        role: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
         signatures: true,
@@ -41,9 +86,22 @@ export async function POST(
       return NextResponse.json({ error: "Contract not found" }, { status: 404 });
     }
 
+    const canManageBuyerSide = canManageEvent(user, contract.proposal.event);
+    const canSignSellerSide =
+      !!contract.proposal.listing?.org &&
+      (contract.proposal.listing.org.ownerId === user.id ||
+        isOrgMember(user, contract.proposal.listing.org));
+
+    if (!canManageBuyerSide && !canSignSellerSide) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
     // Check if user already signed
     const existingSignature = contract.signatures.find(
-      (s) => s.signerEmail === signerEmail
+      (s) => s.signerEmail.toLowerCase() === signerEmail.toLowerCase()
     );
 
     if (existingSignature && existingSignature.signedAt) {
@@ -59,6 +117,7 @@ export async function POST(
       signature = await prisma.signature.update({
         where: { id: existingSignature.id },
         data: {
+          signerId: user.id,
           signerName,
           signerEmail,
           signedAt: new Date(),
@@ -69,6 +128,7 @@ export async function POST(
       signature = await prisma.signature.create({
         data: {
           contractId: contract.id,
+          signerId: user.id,
           signerName,
           signerEmail,
           signedAt: new Date(),
@@ -77,24 +137,66 @@ export async function POST(
       });
     }
 
-    // Update contract status based on signatures
+    // Update contract status based on true dual-party execution
+    const buyerMemberIds = new Set([
+      contract.proposal.event.org.ownerId,
+      ...contract.proposal.event.org.members.map((member) => member.userId),
+    ]);
+    const sellerMemberIds = new Set(
+      [
+        contract.proposal.listing?.org?.ownerId,
+        ...(contract.proposal.listing?.org.members ?? []).map((member) => member.userId),
+      ].filter((id): id is string => Boolean(id))
+    );
+
     const allSignatures = await prisma.signature.findMany({
       where: { contractId: contract.id },
+      select: { signerId: true, signedAt: true },
     });
 
-    const signedCount = allSignatures.filter((s) => s.signedAt).length;
-    const totalSignatures = allSignatures.length;
+    const buyerSigned = allSignatures.some(
+      (signature) => Boolean(signature.signedAt && signature.signerId && buyerMemberIds.has(signature.signerId))
+    );
+    const sellerSigned = allSignatures.some(
+      (signature) => Boolean(signature.signedAt && signature.signerId && sellerMemberIds.has(signature.signerId))
+    );
 
     let newStatus = contract.status;
-    if (signedCount === totalSignatures && totalSignatures > 0) {
+    if (buyerSigned && sellerSigned) {
       newStatus = "FULLY_SIGNED";
-    } else if (signedCount > 0) {
+    } else if (buyerSigned || sellerSigned) {
       newStatus = "PARTIALLY_SIGNED";
     }
 
     await prisma.contract.update({
       where: { id: contract.id },
       data: { status: newStatus },
+    });
+
+    const bookingClassification = String((contract.proposal as any).bookingClassification || "DIRECT").toLowerCase();
+    await recordAcceptance({
+      actorId: user.id,
+      actorRole: user.role,
+      orgId: contract.proposal.event.orgId,
+      grossAmountCents: contract.proposal.totalCents,
+      legalSurface: getLegalSurface("contract", bookingClassification),
+      legalVersion: acceptance.legalVersion,
+      sourceSurface: "contract.sign",
+      requestContextId: request.headers.get("x-request-id") || undefined,
+      proposalId: contract.proposal.id,
+      contractId: contract.id,
+      bookingClassificationInput: {
+        proposal: {
+          bookingClassification: (contract.proposal as any).bookingClassification,
+          listingId: contract.proposal.listingId,
+        },
+        event: { org: { type: (contract.proposal.event as any)?.org?.type } },
+      },
+      metadata: {
+        requiredVersion: CURRENT_ACCEPTANCE_VERSIONS.contract,
+        signatureId: signature.id,
+        contractStatusAfter: newStatus,
+      },
     });
 
     // Demo mode: Log instead of sending email
@@ -118,4 +220,3 @@ export async function POST(
     );
   }
 }
-

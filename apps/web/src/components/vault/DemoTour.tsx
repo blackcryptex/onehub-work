@@ -3,6 +3,7 @@
 import { Card, Button } from "@/components/ui";
 import { MapPin, FileText, FileCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { contractDetail } from "@/lib/routes";
 
 interface DemoTourProps {
   eventSlug: string;
@@ -72,7 +73,7 @@ export function DemoTour({ eventSlug, eventId, proposalId, contractId, show = fa
             size="sm"
             className="justify-start text-xs"
           >
-            <Link href={`/app/contracts/${contractId}`}>
+            <Link href={contractDetail(contractId)}>
               <FileCheck className="w-3 h-3 mr-1" />
               View Contract
             </Link>

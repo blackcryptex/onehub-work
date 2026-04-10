@@ -113,22 +113,42 @@ export async function getCurrentUser(): Promise<AppUser | null> {
     }
   }
 
-  // Not impersonating - return session user data
+  // Not impersonating. Prefer canonical DB data, but fall back to the
+  // authenticated session payload if the DB lookup is temporarily unavailable.
   const userId = session.user.id;
-  const userEmail = session.user.email;
-  const userName = session.user.name;
-  const userRole = session.user.role;
 
-  if (!userId || !userEmail || !userRole) {
+  if (!userId) {
     return null;
   }
 
-  return {
-    id: userId,
-    email: userEmail,
-    name: userName,
-    role: userRole as Role,
-  };
+  try {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, role: true },
+    });
+
+    if (dbUser) {
+      return {
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name,
+        role: dbUser.role,
+      };
+    }
+  } catch (error) {
+    console.error("[Auth] Error loading current user:", error);
+  }
+
+  if (session.user.email && session.user.role) {
+    return {
+      id: userId,
+      email: session.user.email,
+      name: session.user.name,
+      role: session.user.role as Role,
+    };
+  }
+
+  return null;
 }
 
 /**

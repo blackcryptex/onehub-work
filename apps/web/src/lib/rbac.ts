@@ -2,6 +2,7 @@ import type { Role, RoleUserLike } from "@onehub/types/src/roles";
 import { hasRole, requireRole } from "@onehub/types/src/roles";
 import type { AppUser } from "@/lib/auth-helpers";
 import { isAdmin } from "@/lib/auth-helpers";
+import { prisma } from "@/lib/prisma";
 
 export type { Role };
 
@@ -9,6 +10,39 @@ export type { Role };
  * Re-exported role checks for convenience in app layer.
  */
 export { hasRole, requireRole, isAdmin };
+
+export const GUARDED_MVP_PLATFORM_ADMIN_AUTHORITY = "PLATFORM_ADMIN";
+
+export function isPlatformAdminForGuardedMvp(user: AppUser | null | undefined): boolean {
+  if (!user || !isAdmin(user)) return false;
+
+  const configuredIds = (process.env.GUARDED_MVP_PLATFORM_ADMIN_USER_IDS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return configuredIds.includes(user.id);
+}
+
+export async function getGuardedMvpAuthorityForUserId(userId: string | null | undefined) {
+  if (!userId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, name: true, role: true },
+  });
+
+  if (!user) return null;
+  return isPlatformAdminForGuardedMvp(user) ? user : null;
+}
+
+export function assertPlatformAdminForGuardedMvp(user: AppUser | null | undefined) {
+  if (isPlatformAdminForGuardedMvp(user)) return;
+  const err = new Error("Forbidden");
+  // @ts-expect-error add status on the fly
+  err.status = 403;
+  throw err;
+}
 
 /**
  * Asserts access and throws 403 error if missing.
@@ -248,32 +282,11 @@ export function canSendProposal(user: AppUser | null | undefined, event: EventLi
 }
 
 /**
- * Returns true if the user can release milestone payments or mark milestones as complete.
- * True if:
- * - user is ADMIN, OR
- * - user is org owner of the event's org, OR
- * - user is a PRO_PLANNER who is an org member (for milestone completion, sellers can also mark complete).
- * 
- * Note: For marking milestones complete, sellers (vendors) can also mark their own milestones complete.
- * For releasing payments, only admins, org owners, and PRO_PLANNER can trigger releases.
- * 
- * Assumption: event.orgId is populated and org.members includes all planners for this event.
+ * Returns true if the user can release milestone payments in guarded MVP.
+ * Only a canonical PLATFORM_ADMIN authority holder may release funds.
  */
-export function canReleaseMilestonePayment(user: AppUser | null | undefined, event: EventLike | null | undefined): boolean {
-  if (!user || !event) return false;
-  // Admin can release all payments
-  if (isAdmin(user)) return true;
-  
-  const org = event.org || { ownerId: "", members: [] };
-  // Org owner can release payments
-  if (isOrgOwner(user, org)) return true;
-  
-  // Only PRO_PLANNER can release payments (not DIY_PLANNER or vendors)
-  if (user.role === "PRO_PLANNER" && isOrgMember(user, org)) {
-    return true;
-  }
-  
-  return false;
+export function canReleaseMilestonePayment(user: AppUser | null | undefined, _event: EventLike | null | undefined): boolean {
+  return isPlatformAdminForGuardedMvp(user);
 }
 
 /**

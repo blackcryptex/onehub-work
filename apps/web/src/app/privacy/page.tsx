@@ -58,7 +58,7 @@ export default function PrivacyPage() {
             </p>
             <h3 className="text-xl font-semibold text-slate-900 mt-6 mb-2">Payment Terms</h3>
             <p>
-              Payments are processed securely through our payment partners. Escrow funds are held in accordance with our escrow policy. All fees are non-refundable unless otherwise stated.
+              Payments are processed securely through our payment partners. Held funds pending release are handled in accordance with our held-funds policy. All fees are non-refundable unless otherwise stated.
             </p>
             <h3 className="text-xl font-semibold text-slate-900 mt-6 mb-2">Limitation of Liability</h3>
             <p>

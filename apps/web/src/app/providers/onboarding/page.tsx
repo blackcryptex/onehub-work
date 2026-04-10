@@ -104,11 +104,13 @@ type ProviderProfileDraft = {
 export default function ProviderOnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const providerType = (searchParams.get("providerType") || "vendor") as ProviderType;
   
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [draftMessage, setDraftMessage] = useState("");
   const [formData, setFormData] = useState<ProviderProfileDraft>({
     businessName: "",
     providerCategory: "",
@@ -164,8 +166,9 @@ export default function ProviderOnboardingPage() {
           step: 7,
           providerType,
         }));
+        const role = providerType === "vendor" ? "VENDOR" : "VENUE";
         const callbackUrl = providerType === "vendor" ? "/vendor/dashboard" : "/venue/dashboard";
-        router.push(`/signup?role=${providerType.toUpperCase()}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
+        router.push(`/signup?role=${role}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
         setLoading(false);
         return;
       }
@@ -182,20 +185,20 @@ export default function ProviderOnboardingPage() {
       });
 
       if (response.ok) {
-        // Clear any pending data
+        const nextRole = providerType === "vendor" ? "VENDOR" : "VENUE";
+        await updateSession?.({ role: nextRole });
         sessionStorage.removeItem("pendingProviderOnboarding");
-        // Redirect to dashboard
         const dashboardUrl = providerType === "vendor" ? "/vendor/dashboard" : "/venue/dashboard";
         router.push(dashboardUrl);
         router.refresh();
       } else {
-        const errorData = await response.json();
-        alert(errorData.error || "Failed to publish profile. Please try again.");
+        const errorData = await response.json().catch(() => null);
+        setFormError(errorData?.error || "Failed to publish profile. Please try again.");
         setLoading(false);
       }
     } catch (error) {
       console.error("Error publishing profile:", error);
-      alert("An error occurred. Please try again.");
+      setFormError("An error occurred while publishing your profile. Please try again.");
       setLoading(false);
     }
   };
@@ -227,16 +230,20 @@ export default function ProviderOnboardingPage() {
             });
 
             if (response.ok) {
+              const nextRole = providerType === "vendor" ? "VENDOR" : "VENUE";
+              await updateSession?.({ role: nextRole });
+              sessionStorage.removeItem("pendingProviderOnboarding");
               const targetUrl = redirectTo || (providerType === "vendor" ? "/vendor/dashboard" : "/venue/dashboard");
               router.push(targetUrl as Route);
+              router.refresh();
             } else {
-              const errorData = await response.json();
-              alert(errorData.error || "Failed to publish profile. Please try again.");
+              const errorData = await response.json().catch(() => null);
+              setFormError(errorData?.error || "Failed to publish profile. Please try again.");
               setLoading(false);
             }
           } catch (error) {
             console.error("Error auto-publishing profile:", error);
-            alert("An error occurred. Please try again.");
+            setFormError("An error occurred while publishing your profile. Please try again.");
             setLoading(false);
           }
         }, 1000);
@@ -260,6 +267,8 @@ export default function ProviderOnboardingPage() {
 
   const updateField = <K extends keyof ProviderProfileDraft>(field: K, value: ProviderProfileDraft[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (formError) setFormError("");
+    if (draftMessage) setDraftMessage("");
   };
 
   // Helper functions for managing arrays
@@ -402,6 +411,8 @@ export default function ProviderOnboardingPage() {
   };
 
   const handleSaveDraft = async () => {
+    setFormError("");
+    setDraftMessage("");
     try {
       const response = await fetch("/api/providers/profile", {
         method: "POST",
@@ -412,11 +423,19 @@ export default function ProviderOnboardingPage() {
           draft: true,
         }),
       });
+      const responseData = await response.json().catch(() => null);
       if (response.ok) {
-        alert("Draft saved successfully!");
+        if (session?.user) {
+          setDraftMessage("Draft saved successfully.");
+        } else {
+          setDraftMessage("Draft saved locally for this session. Create an account or sign in before publishing.");
+        }
+      } else {
+        setFormError(responseData?.error || "Failed to save draft. Please try again.");
       }
     } catch (error) {
       console.error("Error saving draft:", error);
+      setFormError("An error occurred while saving your draft. Please try again.");
     }
   };
 
@@ -485,6 +504,16 @@ export default function ProviderOnboardingPage() {
 
         <form onSubmit={handleSubmit}>
           <Card className="p-6">
+            {formError && (
+              <div className="mb-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {formError}
+              </div>
+            )}
+            {draftMessage && (
+              <div className="mb-6 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+                {draftMessage}
+              </div>
+            )}
             {/* Step 1: Business Profile */}
             {step === 1 && (
               <div className="space-y-6">
@@ -1236,7 +1265,13 @@ export default function ProviderOnboardingPage() {
                 )}
                 {!session?.user && step === 7 && (
                   <Button asChild variant="secondary" type="button">
-                    <Link href="/signin">Sign In</Link>
+                    <Link
+                      href={`/signin?callbackUrl=${encodeURIComponent(
+                        providerType === "vendor" ? "/vendor/dashboard" : "/venue/dashboard"
+                      )}&role=${encodeURIComponent(providerType === "vendor" ? "VENDOR" : "VENUE")}`}
+                    >
+                      Sign In
+                    </Link>
                   </Button>
                 )}
                 <Button type="submit" disabled={loading}>
@@ -1256,4 +1291,3 @@ export default function ProviderOnboardingPage() {
     </div>
   );
 }
-

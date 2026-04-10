@@ -3,68 +3,66 @@ import { SystemStatus } from "@/components/layout/SystemStatus";
 import { QuickLinks } from "@/components/layout/QuickLinks";
 import { RoleBadge } from "@/components/layout/RoleBadge";
 import { Card, Button } from "@/components/ui";
+import { auth } from "@/lib/auth";
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { vaultIndex } from "@/lib/routes";
+import { dashboard, vaultDetail, vaultIndex } from "@/lib/routes";
 
 export default async function AppPage() {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/signin");
+  const session = await auth();
+  const sessionUser = session?.user;
+  const dbUser = sessionUser ? await getCurrentUser() : null;
+
+  if (!sessionUser && !dbUser) {
+    redirect("/signin?callbackUrl=/app");
   }
+
+  const user = dbUser || {
+    id: sessionUser!.id,
+    email: sessionUser!.email,
+    name: sessionUser!.name,
+    role: sessionUser!.role,
+  };
   const userId = user.id;
   const role = user.role;
   const admin = isAdmin(user);
-  
+
+  // Route admins to the canonical admin surface before any broader role checks.
+  if (admin) {
+    redirect(dashboard(role) as any);
+  }
+
   // Check role-specific initial states
   let existingOrg = null;
-  
-  // Handle VENDOR/VENUE roles first (before other role checks)
-  // TODO: centralized via RBAC helper: canAccessDashboard(user, "VENDOR") / canAccessDashboard(user, "VENUE")
+
+  // Preserve VENDOR/VENUE onboarding gating before generic dashboard redirects.
   if (canAccessDashboard(user, "VENDOR") || canAccessDashboard(user, "VENUE")) {
     const targetRole = role === "VENUE" ? "VENUE" : "VENDOR";
-    // Admin sees all orgs, normal user sees only their own
     existingOrg = await prisma.organization.findFirst({
-      where: admin
-        ? { type: targetRole }
-        : { ownerId: userId, type: targetRole },
+      where: { ownerId: userId, type: targetRole },
       orderBy: { createdAt: "desc" },
     });
-    // Redirect vendors/venues to their specific dashboards
     if (existingOrg) {
-      const dashboardUrl = targetRole === "VENUE" ? "/venue/dashboard" : "/vendor/dashboard";
-      redirect(dashboardUrl);
-    } else {
-      // No org yet, redirect to onboarding
-      const onboardingUrl = targetRole === "VENUE" ? "/providers/onboarding?providerType=venue" : "/providers/onboarding?providerType=vendor";
-      redirect(onboardingUrl);
+      redirect(dashboard(targetRole) as any);
     }
+    const onboardingUrl = targetRole === "VENUE"
+      ? "/providers/onboarding?providerType=venue"
+      : "/providers/onboarding?providerType=vendor";
+    redirect(onboardingUrl);
   }
 
-  // Handle DIY_PLANNER: Redirect to dedicated dashboard
-  // TODO: centralized via RBAC helper: canAccessDashboard(user, "DIY_PLANNER")
-  if (canAccessDashboard(user, "DIY_PLANNER")) {
-    redirect("/diy-planner");
-  }
-
-  // Handle EVENT_DREAMER: Redirect to dedicated dashboard
-  // TODO: centralized via RBAC helper: canAccessDashboard(user, "EVENT_DREAMER")
-  if (canAccessDashboard(user, "EVENT_DREAMER")) {
-    redirect("/event-dreamer");
-  }
-
-  // Handle PRO_PLANNER: Redirect to dedicated dashboard
-  // TODO: centralized via RBAC helper: canAccessDashboard(user, "PRO_PLANNER")
-  if (canAccessDashboard(user, "PRO_PLANNER")) {
-    // Redirect to Pro Planner dashboard (it will handle org setup if needed)
-    redirect("/pro/planner");
+  if (
+    canAccessDashboard(user, "DIY_PLANNER") ||
+    canAccessDashboard(user, "EVENT_DREAMER") ||
+    canAccessDashboard(user, "PRO_PLANNER")
+  ) {
+    redirect(dashboard(role) as any);
   }
 
   // Get user's organizations
-  // Admin sees all orgs, normal user sees only orgs they're a member of
   const orgs = await prisma.organization.findMany({
     where: admin ? {} : { members: { some: { userId } } },
     take: 5,
@@ -72,8 +70,6 @@ export default async function AppPage() {
     include: { _count: { select: { members: true, events: true } } },
   });
 
-  // Get recent events across user's orgs
-  // Admin sees all events, normal user sees only events from their orgs
   const orgIds = orgs.map((o) => o.id);
   const recentEvents = await prisma.event.findMany({
     where: admin ? {} : { orgId: { in: orgIds } },
@@ -82,8 +78,6 @@ export default async function AppPage() {
     include: { org: { select: { name: true, slug: true } } },
   });
 
-  // Get recent activity
-  // Admin sees all activity, normal user sees only activity from their orgs
   const recentActivity = await prisma.activity.findMany({
     where: admin ? {} : { orgId: { in: orgIds } },
     take: 10,
@@ -91,8 +85,6 @@ export default async function AppPage() {
     include: { actor: { select: { name: true, email: true } } },
   });
 
-  // Get stats based on role
-  // Admin sees all events, normal user sees only events from their orgs
   let stats = null;
   if (role === "PRO_PLANNER" || admin) {
     const totalEvents = await prisma.event.count({ where: admin ? {} : { orgId: { in: orgIds } } });
@@ -107,7 +99,6 @@ export default async function AppPage() {
         <RoleBadge role={role} />
       </div>
 
-      {/* Stats */}
       {stats && (
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="p-4">
@@ -126,7 +117,6 @@ export default async function AppPage() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Organizations */}
         <Card className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Organizations</h2>
@@ -152,7 +142,6 @@ export default async function AppPage() {
           )}
         </Card>
 
-        {/* Recent Events */}
         <Card className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Recent Events</h2>
@@ -173,7 +162,7 @@ export default async function AppPage() {
                     </div>
                   </div>
                   <Button asChild variant="ghost">
-                    <Link href={`/app/events/${event.slug}` as any}>View</Link>
+                    <Link href={vaultDetail(role, event.slug) as any}>View</Link>
                   </Button>
                 </li>
               ))}
@@ -182,13 +171,11 @@ export default async function AppPage() {
         </Card>
       </div>
 
-      {/* Quick Links &amp; Getting Started */}
       <div className="grid gap-6 md:grid-cols-2">
         <GettingStartedCard />
         <QuickLinks />
       </div>
 
-      {/* Recent Activity */}
       {recentActivity.length > 0 && (
         <Card className="p-4">
           <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
@@ -207,4 +194,3 @@ export default async function AppPage() {
     </div>
   );
 }
-

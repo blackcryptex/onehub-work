@@ -7,6 +7,7 @@ import { Star, Sparkles, Palette, Calendar, Heart } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import type { Route } from "next";
+import { vaultDetail } from "@/lib/routes";
 
 export default function EventDreamerCreatePage() {
   const router = useRouter();
@@ -37,7 +38,8 @@ export default function EventDreamerCreatePage() {
 
         if (response.ok) {
           const { slug } = await response.json();
-          router.push(`/app/events/${slug}` as unknown as Route);
+          const eventPath = vaultDetail(session?.user?.role as any, slug);
+          router.push(eventPath as unknown as Route);
         } else {
           alert("Failed to save your dream event. Please try again.");
         }

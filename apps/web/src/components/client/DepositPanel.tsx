@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card, Button, Input, Label } from "@/components/ui";
 import { DollarSign, CreditCard, CheckCircle2, XCircle } from "lucide-react";
+import { PaymentModal } from "@/components/payments/PaymentModal";
 
 interface Deposit {
   id: string;
@@ -23,7 +24,10 @@ export function DepositPanel({ eventSlug, deposits }: DepositPanelProps) {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentAmountCents, setPaymentAmountCents] = useState<number>(0);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
 
   const formatCurrency = (cents: number, currency: string = "USD") => {
     return new Intl.NumberFormat("en-US", {
@@ -63,23 +67,24 @@ export function DepositPanel({ eventSlug, deposits }: DepositPanelProps) {
 
       const data = await response.json();
       setClientSecret(data.clientSecret);
-      
-      // TODO: Integrate Stripe Elements here
-      // For now, show success message
-      alert("Deposit created! Stripe payment form would be integrated here.");
-      
-      // Reset form
+      setPaymentAmountCents(amountCents);
+      setPaymentIntentId(data.deposit?.id || null);
+      setShowPaymentModal(true);
+
       setAmount("");
       setNotes("");
-      setClientSecret(null);
-      
-      // Reload page to show new deposit
-      window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create deposit");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDepositSuccess = () => {
+    setShowPaymentModal(false);
+    setClientSecret(null);
+    setPaymentIntentId(null);
+    window.location.reload();
   };
 
   const getStatusBadge = (status: Deposit["status"]) => {
@@ -167,11 +172,6 @@ export function DepositPanel({ eventSlug, deposits }: DepositPanelProps) {
             {loading ? "Processing..." : "Create Deposit"}
           </Button>
 
-          {clientSecret && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
-              Payment form would be integrated here with Stripe Elements.
-            </div>
-          )}
         </div>
       </Card>
 
@@ -213,6 +213,23 @@ export function DepositPanel({ eventSlug, deposits }: DepositPanelProps) {
             ))}
           </div>
         </Card>
+      )}
+
+      {showPaymentModal && clientSecret && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setClientSecret(null);
+            setPaymentIntentId(null);
+          }}
+          amountCents={paymentAmountCents}
+          currency="USD"
+          milestoneLabel="event deposit"
+          paymentIntentId={paymentIntentId || undefined}
+          clientSecret={clientSecret}
+          onSuccess={handleDepositSuccess}
+        />
       )}
     </div>
   );

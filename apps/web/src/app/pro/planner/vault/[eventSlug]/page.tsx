@@ -21,7 +21,8 @@ import { ShareEventButton } from "@/components/events/ShareEventButton";
 import { StakeholdersSectionClient } from "@/components/vault/StakeholdersSectionClient";
 import { AiSourceVendorsVenuesPanel } from "@/components/vault/AiSourceVendorsVenuesPanel";
 import { DemoTour } from "@/components/vault/DemoTour";
-import { getVaultBasePath } from "@/lib/routes";
+import { getVaultBasePath, proposalDetail } from "@/lib/routes";
+import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
 /**
  * Pro Planner Event Vault Detail Page
@@ -50,12 +51,13 @@ export default async function ProVaultDetailPage({
   }
 
   const userId = user.id;
+  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(eventSlug, "manage");
   const vaultBasePath = getVaultBasePath(user.role);
 
   let event;
   try {
-    event = await prisma.event.findFirst({
-      where: { slug: eventSlug },
+    event = await prisma.event.findUnique({
+      where: { id: authorizedEvent.id },
       include: {
         createdBy: { select: { name: true, email: true } },
         org: {
@@ -129,8 +131,8 @@ export default async function ProVaultDetailPage({
   } catch (error) {
     console.error("[Pro Vault] Error loading event:", error);
     if (error instanceof Error && error.message.includes("shortlistItems")) {
-      event = await prisma.event.findFirst({
-        where: { slug: eventSlug },
+      event = await prisma.event.findUnique({
+        where: { id: authorizedEvent.id },
         include: {
           createdBy: { select: { name: true, email: true } },
           org: {
@@ -196,10 +198,6 @@ export default async function ProVaultDetailPage({
   const canManage = canManageEvent(user, event);
   const canEdit = canEditEvent(user, event);
   const canDelete = canDeleteEvent(user, event);
-  
-  if (!canManage) {
-    return notFound();
-  }
 
   const planned = event.budgetLines.reduce((a, l) => a + l.plannedCents, 0);
   const actual = event.budgetLines.reduce((a, l) => a + l.actualCents, 0);
@@ -208,7 +206,7 @@ export default async function ProVaultDetailPage({
   const checklistDone = event.checklists.reduce((sum, c) => sum + c.items.filter((i) => i.done).length, 0);
   const progress = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
 
-  const guestList = event.guestLists[0];
+  const guestList = event.guestLists?.[0];
   const totalGuests = guestList?.guests.length || 0;
   const rsvped = guestList?.guests.filter((g) => g.status === "ACCEPTED").length || 0;
   const rsvpPending = guestList?.guests.filter((g) => g.status === "PENDING").length || 0;
@@ -597,27 +595,41 @@ export default async function ProVaultDetailPage({
                   <h4 className="text-sm font-medium mb-2 text-slate-700">Generate Proposals from Shortlist:</h4>
                   <div className="space-y-2">
                     {(event.shortlistItems as any[]).map((item: any) => (
-                      <div key={item.id} className="flex items-center justify-between rounded border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="text-sm font-medium">{item.listing.title}</div>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Verified
-                            </span>
+                      <div key={item.id} className="rounded border border-slate-200 bg-slate-50 p-3">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="text-sm font-medium">{item.listing.title}</div>
+                              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Verified
+                              </span>
+                            </div>
+                            <div className="text-xs text-slate-500 mt-1">
+                              {item.listing.type === "VENUE" ? "Venue" : "Vendor"} • {item.listing.category}
+                              {item.listing.org.city && ` • ${item.listing.org.city}, ${item.listing.org.state}`}
+                            </div>
+                            {item.notes && (
+                              <div className="text-xs text-slate-400 mt-1 italic">{item.notes}</div>
+                            )}
+                            <div className="mt-2 text-xs text-slate-600">
+                              Ready to reach out? Open this listing with your event attached to request booking.
+                            </div>
                           </div>
-                          <div className="text-xs text-slate-500 mt-1">
-                            {item.listing.type === "VENUE" ? "Venue" : "Vendor"} • {item.listing.category}
-                            {item.listing.org.city && ` • ${item.listing.org.city}, ${item.listing.org.state}`}
+                          <div className="flex flex-wrap gap-2 lg:justify-end">
+                            <Button asChild size="sm" variant="secondary">
+                              <Link
+                                href={`/marketplace/${item.listing.slug}?eventId=${event.id}&eventSlug=${event.slug}&eventName=${encodeURIComponent(event.name)}&returnTo=${encodeURIComponent(`/pro/planner/vault/${event.slug}`)}`}
+                              >
+                                Request booking
+                              </Link>
+                            </Button>
+                            <GenerateProposalButton 
+                              eventId={event.id} 
+                              listingId={item.listingId}
+                            />
                           </div>
-                          {item.notes && (
-                            <div className="text-xs text-slate-400 mt-1 italic">{item.notes}</div>
-                          )}
                         </div>
-                        <GenerateProposalButton 
-                          eventId={event.id} 
-                          listingId={item.listingId}
-                        />
                       </div>
                     ))}
                   </div>
@@ -632,7 +644,7 @@ export default async function ProVaultDetailPage({
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="text-sm font-medium">
-                              <Link href={`/proposals/${proposal.id}`} className="hover:underline">
+                              <Link href={proposalDetail(proposal.id) as any} className="hover:underline">
                                 {proposal.title}
                               </Link>
                             </div>
@@ -653,9 +665,19 @@ export default async function ProVaultDetailPage({
                         <strong>💡 Tip:</strong> To generate vendor/venue-specific proposals, first add vendors or venues to your shortlist.
                       </p>
                       <p className="text-xs text-indigo-700">
-                        Browse the marketplace and add vendors/venues to your shortlist, then generate proposals from them. 
+                        Browse the marketplace with this event attached, shortlist a vendor or venue, then come back here to generate a proposal.
                         You can also generate a generic AI proposal for this event using the button above.
                       </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button asChild size="sm" variant="secondary">
+                          <Link href={`/marketplace?eventId=${event.id}&eventSlug=${event.slug}&eventName=${encodeURIComponent(event.name)}&returnTo=${encodeURIComponent(`/pro/planner/vault/${event.slug}`)}`}>
+                            Browse marketplace for this event
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm" variant="ghost">
+                          <Link href="/app/requests">View booking requests</Link>
+                        </Button>
+                      </div>
                     </div>
                   )}
                   <div className="text-sm text-slate-500">

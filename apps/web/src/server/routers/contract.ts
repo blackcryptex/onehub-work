@@ -228,6 +228,13 @@ export const contractRouter = router({
                     },
                   },
                 },
+                listing: {
+                  include: {
+                    org: {
+                      include: { members: true },
+                    },
+                  },
+                },
               },
             },
           },
@@ -259,18 +266,46 @@ export const contractRouter = router({
       },
     });
     
-    // Reload contract with all signatures to check if fully signed
+    // Reload contract with all signatures to check true dual-party execution
     const contractWithSignatures = await prisma.contract.findUniqueOrThrow({
       where: { id: contract.id },
-      include: { signatures: true },
+      include: {
+        signatures: true,
+        proposal: {
+          include: {
+            event: {
+              include: {
+                org: {
+                  include: { members: true },
+                },
+              },
+            },
+            listing: {
+              include: {
+                org: {
+                  include: { members: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
-    const allSigned = contractWithSignatures.signatures.every((s) => s.signedAt);
-    const newStatus = allSigned ? "FULLY_SIGNED" : "PARTIALLY_SIGNED";
-    if (allSigned) {
-      await prisma.contract.update({ where: { id: contract.id }, data: { status: "FULLY_SIGNED" } });
-    } else {
-      await prisma.contract.update({ where: { id: contract.id }, data: { status: "PARTIALLY_SIGNED" } });
-    }
+    const buyerMemberIds = new Set(
+      contractWithSignatures.proposal.event.org.members.map((member) => member.userId)
+    );
+    const sellerMemberIds = new Set(
+      (contractWithSignatures.proposal.listing?.org.members ?? []).map((member) => member.userId)
+    );
+    const buyerSigned = contractWithSignatures.signatures.some(
+      (signature) => Boolean(signature.signedAt && signature.signerId && buyerMemberIds.has(signature.signerId))
+    );
+    const sellerSigned = contractWithSignatures.signatures.some(
+      (signature) => Boolean(signature.signedAt && signature.signerId && sellerMemberIds.has(signature.signerId))
+    );
+    const allSigned = buyerSigned && sellerSigned;
+    const newStatus = allSigned ? "FULLY_SIGNED" : buyerSigned || sellerSigned ? "PARTIALLY_SIGNED" : contract.status;
+    await prisma.contract.update({ where: { id: contract.id }, data: { status: newStatus } });
     
     // Audit: Log that this contract was signed
     await recordActivity({
@@ -420,4 +455,3 @@ export const contractRouter = router({
     return updated;
   }),
 });
-

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui";
 import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
+import { contractDetail } from "@/lib/routes";
 
 interface GenerateContractButtonProps {
   proposalId: string;
@@ -45,7 +46,7 @@ export function GenerateContractButton({
         onSuccess(contract.id);
       } else {
         // Navigate to contract page
-        router.push(`/app/contracts/${contract.id}` as any);
+        router.push(contractDetail(contract.id) as any);
       }
     } catch (err) {
       console.error("Error generating contract:", err);

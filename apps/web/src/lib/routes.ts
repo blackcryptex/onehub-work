@@ -9,11 +9,12 @@ import type { Role } from "@onehub/types/src/roles";
  * Role-to-path mapping:
  * - DIY_PLANNER: /diy-planner/vault/*
  * - PRO_PLANNER: /pro/planner/vault/*
- * - VENDOR/VENUE/ADMIN/others: /app/vault/* (legacy route)
+ * - CLIENT detail: /client/events/*
+ * - VENDOR/VENUE/ADMIN/EVENT_DREAMER/others: /app/vault/* (legacy route)
  * 
  * Shared routes (not role-specific):
- * - Proposals: /app/proposals/[id]
- * - Contracts: /app/contracts/[id]
+ * - Proposals: /proposals/[id]
+ * - Contracts: /contracts/[id]
  */
 
 /**
@@ -42,8 +43,16 @@ export function vaultIndex(role: Role | undefined): string {
  * Get the vault detail route for a given role and event slug
  */
 export function vaultDetail(role: Role | undefined, eventSlug: string): string {
-  const base = getVaultBasePath(role);
-  return `${base}/${eventSlug}`;
+  switch (role) {
+    case "DIY_PLANNER":
+      return `/diy-planner/vault/${eventSlug}`;
+    case "PRO_PLANNER":
+      return `/pro/planner/vault/${eventSlug}`;
+    case "CLIENT":
+      return `/client/events/${eventSlug}`;
+    default:
+      return `/app/vault/${eventSlug}`;
+  }
 }
 
 /**
@@ -87,17 +96,17 @@ export function eventProposals(role: Role | undefined, eventSlug: string): strin
 }
 
 /**
- * Get the proposal detail route (shared across all roles)
+ * Get the canonical proposal detail route (shared across all roles)
  */
 export function proposalDetail(proposalId: string): string {
-  return `/app/proposals/${proposalId}`;
+  return `/proposals/${proposalId}`;
 }
 
 /**
  * Get the contract detail route (shared across all roles)
  */
 export function contractDetail(contractId: string): string {
-  return `/app/contracts/${contractId}`;
+  return `/contracts/${contractId}`;
 }
 
 /**
@@ -105,6 +114,8 @@ export function contractDetail(contractId: string): string {
  */
 export function dashboard(role: Role | undefined): string {
   switch (role) {
+    case "ADMIN":
+      return "/app/admin/overview";
     case "DIY_PLANNER":
       return "/diy-planner";
     case "PRO_PLANNER":
@@ -113,6 +124,10 @@ export function dashboard(role: Role | undefined): string {
       return "/vendor/dashboard";
     case "VENUE":
       return "/venue/dashboard";
+    case "EVENT_DREAMER":
+      return "/event-dreamer";
+    case "CLIENT":
+      return "/app";
     default:
       return "/app";
   }

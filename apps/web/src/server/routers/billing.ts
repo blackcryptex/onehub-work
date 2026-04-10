@@ -6,6 +6,7 @@ import { auth as _auth } from "@/lib/auth";
 import { getStripeOrThrow } from "@/server/lib/stripe";
 import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
 import { recordAudit } from "@/server/lib/audit";
+import { createRefundRequest } from "@/lib/refund-request";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner, canManageEvent, canReleaseMilestonePayment } from "@/lib/rbac";
 
@@ -25,19 +26,68 @@ export const billingRouter = router({
       });
     }
     const stripe = getStripeOrThrow();
-    const account = await stripe.accounts.create({ type: "express" });
+    const existingAccountId = org.stripeConnectAccountId;
+    const account = existingAccountId
+      ? await stripe.accounts.retrieve(existingAccountId)
+      : await stripe.accounts.create({
+          type: "express",
+          country: org.country || "US",
+          metadata: {
+            orgId: org.id,
+            orgSlug: org.slug,
+          },
+        });
+
+    if (!existingAccountId) {
+      await prisma.organization.update({
+        where: { id: org.id },
+        data: { stripeConnectAccountId: account.id },
+      });
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/app/billing/connect`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/app/billing/connect?success=true`,
+      refresh_url: `${appUrl}/app/billing/connect`,
+      return_url: `${appUrl}/app/billing/connect?success=true`,
       type: "account_onboarding",
     });
-    // TODO: Store account.id on Organization.stripeConnectAccountId field
-    return { url: accountLink.url };
+    return { url: accountLink.url, accountId: account.id };
   }),
-  connectStatus: publicProcedure.input(z.object({ orgId: z.string() })).query(async ({ input: _input }) => {
-    // TODO: Check Organization.stripeConnectAccountId and verify status with Stripe
-    return { connected: false, accountId: null };
+  connectStatus: protectedProcedure.input(z.object({ orgId: z.string() })).query(async ({ input, ctx }) => {
+    const org = await prisma.organization.findUniqueOrThrow({
+      where: { id: input.orgId },
+      include: { members: true },
+    });
+
+    const membership = org.members.find((m) => m.userId === ctx.user.id);
+    if (!isOrgAdminOrOwner(ctx.user, org, membership)) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Only org admins or owners can view Stripe Connect status",
+      });
+    }
+
+    if (!org.stripeConnectAccountId) {
+      return {
+        connected: false,
+        accountId: null,
+        chargesEnabled: false,
+        payoutsEnabled: false,
+        detailsSubmitted: false,
+      };
+    }
+
+    const stripe = getStripeOrThrow();
+    const account = await stripe.accounts.retrieve(org.stripeConnectAccountId);
+
+    return {
+      connected: Boolean(account.charges_enabled && account.payouts_enabled),
+      accountId: account.id,
+      chargesEnabled: Boolean(account.charges_enabled),
+      payoutsEnabled: Boolean(account.payouts_enabled),
+      detailsSubmitted: Boolean(account.details_submitted),
+    };
   }),
   // SECURITY HOTFIX: require auth (P0)
   // SECURITY: permission check - user must be able to manage the event
@@ -94,51 +144,22 @@ export const billingRouter = router({
     });
     return { clientSecret: intent.client_secret };
   }),
-  // SECURITY HOTFIX: require auth (P0)
-  // SECURITY: permission check - user must be able to release milestone payments
+  // Guarded MVP: disable the legacy tRPC release surface so milestone releases can only
+  // flow through the canonical /api/payments/release-milestone path with acceptance,
+  // override evidence, and blocking checks.
   escrowReleaseMilestone: protectedProcedure.input(z.object({
     milestoneId: z.string(),
-  })).mutation(async ({ input, ctx }) => {
-    const milestone = await prisma.paymentMilestone.findUniqueOrThrow({
-      where: { id: input.milestoneId },
-      include: {
-        proposal: {
-          include: {
-            listing: { include: { org: true } },
-            event: {
-              include: {
-                org: {
-                  include: { members: true },
-                },
-              },
-            },
-          },
-        },
-      },
+  })).mutation(async () => {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Milestone release via billing router is disabled. Use the canonical /api/payments/release-milestone route.",
     });
-    if (!canReleaseMilestonePayment(ctx.user, milestone.proposal.event)) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "You do not have permission to release milestone payments",
-      });
-    }
-    // TODO: Create Stripe Transfer to recipient org's Connect account
-    const payout = await prisma.payout.create({
-      data: {
-        proposalId: milestone.proposalId,
-        milestoneId: milestone.id,
-        listingId: milestone.proposal.listingId ?? undefined,
-        orgId: milestone.proposal.listing?.orgId ?? milestone.proposal.orgId,
-        amountCents: milestone.amountCents,
-      },
-    });
-    await prisma.paymentMilestone.update({ where: { id: milestone.id }, data: { status: "PAID" } });
-    return payout;
   }),
   // SECURITY: permission check - user must be able to manage the event
   refundMilestone: publicProcedure.input(z.object({
     milestoneId: z.string(),
     amountCents: z.number().int().optional(),
+    reason: z.string().min(10),
   })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
@@ -167,32 +188,15 @@ export const billingRouter = router({
       });
     }
     
-    const milestoneStatusBefore = milestone.status;
     const refundAmountCents = input.amountCents ?? milestone.amountCents;
-    
-    // TODO: Create Stripe refund via Charge ID stored in MoneyTx
-    // For now, we'll log the refund initiation
-    await prisma.paymentMilestone.update({
-      where: { id: milestone.id },
-      data: { status: "REFUNDED" },
-    });
-    
-    // Create MoneyTx entry for the refund
-    await prisma.moneyTx.create({
-      data: {
-        type: "REFUND",
-        proposalId: milestone.proposalId,
-        milestoneId: milestone.id,
-        amountCents: refundAmountCents,
-        currency: milestone.proposal.currency,
-        meta: {
-          refundedBy: user.id,
-          refundedByRole: user.role,
-          milestoneStatusBefore,
-          milestoneStatusAfter: "REFUNDED",
-          // TODO: Add stripeRefundId when Stripe refund is created
-        },
-      },
+    const refundRequest = await createRefundRequest({
+      actorId: user.id,
+      actorRole: user.role,
+      proposalId: milestone.proposalId,
+      milestoneId: milestone.id,
+      amountRequestedCents: refundAmountCents,
+      reason: input.reason,
+      orgId: milestone.proposal.event.orgId,
     });
     
     // Audit: Log that refund was initiated (Activity for event timeline)
@@ -201,16 +205,15 @@ export const billingRouter = router({
       eventId: milestone.proposal.eventId,
       actorId: user.id,
       action: ACTIVITY_ACTIONS.MILESTONE_REFUND_INITIATED,
-      target: milestone.id,
+      target: refundRequest.id,
       meta: {
+        refundRequestId: refundRequest.id,
         milestoneId: milestone.id,
         milestoneTitle: milestone.title,
         amountCents: refundAmountCents,
         currency: milestone.proposal.currency,
-        milestoneStatusBefore,
-        milestoneStatusAfter: "REFUNDED",
         refundedByRole: user.role,
-        // TODO: Add stripeRefundId when Stripe refund is created
+        status: "OPEN",
       },
     });
     
@@ -218,22 +221,21 @@ export const billingRouter = router({
     await recordAudit({
       actorId: user.id,
       orgId: milestone.proposal.event.orgId,
-      action: "payment.milestone.refund",
-      target: milestone.id,
+      action: "payment.milestone.refund-request.submitted",
+      target: refundRequest.id,
       metadata: {
+        refundRequestId: refundRequest.id,
         milestoneId: milestone.id,
         milestoneTitle: milestone.title,
         amountCents: refundAmountCents,
         currency: milestone.proposal.currency,
         proposalId: milestone.proposalId,
         eventId: milestone.proposal.eventId,
-        milestoneStatusBefore,
-        milestoneStatusAfter: "REFUNDED",
-        // TODO: Add stripeRefundId when Stripe refund is created
+        status: "OPEN",
+        reason: input.reason,
       },
     });
     
-    return { success: true };
+    return { success: true, refundRequestId: refundRequest.id };
   }),
 });
-

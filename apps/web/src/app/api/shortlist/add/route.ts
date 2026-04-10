@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
+import { canManageEvent } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -33,15 +34,35 @@ export async function POST(request: NextRequest) {
 
     const { eventId, listingId, notes } = validationResult.data;
 
-    // Verify event exists and user has access (optional but good for security)
+    // Verify event exists and caller can manage it
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      select: { id: true, orgId: true },
+      include: {
+        org: {
+          select: {
+            ownerId: true,
+            members: {
+              select: {
+                userId: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!event) {
       console.error("[api/shortlist/add] Event not found:", eventId);
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    if (!canManageEvent(user, event)) {
+      console.error("[api/shortlist/add] Forbidden: user cannot manage event", {
+        userId: user.id,
+        eventId,
+      });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Verify listing exists

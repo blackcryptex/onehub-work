@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { isDemoMode } from "@/lib/demo-mode";
 import { Calendar, User, Mail, Phone, Users, MessageSquare } from "lucide-react";
+import { vaultDetail } from "@/lib/routes";
 
 const getStatusBadgeColor = (status: string) => {
   switch (status) {
@@ -23,6 +24,7 @@ const getStatusBadgeColor = (status: string) => {
 export default async function RequestsPage() {
   const session = await auth();
   const userId = session?.user?.id as string | undefined;
+  const userRole = session?.user?.role;
   if (!userId) return <div>Unauthorized</div>;
   const demoMode = isDemoMode();
   
@@ -83,7 +85,7 @@ export default async function RequestsPage() {
                         <Calendar className="w-4 h-4" />
                         <span>
                           <Link
-                            href={`/app/events/${r.event.slug}`}
+                            href={vaultDetail(userRole as any, r.event.slug) as any}
                             className="text-indigo-600 hover:underline"
                           >
                             {r.event.name}

@@ -1,5 +1,7 @@
 # Payments & Stripe Integration
 
+Canonical exception policy for guarded MVP: `onehub_work/docs/legal-exceptions-register.md`
+
 ## Environment Variables
 
 - `STRIPE_SECRET_KEY`: Stripe secret key

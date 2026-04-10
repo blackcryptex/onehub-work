@@ -174,7 +174,7 @@ export function AiSourceVendorsVenuesPanel({ eventId, eventName, eventLocation }
         <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 mb-4">
           <p className="text-xs text-indigo-900 font-medium mb-1">Investor Confidence:</p>
           <p className="text-xs text-indigo-700">
-            <strong>Verified</strong> = On-platform account (trust + escrow).{" "}
+            <strong>Verified</strong> = On-platform account (trust + held funds).{" "}
             <strong>Unverified</strong> = Lead (growth pipeline).
           </p>
         </div>
@@ -229,7 +229,7 @@ export function AiSourceVendorsVenuesPanel({ eventId, eventName, eventLocation }
                   </div>
                   {result.kind === "VERIFIED" ? (
                     <p className="text-xs text-slate-500 mb-2">
-                      Verified vendors are on OneHub and can accept proposals, contracts, and escrow payments.
+                      Verified vendors are on OneHub and can accept proposals, contracts, and payments with held funds pending release.
                     </p>
                   ) : (
                     <p className="text-xs text-slate-500 mb-2">

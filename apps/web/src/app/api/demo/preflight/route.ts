@@ -26,10 +26,10 @@ export async function GET() {
       if (demoEvent) {
         seedOk = true;
 
-        // Optionally check for verified listings (listings with orgId)
+        // Optionally check for verified listings in the demo state
+        // Listing.orgId is required in the schema, so no null filter is needed.
         verifiedListingsCount = await prisma.listing.count({
           where: {
-            orgId: { not: null },
             state: "IL", // Match demo event location
           },
         });

@@ -41,37 +41,11 @@ export function MilestoneActions({
     }
   };
 
-  const handleRelease = async () => {
-    setLoading("release");
-    try {
-      const response = await fetch(
-        `/api/demo/milestones/${milestoneId}/release`,
-        {
-          method: "POST",
-        }
-      );
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to release milestone");
-      }
-
-      // Refresh the page to show updated status
-      router.refresh();
-    } catch (error) {
-      console.error("Error releasing milestone:", error);
-      alert(
-        error instanceof Error ? error.message : "Failed to release milestone"
-      );
-    } finally {
-      setLoading(null);
-    }
-  };
 
   if (!demoModeActive) {
     return (
       <p className="text-xs text-slate-500">
-        Stripe Connect escrow coming next
+        Stripe Connect held funds pending release coming next
       </p>
     );
   }
@@ -98,24 +72,11 @@ export function MilestoneActions({
 
   if (status === "IN_ESCROW") {
     return (
-      <Button
-        onClick={handleRelease}
-        disabled={loading === "release"}
-        size="sm"
-        variant="default"
-      >
-        {loading === "release" ? (
-          <>
-            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-            Releasing...
-          </>
-        ) : (
-          "Release (Escrow → Vendor)"
-        )}
-      </Button>
+      <p className="text-xs text-slate-500">
+        Demo release is disabled in guarded MVP. Use the canonical admin release flow.
+      </p>
     );
   }
 
   return null;
 }
-

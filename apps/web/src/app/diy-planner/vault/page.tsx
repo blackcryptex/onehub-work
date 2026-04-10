@@ -73,11 +73,17 @@ export default async function DIYVaultPage() {
       {allEvents.length === 0 ? (
         <Card className="p-12 text-center">
           <Folder className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">No events yet</h2>
-          <p className="text-slate-600 mb-6">Create your first event using the Event Wizard</p>
-          <Button asChild>
-            <Link href="/events/new">Create Event</Link>
-          </Button>
+          <h2 className="text-xl font-semibold mb-2">Your vault is ready</h2>
+          <p className="text-slate-600 mb-3">Create your first event and OneHub will open it with starter budget lines, checklist items, and a first milestone.</p>
+          <p className="text-sm text-slate-500 mb-6">Fastest path: launch the event wizard, finish the basics, and you’ll land directly in the new event’s vault.</p>
+          <div className="flex flex-col sm:flex-row justify-center gap-3">
+            <Button asChild>
+              <Link href="/events/new">Launch Event Wizard</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/diy-planner">Go to dashboard</Link>
+            </Button>
+          </div>
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

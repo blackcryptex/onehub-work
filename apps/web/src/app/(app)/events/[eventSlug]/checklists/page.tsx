@@ -1,22 +1,15 @@
 import { Card } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth-helpers";
-import { redirect } from "next/navigation";
+import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
 export default async function EventChecklists({ params }: { params: { eventSlug: string } }) {
-  const user = await getCurrentUser();
-  
-  // Phase 0: Security hardening - Block CLIENT users from accessing planner event pages
-  if (!user) {
-    redirect("/signin");
-  }
-  if (user.role === "CLIENT") {
-    redirect("/app");
-  }
+  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "manage");
 
-  const ev = await prisma.event.findFirst({ where: { slug: params.eventSlug } });
-  if (!ev) return null;
-  const lists = await prisma.checklist.findMany({ where: { eventId: ev.id }, include: { items: true } });
+  const lists = await prisma.checklist.findMany({
+    where: { eventId: authorizedEvent.id },
+    include: { items: true },
+  });
+
   return (
     <div className="space-y-4">
       {lists.map((cl) => (

@@ -1,16 +1,20 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui";
 import { signOut } from "next-auth/react";
 
 export function SignOutButton() {
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  const handleSignOut = () => {
-    startTransition(() => {
-      signOut({ callbackUrl: "/" });
-    });
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  const handleSignOut = async () => {
+    setIsPending(true);
+    await signOut({ callbackUrl: "/signin", redirect: true });
   };
 
   return (
@@ -18,10 +22,9 @@ export function SignOutButton() {
       variant="ghost"
       size="sm"
       onClick={handleSignOut}
-      disabled={isPending}
+      disabled={!isHydrated || isPending}
     >
-      {isPending ? "Signing out..." : "Sign out"}
+      {!isHydrated ? "Loading..." : isPending ? "Signing out..." : "Sign out"}
     </Button>
   );
 }
-

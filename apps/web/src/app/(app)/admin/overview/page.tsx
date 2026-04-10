@@ -20,9 +20,14 @@ export default async function AdminOverviewPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <a href="/admin/users" className="text-sm text-indigo-600 hover:text-indigo-800">
-          Manage Users →
-        </a>
+        <div className="flex gap-4 text-sm">
+          <a href="/app/admin/verification" className="text-indigo-600 hover:text-indigo-800">
+            Verification →
+          </a>
+          <a href="/admin/users" className="text-indigo-600 hover:text-indigo-800">
+            Manage Users →
+          </a>
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-4">
         <KPIStat label="Organizations" value={orgs} />

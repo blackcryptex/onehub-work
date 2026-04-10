@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { VendorSearchFilters, ExternalVendorResult } from "@/lib/types.vendor-search";
 
+export const dynamic = "force-dynamic";
+
 /**
  * External vendor search API route
  * 
@@ -59,4 +61,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

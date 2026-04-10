@@ -32,8 +32,8 @@ export default function FeaturesPage() {
     },
     {
       icon: Shield,
-      title: "Escrow Protection",
-      description: "Secure payments with escrow accounts. Funds are held safely until services are delivered to your satisfaction.",
+      title: "Held Funds Protection",
+      description: "Secure payments with held funds pending release. Funds are held safely until services are delivered to your satisfaction.",
     },
     {
       icon: Zap,

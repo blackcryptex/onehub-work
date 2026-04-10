@@ -2,7 +2,7 @@
 
 ## Overview
 
-A unified contract-based payment flow has been implemented across all dashboards (DIY Planner, Professional Planner, Vendors & Venues, Event Dreamer). All payments flow through OneHub Payments using escrow and milestones.
+A unified contract-based payment flow has been implemented across all dashboards (DIY Planner, Professional Planner, Vendors & Venues, Event Dreamer). All payments flow through OneHub Payments using held funds and milestones.
 
 ## What Was Implemented
 
@@ -35,7 +35,7 @@ Created TypeScript types and helper functions:
 - `PaymentIntent`, `PaymentMilestone`, `Contract` types
 - `getNextUnpaidMilestone()` - Finds next milestone to pay
 - `calculateTotalDue()` - Sums unpaid milestones
-- `calculateEscrowAmount()` - Sums milestones in escrow
+- `calculateHeldFundsAmount()` - Sums milestones in held funds
 - `calculatePaidAmount()` - Sums paid milestones
 - `formatCurrency()` - Formats cents to currency string
 - `canUserPay()`, `canUserReceive()` - Permission checks
@@ -76,7 +76,7 @@ Created TypeScript types and helper functions:
 - Calls `/api/payments/confirm` on success
 
 #### `ContractPaymentPanel` (`apps/web/src/components/payments/ContractPaymentPanel.tsx`)
-- Shows payment summary (Total Due, In Escrow, Paid)
+- Shows payment summary (Total Due, Held Funds, Paid)
 - Displays next unpaid milestone
 - Shows full payment schedule
 - "Pay Deposit Now" / "Pay Next Milestone" buttons
@@ -85,7 +85,7 @@ Created TypeScript types and helper functions:
 
 #### `VendorPaymentPanel` (`apps/web/src/components/payments/VendorPaymentPanel.tsx`)
 - Shows contracts with payments
-- Displays milestone status (Pending, In Escrow, Paid)
+- Displays milestone status (Pending, Held, Paid)
 - "Mark Milestone Complete" button for milestones in escrow
 - Links to contract details
 
@@ -93,9 +93,9 @@ Created TypeScript types and helper functions:
 - **Receiving Payments Section**: Shows contracts where planner is seller
   - Displays what client owes
   - "Copy Payment Link" button
-  - Shows escrow status
+  - Shows held-funds status
 - **Vendor Payments Section**: Shows contracts where planner is buyer
-  - Lists milestones in escrow
+  - Lists milestones in held funds
   - "Release Payment to Vendor" button
 
 ### 5. Dashboard Integrations

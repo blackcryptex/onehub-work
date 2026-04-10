@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
+import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
+import { getLegalSurface } from "@/lib/legal-surface";
 
 /**
  * POST /api/proposals/[id]/approve
@@ -21,6 +23,11 @@ export async function POST(
     }
 
     const proposalId = params.id;
+    const body = await request.json().catch(() => ({}));
+    const acceptance = acceptanceInputSchema.parse(body.acceptance);
+    if (acceptance.legalVersion !== CURRENT_ACCEPTANCE_VERSIONS.proposal) {
+      return NextResponse.json({ error: "Proposal acceptance version mismatch" }, { status: 400 });
+    }
 
     if (!proposalId) {
       return NextResponse.json(
@@ -73,6 +80,31 @@ export async function POST(
       data: { status: "ACCEPTED" },
     });
 
+    const requestContextId = request.headers.get("x-request-id") || undefined;
+    const bookingClassification = String((proposal as any).bookingClassification || "DIRECT").toLowerCase();
+    await recordAcceptance({
+      actorId: user.id,
+      actorRole: user.role,
+      orgId: proposal.event.orgId,
+      grossAmountCents: proposal.totalCents,
+      legalSurface: getLegalSurface("proposal", bookingClassification),
+      legalVersion: acceptance.legalVersion,
+      sourceSurface: "proposal.approve",
+      requestContextId,
+      proposalId: proposal.id,
+      bookingClassificationInput: {
+        proposal: {
+          bookingClassification: (proposal as any).bookingClassification,
+          listingId: proposal.listingId,
+        },
+        event: { org: { type: (proposal.event as any)?.org?.type } },
+      },
+      metadata: {
+        requiredVersion: CURRENT_ACCEPTANCE_VERSIONS.proposal,
+        proposalStatusAfter: "ACCEPTED",
+      },
+    });
+
     console.log("[API] Proposal approved:", {
       proposalId: updatedProposal.id,
       status: updatedProposal.status,
@@ -86,4 +118,3 @@ export async function POST(
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

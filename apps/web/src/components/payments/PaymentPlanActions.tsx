@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui";
 import { useRouter } from "next/navigation";
-import { DollarSign, CheckCircle2, Loader2, Pencil, Trash2 } from "lucide-react";
+import { DollarSign, Loader2, Pencil, Trash2 } from "lucide-react";
 
 interface DepositActionsProps {
   depositId: string;
@@ -102,7 +102,7 @@ interface PayoutActionsProps {
   payoutId: string;
   currentStatus: string;
   amountCents: number;
-  escrowBalanceCents: number;
+  heldFundsBalanceCents: number;
   onEdit: () => void;
   onDelete: () => void;
   isDemoMode: boolean;
@@ -111,49 +111,16 @@ interface PayoutActionsProps {
 }
 
 export function PayoutActions({
-  payoutId,
+  payoutId: _payoutId,
   currentStatus,
-  amountCents,
-  escrowBalanceCents,
+  amountCents: _amountCents,
+  heldFundsBalanceCents: _heldFundsBalanceCents,
   onEdit,
   onDelete,
   isDemoMode,
   isPlanner,
   isLocked = false,
 }: PayoutActionsProps) {
-  const [releasing, setReleasing] = useState(false);
-  const router = useRouter();
-
-  const handleRelease = async () => {
-    if (!isDemoMode || currentStatus !== "PENDING") return;
-
-    if (escrowBalanceCents < amountCents) {
-      alert("Insufficient escrow balance to release this payout");
-      return;
-    }
-
-    setReleasing(true);
-    try {
-      const response = await fetch(`/api/demo/payouts/${payoutId}/release`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to release payout");
-      }
-
-      router.refresh();
-    } catch (err) {
-      console.error("Error releasing payout:", err);
-      alert(err instanceof Error ? err.message : "Failed to release payout");
-    } finally {
-      setReleasing(false);
-    }
-  };
-
-  const canRelease = isDemoMode && currentStatus === "PENDING" && escrowBalanceCents >= amountCents;
 
   return (
     <div className="flex items-center gap-2">
@@ -180,31 +147,11 @@ export function PayoutActions({
           </Button>
         </>
       )}
-      {canRelease && (
-        <Button
-          onClick={handleRelease}
-          disabled={releasing}
-          size="sm"
-          variant="secondary"
-          className="flex items-center gap-1"
-        >
-          {releasing ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Releasing...
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="w-4 h-4" />
-              Release
-            </>
-          )}
-        </Button>
-      )}
-      {isDemoMode && currentStatus === "PENDING" && escrowBalanceCents < amountCents && (
-        <span className="text-xs text-amber-600">Insufficient escrow</span>
+      {isDemoMode && currentStatus === "PENDING" && (
+        <span className="text-xs text-slate-500">
+          Demo payout release is disabled in guarded MVP.
+        </span>
       )}
     </div>
   );
 }
-

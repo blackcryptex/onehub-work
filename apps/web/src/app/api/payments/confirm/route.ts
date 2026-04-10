@@ -6,6 +6,10 @@ import { stripe } from "@/server/lib/stripe";
 import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
 import { getRequestLogger } from "@/lib/logger";
 import { trackError } from "@/lib/errorTracker";
+import { resolveBookingClassification } from "@/lib/booking-classification";
+import { resolveFeeProfile } from "@/lib/fee-profile";
+import { requireAcceptanceProof } from "@/lib/acceptance";
+import { evaluateHoldbackForPaymentIntent } from "@/lib/holdback";
 
 const confirmPaymentSchema = z.object({
   paymentIntentId: z.string(),
@@ -42,6 +46,11 @@ export async function POST(request: NextRequest) {
               include: {
                 milestones: true,
                 escrowAccount: true,
+                event: {
+                  select: {
+                    orgId: true,
+                  },
+                },
               },
             },
           },
@@ -58,6 +67,17 @@ export async function POST(request: NextRequest) {
     if (paymentIntent.payerId !== userId) {
       return NextResponse.json({ error: "Only the payer can confirm payment" }, { status: 403 });
     }
+
+    await requireAcceptanceProof({
+      paymentIntentId,
+      legalSurface: `payment.${resolveBookingClassification({
+        proposal: {
+          bookingClassification: paymentIntent.contract.proposal.bookingClassification,
+          listingId: paymentIntent.contract.proposal.listingId,
+        },
+        event: paymentIntent.contract.proposal.event,
+      })}`,
+    });
 
     // Check if Stripe is configured
     if (!stripe) {
@@ -104,6 +124,11 @@ export async function POST(request: NextRequest) {
                 include: {
                   milestones: true,
                   escrowAccount: true,
+                  event: {
+                    select: {
+                      orgId: true,
+                    },
+                  },
                 },
               },
             },
@@ -120,6 +145,14 @@ export async function POST(request: NextRequest) {
       if (currentPaymentIntent.status === "SUCCEEDED") {
         return; // Already processed, exit early
       }
+
+      const bookingClassification = resolveBookingClassification({
+        proposal: {
+          bookingClassification: currentPaymentIntent.contract.proposal.bookingClassification,
+          listingId: currentPaymentIntent.contract.proposal.listingId,
+        },
+        event: currentPaymentIntent.contract.proposal.event,
+      });
 
       // Update payment intent status atomically
       await (tx as any).paymentIntent.update({
@@ -152,9 +185,12 @@ export async function POST(request: NextRequest) {
       }
 
       // Create transaction record (unique constraint on paymentIntentId prevents duplicates)
-      const platformFeePercent = (currentPaymentIntent.contract as any).platformFeePercent || 5.0;
-      const platformFeeCents = Math.round(currentPaymentIntent.amountCents * (platformFeePercent / 100));
-      const netAmountCents = currentPaymentIntent.amountCents - platformFeeCents;
+      const feeProfile = resolveFeeProfile({
+        bookingClassification,
+        grossAmountCents: currentPaymentIntent.amountCents,
+      });
+      const platformFeeCents = feeProfile.platformFeeAmountCents;
+      const netAmountCents = feeProfile.netAmountCents;
 
       await (tx as any).transaction.create({
         data: {
@@ -170,9 +206,14 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      await evaluateHoldbackForPaymentIntent({
+        paymentIntentId: currentPaymentIntent.id,
+        tx,
+      });
+
       // Update contract status if needed
       // Note: IN_PAYMENT status will be available after Prisma migration
-      if (currentPaymentIntent.contract.status === "ACCEPTED") {
+      if (currentPaymentIntent.contract.status === "FULLY_SIGNED") {
         await tx.contract.update({
           where: { id: currentPaymentIntent.contractId },
           data: { status: "IN_PAYMENT" as any },
@@ -199,7 +240,11 @@ export async function POST(request: NextRequest) {
           escrowStatusBefore: escrowAccount?.status,
           escrowStatusAfter: escrowAccount?.balanceCents === 0 ? "FUNDED" : "PARTIALLY_RELEASED",
           contractStatusBefore: currentPaymentIntent.contract.status,
-          contractStatusAfter: currentPaymentIntent.contract.status === "ACCEPTED" ? "IN_PAYMENT" : currentPaymentIntent.contract.status,
+          contractStatusAfter: currentPaymentIntent.contract.status === "FULLY_SIGNED"
+            ? "IN_PAYMENT"
+            : currentPaymentIntent.contract.status,
+          bookingClassification,
+          feeProfile,
         },
       });
     });
@@ -218,7 +263,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Payment confirmed. Funds are held in escrow.",
+      message: "Payment confirmed. Held funds have been updated.",
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Failed to confirm payment";
@@ -246,4 +291,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to confirm payment" }, { status: 500 });
   }
 }
-

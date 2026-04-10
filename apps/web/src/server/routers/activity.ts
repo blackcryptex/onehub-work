@@ -2,6 +2,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { router, publicProcedure } from "@/server/trpc";
+import { maskPaymentTerminology } from "@/lib/paymentTerminology";
 
 export const activityRouter = router({
   list: publicProcedure.input(z.object({ orgSlug: z.string(), eventId: z.string().optional(), cursor: z.string().optional(), limit: z.number().min(1).max(100).default(20) })).query(async ({ input }) => {
@@ -15,6 +16,9 @@ export const activityRouter = router({
       const next = items.pop();
       nextCursor = next?.id;
     }
-    return { items, nextCursor };
+    return {
+      items: items.map((item) => maskPaymentTerminology(item)),
+      nextCursor,
+    };
   }),
 });

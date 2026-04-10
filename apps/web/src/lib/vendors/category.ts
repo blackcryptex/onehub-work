@@ -129,8 +129,8 @@ export function toVendorCategory(input: string): VendorCategory {
     }
   }
   
-  // Last resort: throw in dev, default to 'other' in production
-  if (process.env.NODE_ENV === 'development') {
+  // Last resort: throw in non-production so unknown categories fail loudly in development and tests
+  if (process.env.NODE_ENV !== 'production') {
     throw new Error(`Unknown VendorCategory: "${input}". Valid categories: ${Array.from(VALID_CATEGORIES).join(', ')}`);
   }
   

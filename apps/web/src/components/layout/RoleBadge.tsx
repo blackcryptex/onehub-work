@@ -1,3 +1,4 @@
+import React from "react";
 import type { Role } from "@onehub/types/src/roles";
 
 export function RoleBadge({ role }: { role: Role | undefined }) {

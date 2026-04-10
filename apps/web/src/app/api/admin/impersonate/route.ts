@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { recordAudit } from "@/server/lib/audit";
+import { GUARDED_MVP_PLATFORM_ADMIN_AUTHORITY, getGuardedMvpAuthorityForUserId } from "@/lib/rbac";
 
 /**
  * API route to start impersonation
@@ -9,7 +11,8 @@ import { prisma } from "@/lib/prisma";
  * The actual session update happens on the client side using NextAuth's update() method,
  * which triggers the JWT callback with trigger === 'update'.
  * 
- * Security: Only admins can impersonate other users.
+ * Security: Only canonical guarded-MVP PLATFORM_ADMIN users can impersonate other users,
+ * and only with break-glass evidence.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -21,17 +24,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    // Verify the real user is an admin
-    const realUser = await prisma.user.findUnique({ where: { id: realUserId } });
-    if (!realUser || realUser.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+    const realUser = await getGuardedMvpAuthorityForUserId(realUserId);
+    if (!realUser) {
+      return NextResponse.json({ error: "Forbidden: PLATFORM_ADMIN access required" }, { status: 403 });
     }
     
     const body = await request.json();
-    const { targetUserId } = body;
+    const { targetUserId, reason, incidentTicketId } = body;
     
     if (!targetUserId || typeof targetUserId !== "string") {
       return NextResponse.json({ error: "targetUserId is required" }, { status: 400 });
+    }
+
+    if (!reason || typeof reason !== "string" || !reason.trim()) {
+      return NextResponse.json({ error: "Break-glass reason is required" }, { status: 400 });
+    }
+
+    if (!incidentTicketId || typeof incidentTicketId !== "string" || !incidentTicketId.trim()) {
+      return NextResponse.json({ error: "incidentTicketId is required" }, { status: 400 });
     }
     
     // Verify target user exists
@@ -49,7 +59,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Cannot impersonate yourself" }, { status: 400 });
     }
     
-    // Return target user info - client will call session.update() with actingUserId
+    await recordAudit({
+      actorId: realUser.id,
+      orgId: null,
+      action: "admin.impersonation.break_glass.start",
+      target: targetUser.id,
+      metadata: {
+        authorityPath: `guarded-mvp.${GUARDED_MVP_PLATFORM_ADMIN_AUTHORITY}`,
+        incidentTicketId,
+        reason: reason.trim(),
+        targetUserId: targetUser.id,
+        targetUserRole: targetUser.role,
+        sessionStartAt: new Date().toISOString(),
+        auditTrail: true,
+      },
+    });
+
+    // Return target user info, client will call session.update() with actingUserId
     return NextResponse.json({
       success: true,
       targetUser: {
@@ -59,6 +85,11 @@ export async function POST(request: NextRequest) {
       },
       // Client will use this to update the session
       actingUserId: targetUser.id,
+      breakGlass: {
+        authorityPath: `guarded-mvp.${GUARDED_MVP_PLATFORM_ADMIN_AUTHORITY}`,
+        incidentTicketId: incidentTicketId.trim(),
+        reason: reason.trim(),
+      },
     });
   } catch (error) {
     console.error("[Impersonation] Error starting impersonation:", error);

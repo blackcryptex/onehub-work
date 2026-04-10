@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type {
@@ -429,5 +431,4 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to load events" }, { status: 500 });
   }
 }
-
 

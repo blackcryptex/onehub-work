@@ -31,6 +31,9 @@ export interface ContractContext {
     }>;
     totalCents: number;
     currency: string;
+    bookingClassification?: string;
+    legalSurface?: string;
+    acceptanceSurface?: string;
   };
   event: {
     name: string;

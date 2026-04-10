@@ -27,7 +27,7 @@ export default function HelpPage() {
       title: "Contracts & Payments",
       articles: [
         "Creating AI contracts",
-        "Understanding escrow",
+        "Understanding held funds pending release",
         "Processing payments",
         "Managing proposals",
       ],

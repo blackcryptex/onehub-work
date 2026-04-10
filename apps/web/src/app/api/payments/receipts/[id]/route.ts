@@ -2,12 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { generateReceiptHTML } from "@/server/lib/receipt";
-import { isDemoMode } from "@/lib/demo-mode";
-
-// Platform fee constants (matching payment plan page)
-const PLATFORM_FEE_BPS = 300; // 3.00%
-const PROCESSING_FEE_RATE = 0.029; // 2.9%
-const PROCESSING_FEE_FIXED = 30; // $0.30
+import { resolveBookingClassification } from "@/lib/booking-classification";
+import { resolveFeeProfile } from "@/lib/fee-profile";
 
 export async function GET(
   request: NextRequest,
@@ -20,11 +16,13 @@ export async function GET(
     }
 
     const resolvedParams = await params;
-    const payout = await prisma.payout.findUnique({
+    const payout = await (prisma as any).payout.findUnique({
       where: { id: resolvedParams.id },
       include: {
         proposal: {
-          include: {
+          select: {
+            currency: true,
+            bookingClassification: true,
             event: {
               select: {
                 id: true,
@@ -41,6 +39,11 @@ export async function GET(
                     contactEmail: true,
                   },
                 },
+              },
+            },
+            org: {
+              select: {
+                type: true,
               },
             },
           },
@@ -69,24 +72,36 @@ export async function GET(
       );
     }
 
-    // Calculate fees
-    const gross = payout.amountCents;
-    const platformFee = Math.round((gross * PLATFORM_FEE_BPS) / 10000);
-    const processingFee = Math.round(gross * PROCESSING_FEE_RATE + PROCESSING_FEE_FIXED);
-    const netAmount = gross - platformFee - processingFee;
+    const bookingClassification = resolveBookingClassification({
+      proposal: {
+        bookingClassification: payout.proposal?.bookingClassification,
+        listingId: payout.proposal?.listing?.id,
+      },
+      event: {
+        org: {
+          type: payout.proposal?.org?.type,
+        },
+      },
+    });
+
+    const feeProfile = resolveFeeProfile({
+      bookingClassification,
+      grossAmountCents: payout.amountCents,
+    });
 
     const receiptData = {
       payoutId: payout.id,
-      payoutAmountCents: gross,
+      payoutAmountCents: feeProfile.grossAmountCents,
       vendorName: payout.proposal?.listing?.title || "Vendor",
       vendorEmail: payout.proposal?.listing?.org?.contactEmail || undefined,
       eventName: event.name,
       eventDate: event.startAt,
-      platformFeeCents: platformFee,
-      processingFeeCents: processingFee,
-      netAmountCents: netAmount,
+      platformFeeCents: feeProfile.platformFeeAmountCents,
+      processingFeeCents: feeProfile.processingFeeAmountCents,
+      netAmountCents: feeProfile.netAmountCents,
       releaseDate: payout.createdAt,
-      currency: "USD",
+      currency: payout.proposal?.currency || "USD",
+      feeProfile,
     };
 
     const html = generateReceiptHTML(receiptData);

@@ -66,10 +66,12 @@ export async function POST(request: NextRequest) {
     // Determine if user is planner/buyer or vendor/seller
     const isPlanner =
       contract.buyerId === contract.proposal.event.orgId &&
-      contract.proposal.event.org.members.some((m) => m.userId === user.id);
+      (contract.proposal.event.org.ownerId === user.id ||
+        contract.proposal.event.org.members.some((m) => m.userId === user.id));
     const isVendor =
       contract.sellerId &&
-      contract.proposal.listing?.org.members.some((m) => m.userId === user.id);
+      (contract.proposal.listing?.org.ownerId === user.id ||
+        contract.proposal.listing?.org.members.some((m) => m.userId === user.id));
 
     if (!isPlanner && !isVendor) {
       return NextResponse.json(
@@ -139,12 +141,23 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to reload contract");
     }
 
-    // Determine new status based on signatures
+    // Determine new status based on true dual-party execution
+    const buyerMemberIds = new Set([
+      contract.proposal.event.org.ownerId,
+      ...contract.proposal.event.org.members.map((member) => member.userId),
+    ]);
+    const sellerMemberIds = new Set(
+      [
+        contract.proposal.listing?.org?.ownerId,
+        ...(contract.proposal.listing?.org.members ?? []).map((member) => member.userId),
+      ].filter((id): id is string => Boolean(id))
+    );
+
     const plannerSigned = updatedContract.signatures.some(
-      (s) => s.signedAt && contract.buyerId === contract.proposal.event.orgId
+      (signature) => Boolean(signature.signedAt && signature.signerId && buyerMemberIds.has(signature.signerId))
     );
     const vendorSigned = updatedContract.signatures.some(
-      (s) => s.signedAt && contract.sellerId === contract.proposal.listing?.orgId
+      (signature) => Boolean(signature.signedAt && signature.signerId && sellerMemberIds.has(signature.signerId))
     );
 
     let newStatus = contract.status;

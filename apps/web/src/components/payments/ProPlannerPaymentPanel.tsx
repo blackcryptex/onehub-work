@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@onehub/ui";
 import { formatCurrency } from "@/lib/types.payment";
 import Link from "next/link";
+import { contractDetail } from "@/lib/routes";
 
 interface ProPlannerPaymentPanelProps {
   contractsAsSeller: Array<{
@@ -77,7 +78,7 @@ export function ProPlannerPaymentPanel({
     if (onCopyPaymentLink) {
       onCopyPaymentLink(contractId);
     } else {
-      const link = `${window.location.origin}/app/contracts/${contractId}`;
+      const link = `${window.location.origin}${contractDetail(contractId)}`;
       navigator.clipboard.writeText(link);
       alert("Payment link copied to clipboard!");
     }
@@ -86,14 +87,14 @@ export function ProPlannerPaymentPanel({
   // Contracts where planner is receiving payment (from clients)
   const receivingContracts = contractsAsSeller.filter((c) => {
     const hasPending = c.proposal.milestones.some((m) => m.status === "PENDING" || m.status === "OVERDUE");
-    const hasInEscrow = c.proposal.milestones.some((m) => m.status === "IN_ESCROW");
-    return hasPending || hasInEscrow;
+    const hasHeldFunds = c.proposal.milestones.some((m) => m.status === "IN_ESCROW");
+    return hasPending || hasHeldFunds;
   });
 
   // Contracts where planner is paying vendors
   const payingContracts = contractsAsBuyer.filter((c) => {
-    const hasInEscrow = c.proposal.milestones.some((m) => m.status === "IN_ESCROW");
-    return hasInEscrow;
+    const hasHeldFunds = c.proposal.milestones.some((m) => m.status === "IN_ESCROW");
+    return hasHeldFunds;
   });
 
   return (
@@ -106,9 +107,9 @@ export function ProPlannerPaymentPanel({
             {receivingContracts.map((contract) => {
               const milestones = contract.proposal.milestones;
               const pending = milestones.filter((m) => m.status === "PENDING" || m.status === "OVERDUE");
-              const inEscrow = milestones.filter((m) => m.status === "IN_ESCROW");
+              const heldFundsMilestones = milestones.filter((m) => m.status === "IN_ESCROW");
               const totalOwed = pending.reduce((sum, m) => sum + m.amountCents, 0);
-              const totalInEscrow = inEscrow.reduce((sum, m) => sum + m.amountCents, 0);
+              const totalHeldFunds = heldFundsMilestones.reduce((sum, m) => sum + m.amountCents, 0);
 
               return (
                 <div key={contract.id} className="border border-slate-200 rounded-lg p-4">
@@ -129,9 +130,9 @@ export function ProPlannerPaymentPanel({
                       </div>
                     </div>
                     <div className="p-2 bg-blue-50 rounded">
-                      <div className="text-xs text-blue-600">In Escrow</div>
+                      <div className="text-xs text-blue-600">Funds Held</div>
                       <div className="text-sm font-semibold text-blue-700">
-                        {formatCurrency(totalInEscrow, contract.proposal.currency)}
+                        {formatCurrency(totalHeldFunds, contract.proposal.currency)}
                       </div>
                     </div>
                   </div>
@@ -144,7 +145,7 @@ export function ProPlannerPaymentPanel({
                       Copy Payment Link
                     </Button>
                     {/* Type assertion: Next.js typed routes don't support dynamic template strings, so we cast to satisfy TypeScript */}
-                    <Link href={`/app/contracts/${contract.id}` as any}>
+                    <Link href={contractDetail(contract.id) as any}>
                       <Button size="sm" variant="secondary">
                         View Contract
                       </Button>
@@ -164,8 +165,8 @@ export function ProPlannerPaymentPanel({
           <div className="space-y-4">
             {payingContracts.map((contract) => {
               const milestones = contract.proposal.milestones;
-              const inEscrow = milestones.filter((m) => m.status === "IN_ESCROW");
-              const totalInEscrow = inEscrow.reduce((sum, m) => sum + m.amountCents, 0);
+              const heldFundsMilestones = milestones.filter((m) => m.status === "IN_ESCROW");
+              const totalHeldFunds = heldFundsMilestones.reduce((sum, m) => sum + m.amountCents, 0);
 
               return (
                 <div key={contract.id} className="border border-slate-200 rounded-lg p-4">
@@ -181,11 +182,11 @@ export function ProPlannerPaymentPanel({
                   <div className="p-2 bg-blue-50 rounded mb-3">
                     <div className="text-xs text-blue-600">Available to Release</div>
                     <div className="text-sm font-semibold text-blue-700">
-                      {formatCurrency(totalInEscrow, contract.proposal.currency)}
+                      {formatCurrency(totalHeldFunds, contract.proposal.currency)}
                     </div>
                   </div>
                   <div className="space-y-2">
-                    {inEscrow.map((milestone) => (
+                    {heldFundsMilestones.map((milestone) => (
                       <div
                         key={milestone.id}
                         className="flex items-center justify-between p-2 bg-slate-50 rounded"
@@ -216,7 +217,7 @@ export function ProPlannerPaymentPanel({
                   <div className="mt-3 pt-3 border-t border-slate-200">
                     {/* Type assertion: Next.js typed routes don't support dynamic template strings, so we cast to satisfy TypeScript */}
                     <Link
-                      href={`/app/contracts/${contract.id}` as any}
+                      href={contractDetail(contract.id) as any}
                       className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                     >
                       View Contract Details →

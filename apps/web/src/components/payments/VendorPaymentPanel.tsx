@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@onehub/ui";
 import { formatCurrency } from "@/lib/types.payment";
 import Link from "next/link";
+import { contractDetail } from "@/lib/routes";
 
 interface VendorPaymentPanelProps {
   contracts: Array<{
@@ -49,9 +50,9 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
   };
 
   const contractsWithPayments = contracts.filter((c) => {
-    const hasInEscrow = c.proposal.milestones.some((m) => m.status === "IN_ESCROW");
+    const hasHeldFunds = c.proposal.milestones.some((m) => m.status === "IN_ESCROW");
     const hasPending = c.proposal.milestones.some((m) => m.status === "PENDING" || m.status === "OVERDUE");
-    return hasInEscrow || hasPending;
+    return hasHeldFunds || hasPending;
   });
 
   if (contractsWithPayments.length === 0) {
@@ -70,12 +71,12 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
       <div className="space-y-4">
         {contractsWithPayments.map((contract) => {
           const milestones = contract.proposal.milestones;
-          const inEscrow = milestones.filter((m) => m.status === "IN_ESCROW");
+          const heldFundsMilestones = milestones.filter((m) => m.status === "IN_ESCROW");
           const pending = milestones.filter((m) => m.status === "PENDING" || m.status === "OVERDUE");
           const paid = milestones.filter((m) => m.status === "PAID");
           
           const totalAmount = milestones.reduce((sum, m) => sum + m.amountCents, 0);
-          const escrowAmount = inEscrow.reduce((sum, m) => sum + m.amountCents, 0);
+          const heldFundsAmount = heldFundsMilestones.reduce((sum, m) => sum + m.amountCents, 0);
           const paidAmount = paid.reduce((sum, m) => sum + m.amountCents, 0);
 
           return (
@@ -103,8 +104,8 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
                   <div className="text-sm font-semibold">{formatCurrency(totalAmount, contract.proposal.currency)}</div>
                 </div>
                 <div className="p-2 bg-blue-50 rounded">
-                  <div className="text-xs text-blue-600">In Escrow</div>
-                  <div className="text-sm font-semibold text-blue-700">{formatCurrency(escrowAmount, contract.proposal.currency)}</div>
+                  <div className="text-xs text-blue-600">Funds Held</div>
+                  <div className="text-sm font-semibold text-blue-700">{formatCurrency(heldFundsAmount, contract.proposal.currency)}</div>
                 </div>
                 <div className="p-2 bg-emerald-50 rounded">
                   <div className="text-xs text-emerald-600">Paid</div>
@@ -115,7 +116,7 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
               {/* Milestones */}
               <div className="space-y-2">
                 {milestones.map((milestone) => {
-                  const isInEscrow = milestone.status === "IN_ESCROW";
+                  const isHeldFunds = milestone.status === "IN_ESCROW";
                   const isPending = milestone.status === "PENDING" || milestone.status === "OVERDUE";
                   const isPaid = milestone.status === "PAID";
 
@@ -140,16 +141,16 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
                           className={`text-xs px-2 py-1 rounded-full ${
                             isPaid
                               ? "bg-emerald-100 text-emerald-700"
-                              : isInEscrow
+                              : isHeldFunds
                               ? "bg-blue-100 text-blue-700"
                               : isPending
                               ? "bg-amber-100 text-amber-700"
                               : "bg-slate-100 text-slate-700"
                           }`}
                         >
-                          {milestone.status.replace("_", " ")}
+                          {isHeldFunds ? "FUNDS HELD" : milestone.status.replace("_", " ")}
                         </span>
-                        {isInEscrow && onMarkComplete && (
+                        {isHeldFunds && onMarkComplete && (
                           <Button
                             size="sm"
                             onClick={() => handleMarkComplete(milestone.id)}
@@ -167,7 +168,7 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
               <div className="mt-3 pt-3 border-t border-slate-200">
                 {/* Type assertion: Next.js typed routes don't support dynamic template strings, so we cast to satisfy TypeScript */}
                 <Link
-                  href={`/app/contracts/${contract.id}` as any}
+                  href={contractDetail(contract.id) as any}
                   className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                 >
                   View Contract Details →

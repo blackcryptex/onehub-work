@@ -35,10 +35,31 @@ function setSecurityHeaders(res: NextResponse) {
 export default async function middleware(req: NextRequest) {
   const requestId = req.headers.get("x-request-id") ?? generateRequestId();
   const pathname = req.nextUrl.pathname;
+  const secureCookie =
+    req.nextUrl.protocol === "https:" ||
+    req.headers.get("x-forwarded-proto") === "https";
   
-  // Get token to check user role (lightweight - doesn't require DB)
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  // Get token to check auth state and role (lightweight, no DB)
+  let token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+    secureCookie,
+  });
+
+  if (!token && !secureCookie) {
+    token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+      secureCookie: true,
+    });
+  }
   const userRole = token?.role as string | undefined;
+
+  if (!token) {
+    const signInUrl = new URL("/signin", req.url);
+    signInUrl.searchParams.set("callbackUrl", `${pathname}${req.nextUrl.search}`);
+    return NextResponse.redirect(signInUrl);
+  }
   
   // Phase 7A: Block CLIENT users from planner routes
   if (userRole === "CLIENT") {

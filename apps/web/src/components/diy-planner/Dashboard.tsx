@@ -26,6 +26,7 @@ import { adaptEventToNewFormat, adaptEventToOldFormat } from "@/lib/eventAdapter
 import { aiAssist, type AssistKind } from "@/lib/aiAssist";
 import { useToast } from "@/hooks/useToast";
 import { EventActions } from "@/components/events/EventActions";
+import { EmptyStateOnboarding } from "@/components/overview/EmptyStateOnboarding";
 import { useSession } from "next-auth/react";
 
 type UIRoute =
@@ -215,6 +216,21 @@ export function DIYPlannerDashboard() {
       );
     }
 
+    if (uiRoute !== "wizard" && events.length === 0) {
+      return (
+        <section className="space-y-6">
+          <EmptyStateOnboarding
+            title="Welcome to DIY Planner"
+            description="Create your first event to unlock your vault, budget, guests, tasks, and timeline. OneHub will seed the basics so you can refine instead of starting from scratch."
+            ctaLabel="Launch event wizard"
+            secondaryActionLabel={uiRoute === "overview" ? undefined : "Go to overview"}
+            onSecondaryAction={uiRoute === "overview" ? undefined : () => setUiRoute("overview")}
+            onCreateEvent={() => setUiRoute("wizard")}
+          />
+        </section>
+      );
+    }
+
     switch (uiRoute) {
       case "overview":
         return (
@@ -328,7 +344,28 @@ export function DIYPlannerDashboard() {
           </section>
         ) : (
           <section className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
-            <h2 className="text-xl font-semibold">No event selected</h2>
+            <div className="max-w-2xl">
+              <h2 className="text-xl font-semibold text-slate-900">No event selected</h2>
+              <p className="mt-2 text-slate-600">
+                Pick an event from the sidebar, return to your overview, or create a new event to keep planning.
+              </p>
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={() => setUiRoute("wizard")}
+                  className="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                >
+                  Create Event
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUiRoute("overview")}
+                  className="w-full sm:w-auto px-6 py-3 border border-slate-300 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-300 transition-colors"
+                >
+                  Return to Overview
+                </button>
+              </div>
+            </div>
           </section>
         );
 

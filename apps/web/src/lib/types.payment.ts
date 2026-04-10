@@ -18,6 +18,26 @@ export type MilestoneStatus =
   | "REFUNDED"
   | "OVERDUE";
 
+export const CANONICAL_PAYMENT_VOCABULARY = {
+  userFacing: {
+    escrow: "held funds",
+    inEscrow: "held pending release",
+    escrowFunded: "payment received",
+    escrowRelease: "payout release",
+    escrowBalance: "held funds balance",
+  },
+  internal: {
+    inEscrow: "held_funds",
+    funded: "held funds",
+    transferEligible: "transfer_eligible",
+    transferReleased: "transfer_released",
+    transferCompleted: "transfer_completed",
+  },
+  architecture: {
+    flow: "separate charges and transfers",
+  },
+} as const;
+
 export type ContractStatus =
   | "DRAFT"
   | "OUT_FOR_SIGNATURE"
@@ -99,13 +119,15 @@ export function calculateTotalDue(milestones: PaymentMilestone[]): number {
 }
 
 /**
- * Calculate total amount in escrow
+ * Calculate total held funds amount
  */
-export function calculateEscrowAmount(milestones: PaymentMilestone[]): number {
+export function calculateHeldFundsAmount(milestones: PaymentMilestone[]): number {
   return milestones
     .filter((m) => m.status === "IN_ESCROW")
     .reduce((sum, m) => sum + m.amountCents, 0);
 }
+
+export const calculateEscrowAmount = calculateHeldFundsAmount;
 
 /**
  * Calculate total amount paid
@@ -144,8 +166,6 @@ export function canUserReceive(contract: Contract, userId: string): boolean {
  * Check if contract is in a payment state
  */
 export function isContractInPayment(contract: Contract): boolean {
-  return contract.status === "ACCEPTED" || 
-         contract.status === "IN_PAYMENT" || 
-         contract.status === "ACTIVE";
+  return contract.status === "FULLY_SIGNED" ||
+         contract.status === "IN_PAYMENT";
 }
-

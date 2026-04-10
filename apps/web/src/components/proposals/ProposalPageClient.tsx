@@ -8,6 +8,10 @@ import { ProposalEditor } from "@/components/proposals/ProposalEditor";
 import { DeleteProposalButton } from "@/components/proposals/DeleteProposalButton";
 import Link from "next/link";
 import { Edit2, Trash2 } from "lucide-react";
+import { contractDetail } from "@/lib/routes";
+import { LegalNotice } from "@/components/legal/LegalNotice";
+import { CURRENT_ACCEPTANCE_VERSIONS } from "@/lib/acceptance-versions";
+import { PUBLIC_LEGAL_PAGES } from "@/lib/legal-surface";
 
 type ThreadMessage = {
   id: string;
@@ -168,11 +172,16 @@ export function ProposalPageClient({
         </Card>
       )}
       {(proposal.status === "SENT" || proposal.status === "DRAFT") && (
-        <Card className="p-4">
+        <Card className="p-4 space-y-4">
           <h3 className="mb-2 font-semibold">Approve Proposal</h3>
           <p className="mb-4 text-sm text-slate-600">
             Review the proposal details above. Once approved, you can generate a formal contract.
           </p>
+          <LegalNotice
+            label="Proposal approval records acceptance of the guarded MVP commercial terms for this booking flow."
+            version={CURRENT_ACCEPTANCE_VERSIONS.proposal}
+            href={PUBLIC_LEGAL_PAGES.terms}
+          />
           <ApproveProposalButton proposalId={proposal.id} />
         </Card>
       )}
@@ -188,7 +197,7 @@ export function ProposalPageClient({
       {proposal.contract && (
         <div className="flex gap-2">
           <Button asChild>
-            <Link href={`/contracts/${proposal.contract.id}` as any}>View Contract</Link>
+            <Link href={contractDetail(proposal.contract.id) as any}>View Contract</Link>
           </Button>
         </div>
       )}

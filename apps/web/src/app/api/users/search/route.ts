@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Phase 3: Search for users (primarily CLIENT users for event intake)
  * 
@@ -56,4 +58,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Failed to search users" }, { status: 500 });
   }
 }
-

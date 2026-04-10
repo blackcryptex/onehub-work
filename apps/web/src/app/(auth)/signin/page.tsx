@@ -1,92 +1,100 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Button, Input, Label, Card } from "@/components/ui";
+import { useEffect, useState } from "react";
+import { getCsrfToken, signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
+import { Button, Label, Card } from "@/components/ui";
 import Link from "next/link";
 
 export default function SignInPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [csrfToken, setCsrfToken] = useState("");
   // Support both callbackUrl (NextAuth standard) and redirect (legacy)
   // Default to /app which will route based on user role
   const callbackUrl = searchParams.get("callbackUrl") || searchParams.get("redirect") || "/app";
   const createEvent = searchParams.get("createEvent") === "true";
+  const authError = searchParams.get("error");
+  const [origin, setOrigin] = useState("");
+
+  const authErrorMessage =
+    authError === "CredentialsSignin"
+      ? "Invalid email or password. Please try again."
+      : authError === "AccessDenied"
+        ? "Access denied. Please sign in with an authorized account."
+        : authError
+          ? "Unable to sign in right now. Please try again."
+          : null;
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
+
+    getCsrfToken()
+      .then((token) => {
+        if (token) setCsrfToken(token);
+      })
+      .catch((err) => {
+        console.error("[signin] failed to load csrf token", err);
+        setError("Unable to start sign-in. Please refresh and try again.");
+      });
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!csrfToken) {
+      setError("Unable to start sign-in. Please refresh and try again.");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
+
+    const targetPath = createEvent ? "/events/new?createEvent=true" : callbackUrl;
+    const targetUrl = origin && targetPath.startsWith("/") ? `${origin}${targetPath}` : targetPath;
+
     try {
-      const res = await signIn("credentials", {
+      const result = await signIn("credentials", {
         email,
         password,
+        csrfToken,
+        callbackUrl: targetUrl,
         redirect: false,
-        callbackUrl: createEvent ? "/events/new?createEvent=true" : callbackUrl,
       });
-      if (res && res.ok) {
-        // Check for pending data and redirect appropriately
-        const pendingEvent = sessionStorage.getItem("pendingEvent");
-        const pendingProPlanner = sessionStorage.getItem("pendingProPlannerSetup");
-        const pendingVendorVenue = sessionStorage.getItem("pendingVendorVenueSetup");
-        const pendingProvider = sessionStorage.getItem("pendingProviderOnboarding");
-        const pendingDream = sessionStorage.getItem("pendingDreamEvent");
 
-        if (pendingEvent && createEvent) {
-          sessionStorage.removeItem("pendingEvent");
-          router.push(`/events/new?createEvent=true`);
-        } else if (pendingProPlanner) {
-          sessionStorage.removeItem("pendingProPlannerSetup");
-          router.push(`/professional-planner/setup?createOrg=true&data=${encodeURIComponent(pendingProPlanner)}&redirectTo=/pro/planner`);
-        } else if (pendingProvider) {
-          sessionStorage.removeItem("pendingProviderOnboarding");
-          const providerData = JSON.parse(pendingProvider);
-          const dashboardUrl = providerData.providerType === "vendor" ? "/vendor/dashboard" : "/venue/dashboard";
-          router.push(`/providers/onboarding?providerType=${providerData.providerType}&autoSubmit=true&data=${encodeURIComponent(JSON.stringify(providerData.formData))}&redirectTo=${encodeURIComponent(dashboardUrl)}`);
-        } else if (pendingVendorVenue) {
-          sessionStorage.removeItem("pendingVendorVenueSetup");
-          router.push(`/vendor-venue/setup?createOrg=true&data=${encodeURIComponent(pendingVendorVenue)}`);
-        } else if (pendingDream) {
-          sessionStorage.removeItem("pendingDreamEvent");
-          router.push(`/event-dreamer/create?createDream=true&data=${encodeURIComponent(pendingDream)}`);
-        } else if (createEvent) {
-          router.push("/events/new?createEvent=true");
-        } else {
-          // Use the URL from response if available, otherwise use callbackUrl
-          const targetUrl = res.url ?? callbackUrl;
-          // Ensure the URL is a relative path as required by router.push
-          // If the URL is absolute, convert it to a relative path
-          let relativeUrl: string;
-          try {
-            const urlObj = new URL(targetUrl, window.location.origin);
-            relativeUrl = urlObj.pathname + urlObj.search + urlObj.hash;
-          } catch {
-            // If targetUrl is already relative or URL constructor fails, use as is
-            relativeUrl = targetUrl;
+      if (!result || result.error) {
+        setError("Invalid email or password. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      let nextUrl = targetPath;
+
+      if (result.url) {
+        try {
+          const resolved = new URL(result.url, origin || window.location.origin);
+          if (resolved.origin === (origin || window.location.origin)) {
+            nextUrl = `${resolved.pathname}${resolved.search}${resolved.hash}`;
           }
-          router.push(relativeUrl as any);
+        } catch {
+          nextUrl = targetPath;
         }
-        router.refresh();
-      } else {
-        // Sign-in failed - show error
-        setError(res?.error ?? "Invalid credentials");
       }
-    } catch (error: unknown) {
-      if (error instanceof Error && error.message) {
-        setError(error.message);
-      } else {
-        setError("An error occurred. Please try again.");
-      }
-      console.error("Sign in error:", error);
-    } finally {
+
+      window.location.assign(nextUrl);
+    } catch (err) {
+      console.error("[signin] submit failed", err);
+      setError("Unable to sign in right now. Please try again.");
       setIsLoading(false);
     }
   }
+
+  const targetPath = createEvent ? "/events/new?createEvent=true" : callbackUrl;
 
   return (
     <main className="mx-auto grid min-h-[70vh] max-w-md place-items-center px-4 py-12">
@@ -100,14 +108,32 @@ export default function SignInPage() {
         <form className="mt-4 space-y-3" onSubmit={onSubmit}>
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-soft focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2"
+            />
           </div>
           <div>
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input
+              id="password"
+              name="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-soft focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2"
+            />
           </div>
-          {error && <p className="text-sm text-rose-600">{error}</p>}
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          {(error || authErrorMessage) && (
+            <p className="text-sm text-rose-600">{error || authErrorMessage}</p>
+          )}
+          <Button type="submit" className="w-full" disabled={isLoading || !csrfToken}>
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
           <p className="text-xs text-center text-slate-600 mt-3">

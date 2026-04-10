@@ -52,6 +52,7 @@ export function Footer() {
                       ) : (
                         <Link
                           href={link.href as any}
+                          prefetch={false}
                           className="text-sm text-slate-600 hover:text-indigo-600 transition-colors"
                         >
                           {link.label}
@@ -86,6 +87,7 @@ export function Footer() {
               </a>
               <Link
                 href="/support"
+                prefetch={false}
                 className="flex items-center gap-2 hover:text-indigo-600 transition-colors"
               >
                 <MessageCircle className="w-4 h-4" />

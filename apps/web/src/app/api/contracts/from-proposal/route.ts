@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { generateContractFromProposal } from "@/lib/ai/generateContract";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
+import { resolveBookingClassification } from "@/lib/booking-classification";
+import { resolveFeeProfile } from "@/lib/fee-profile";
 
 /**
  * POST /api/contracts/from-proposal
@@ -29,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Load proposal with all relations
-    const proposal = await prisma.proposal.findUnique({
+    const proposal = await (prisma as any).proposal.findUnique({
       where: { id: proposalId },
       include: {
         event: {
@@ -95,17 +97,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build contract context
+    // Validate required listing context before contract generation
     const listing = proposal.listing;
-    const vendorOrg = listing?.org || null;
+    if (!listing) {
+      return NextResponse.json(
+        {
+          error:
+            "Proposal is missing listing context and cannot be converted into a contract.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Build contract context
+    const vendorOrg = listing.org || null;
     const planner = proposal.event.createdBy;
+    const bookingClassification = resolveBookingClassification({
+      proposal: {
+        bookingClassification: proposal.bookingClassification,
+        listingId: proposal.listingId,
+      },
+      event: proposal.event,
+    });
+    const feeProfile = resolveFeeProfile({
+      bookingClassification,
+      grossAmountCents: proposal.totalCents,
+    });
 
     const contractContext = {
       proposal: {
         title: proposal.title,
         summary: proposal.summary,
         terms: proposal.terms,
-        lineItems: proposal.lineItems.map((item) => ({
+        lineItems: proposal.lineItems.map((item: any) => ({
           label: item.label,
           description: item.description,
           qty: item.qty,
@@ -113,7 +137,7 @@ export async function POST(request: NextRequest) {
           unitPriceCents: item.unitPriceCents,
           totalCents: item.totalCents,
         })),
-        milestones: proposal.milestones.map((m) => ({
+        milestones: proposal.milestones.map((m: any) => ({
           title: m.title,
           description: m.description,
           dueType: m.dueType,
@@ -123,6 +147,9 @@ export async function POST(request: NextRequest) {
         })),
         totalCents: proposal.totalCents,
         currency: proposal.currency,
+        bookingClassification,
+        legalSurface: feeProfile.hooks.legalSurface,
+        acceptanceSurface: feeProfile.hooks.acceptanceSurface,
       },
       event: {
         name: proposal.event.name,
@@ -184,7 +211,7 @@ export async function POST(request: NextRequest) {
         status: "DRAFT",
         buyerId,
         sellerId,
-        platformFeePercent: 5.0,
+        platformFeePercent: feeProfile.platformFeePercent,
       },
     });
 
@@ -196,7 +223,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(contract);
+    return NextResponse.json({
+      ...contract,
+      feeProfile,
+    });
   } catch (error) {
     console.error("[API] Error generating contract:", error);
     const message =

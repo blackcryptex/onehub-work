@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
 
     const userId = session?.user?.id as string | undefined;
     const orgType = providerType === "vendor" ? "VENDOR" : "VENUE";
+    const targetUserRole = providerType === "vendor" ? "VENDOR" : "VENUE";
     const name = businessName || `${providerType} Profile`;
 
     // For drafts without auth, just return success (could store in sessionStorage or a drafts table later)
@@ -91,30 +92,39 @@ export async function POST(request: NextRequest) {
 
       if (existingOrg) {
         // Update existing org with all provider profile data
-        const updatedOrg = await prisma.organization.update({
-          where: { id: existingOrg.id },
-          data: {
-            name: businessName || name,
-            contactEmail: profileData.contactEmail || null,
-            contactPhone: profileData.contactPhone || null,
-            website: profileData.website || null,
-            instagram: profileData.instagram || null,
-            facebook: profileData.facebook || null,
-            addressLine1: profileData.addressLine1 || null,
-            addressLine2: profileData.addressLine2 || null,
-            city: profileData.city || null,
-            state: profileData.state || null,
-            postalCode: profileData.postalCode || null,
-            country: profileData.country || "US",
-            about: profileData.about || null,
-            servicesJson: profileData.servicesJson || null,
-            spacesJson: profileData.spacesJson || null,
-            availabilityJson: profileData.availabilityJson || null,
-            paymentsJson: profileData.paymentsJson || null,
-            mediaJson: profileData.mediaJson || null,
-            notificationsJson: profileData.notificationsJson || null,
-            profileStatus,
-          } as any, // Type assertion needed until TypeScript server picks up regenerated Prisma types
+        const updatedOrg = await prisma.$transaction(async (tx: any) => {
+          if (!draft) {
+            await tx.user.update({
+              where: { id: userId },
+              data: { role: targetUserRole },
+            });
+          }
+
+          return tx.organization.update({
+            where: { id: existingOrg.id },
+            data: {
+              name: businessName || name,
+              contactEmail: profileData.contactEmail || null,
+              contactPhone: profileData.contactPhone || null,
+              website: profileData.website || null,
+              instagram: profileData.instagram || null,
+              facebook: profileData.facebook || null,
+              addressLine1: profileData.addressLine1 || null,
+              addressLine2: profileData.addressLine2 || null,
+              city: profileData.city || null,
+              state: profileData.state || null,
+              postalCode: profileData.postalCode || null,
+              country: profileData.country || "US",
+              about: profileData.about || null,
+              servicesJson: profileData.servicesJson || null,
+              spacesJson: profileData.spacesJson || null,
+              availabilityJson: profileData.availabilityJson || null,
+              paymentsJson: profileData.paymentsJson || null,
+              mediaJson: profileData.mediaJson || null,
+              notificationsJson: profileData.notificationsJson || null,
+              profileStatus,
+            } as any, // Type assertion needed until TypeScript server picks up regenerated Prisma types
+          });
         });
         return NextResponse.json({
           orgId: updatedOrg.id,
@@ -133,34 +143,43 @@ export async function POST(request: NextRequest) {
         });
       } else {
         // Create new org with all provider profile data
-        const org = await prisma.organization.create({
-          data: {
-            name: businessName || name,
-            slug,
-            type: orgType,
-            ownerId: userId,
-            contactEmail: profileData.contactEmail || null,
-            contactPhone: profileData.contactPhone || null,
-            website: profileData.website || null,
-            instagram: profileData.instagram || null,
-            facebook: profileData.facebook || null,
-            addressLine1: profileData.addressLine1 || null,
-            addressLine2: profileData.addressLine2 || null,
-            city: profileData.city || null,
-            state: profileData.state || null,
-            postalCode: profileData.postalCode || null,
-            country: profileData.country || "US",
-            about: profileData.about || null,
-            servicesJson: profileData.servicesJson || null,
-            spacesJson: profileData.spacesJson || null,
-            availabilityJson: profileData.availabilityJson || null,
-            paymentsJson: profileData.paymentsJson || null,
-            mediaJson: profileData.mediaJson || null,
-            notificationsJson: profileData.notificationsJson || null,
-            profileStatus,
-            members: { create: { userId, role: "OWNER" } },
-            settings: { create: {} },
-          } as any, // Type assertion needed until TypeScript server picks up regenerated Prisma types
+        const org = await prisma.$transaction(async (tx: any) => {  // typed as any to avoid ambient Prisma type drift in current repo state
+          if (!draft) {
+            await tx.user.update({
+              where: { id: userId },
+              data: { role: targetUserRole },
+            });
+          }
+
+          return tx.organization.create({
+            data: {
+              name: businessName || name,
+              slug,
+              type: orgType,
+              ownerId: userId,
+              contactEmail: profileData.contactEmail || null,
+              contactPhone: profileData.contactPhone || null,
+              website: profileData.website || null,
+              instagram: profileData.instagram || null,
+              facebook: profileData.facebook || null,
+              addressLine1: profileData.addressLine1 || null,
+              addressLine2: profileData.addressLine2 || null,
+              city: profileData.city || null,
+              state: profileData.state || null,
+              postalCode: profileData.postalCode || null,
+              country: profileData.country || "US",
+              about: profileData.about || null,
+              servicesJson: profileData.servicesJson || null,
+              spacesJson: profileData.spacesJson || null,
+              availabilityJson: profileData.availabilityJson || null,
+              paymentsJson: profileData.paymentsJson || null,
+              mediaJson: profileData.mediaJson || null,
+              notificationsJson: profileData.notificationsJson || null,
+              profileStatus,
+              members: { create: { userId, role: "OWNER" } },
+              settings: { create: {} },
+            } as any, // Type assertion needed until TypeScript server picks up regenerated Prisma types
+          });
         });
         return NextResponse.json({
           orgId: org.id,

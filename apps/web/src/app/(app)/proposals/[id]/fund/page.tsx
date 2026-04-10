@@ -13,7 +13,7 @@ export default async function FundProposalPage({ params }: { params: { id: strin
     .reduce((sum, m) => sum + m.amountCents, 0);
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Fund Escrow</h1>
+      <h1 className="text-2xl font-bold">Fund Held Funds</h1>
       <Card className="p-4">
         <div className="space-y-3">
           <div>

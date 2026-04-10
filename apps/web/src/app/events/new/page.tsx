@@ -7,6 +7,7 @@ import { Calendar, Users, Target, Palette, MessageSquare, UserPlus, ChevronRight
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { ClientIntakeStep } from "@/components/events/ClientIntakeStep";
+import { vaultDetail } from "@/lib/routes";
 
 type WizardStep = "details" | "clients";
 
@@ -32,6 +33,7 @@ export default function EventWizardPage() {
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [autoShareSummary, setAutoShareSummary] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string>("");
 
   // Validation function
   const validateForm = (data: typeof formData): { isValid: boolean; errors: Record<string, string> } => {
@@ -103,16 +105,17 @@ export default function EventWizardPage() {
   };
 
   const handleCreateEvent = useCallback(async () => {
-    // Validate form before proceeding
     const validation = validateForm(formData);
     if (!validation.isValid) {
       setErrors(validation.errors);
+      setFormError("Please fix the highlighted fields before submitting.");
       return;
     }
 
-    // Check if user is authenticated
+    setErrors({});
+    setFormError("");
+
     if (!session?.user) {
-      // Save form data to sessionStorage and redirect to sign in
       sessionStorage.setItem("pendingEvent", JSON.stringify(formData));
       router.push("/signin?redirect=/events/new&createEvent=true");
       return;
@@ -123,41 +126,55 @@ export default function EventWizardPage() {
       const response = await fetch("/api/events/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // Ensure cookies are sent with the request
+        credentials: "include",
         body: JSON.stringify({
           ...formData,
-          // Phase 3: Include client intake data
           clientIds: selectedClientIds,
           autoShareSummary,
         }),
       });
 
+      const responseData = await response.json().catch(() => null);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Event creation error:", errorData);
-        alert(errorData.error || "Failed to create event. Please try again.");
+        console.error("Event creation error:", responseData);
+
+        if (response.status === 400 && responseData?.fieldErrors) {
+          const mappedErrors: Record<string, string> = {};
+          Object.entries(responseData.fieldErrors).forEach(([field, messages]) => {
+            if (Array.isArray(messages) && messages[0]) {
+              mappedErrors[field] = String(messages[0]);
+            }
+          });
+          setErrors(mappedErrors);
+          setFormError(responseData.error || "Please fix the highlighted fields before submitting.");
+        } else if (response.status === 401) {
+          setFormError("Please sign in to create an event.");
+        } else if (response.status === 403) {
+          setFormError(responseData?.error || "You do not have permission to create an event.");
+        } else {
+          setFormError(responseData?.error || "Failed to create event. Please try again.");
+        }
+
         setLoading(false);
         return;
       }
 
-      const { slug } = await response.json();
+      const { slug } = responseData;
+      const eventPath = vaultDetail(session.user.role as any, slug);
       const openInNewTab = process.env.NEXT_PUBLIC_OPEN_EVENT_IN_NEW_TAB === "true";
-      // Redirect to the new feature-rich vault page at /app/vault/[eventSlug]
-      // This page includes booking request proposal generation and all event management features
       if (openInNewTab) {
-        window.open(`/app/vault/${slug}`, "_blank");
+        window.open(eventPath, "_blank");
       }
 
-      // Navigate to the created event folder in Event Vault (same tab by default)
-      // Type assertion: Next.js typed routes don't support dynamic template strings, so we cast to satisfy TypeScript
-      router.push(`/app/vault/${slug}` as any);
+      router.push(eventPath as any);
     } catch (error) {
       console.error("Error creating event:", error);
-      alert("An error occurred. Please try again.");
+      setFormError("An error occurred while creating the event. Please try again.");
     } finally {
       setLoading(false);
     }
-  }, [formData, router, session]);
+  }, [autoShareSummary, formData, router, selectedClientIds, session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,14 +184,14 @@ export default function EventWizardPage() {
       const validation = validateForm(formData);
       if (!validation.isValid) {
         setErrors(validation.errors);
+        setFormError("Please fix the highlighted fields before continuing.");
         return;
       }
-      // Clear errors and move to next step (only for Pro Planners)
       setErrors({});
+      setFormError("");
       if (session?.user?.role === "PRO_PLANNER") {
         setStep("clients");
       } else {
-        // For non-Pro Planners, skip client intake and create event directly
         await handleCreateEvent();
       }
       return;
@@ -223,6 +240,9 @@ export default function EventWizardPage() {
         delete newErrors[field];
         return newErrors;
       });
+    }
+    if (formError) {
+      setFormError("");
     }
   };
 
@@ -288,16 +308,18 @@ export default function EventWizardPage() {
       <form onSubmit={handleSubmit}>
         <Card className="p-6">
           {/* Form-level error summary */}
-          {Object.keys(errors).length > 0 && (
+          {(formError || Object.keys(errors).length > 0) && (
             <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-lg">
               <p className="text-sm font-medium text-rose-800 mb-1">
-                Please fix the errors below before submitting:
+                {formError || "Please fix the errors below before submitting:"}
               </p>
-              <ul className="text-sm text-rose-700 list-disc list-inside space-y-1">
-                {Object.values(errors).map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
+              {Object.keys(errors).length > 0 && (
+                <ul className="text-sm text-rose-700 list-disc list-inside space-y-1">
+                  {Object.values(errors).map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 

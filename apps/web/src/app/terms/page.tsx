@@ -60,7 +60,18 @@ export default function TermsPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">6. Contact Information</h2>
+          <h2 className="text-2xl font-semibold mb-4">6. Guarded MVP legal pages</h2>
+          <ul className="list-disc pl-6 mb-4 text-slate-700">
+            <li><a href="/legal/payments" className="text-indigo-600 hover:underline">Payments and held funds</a></li>
+            <li><a href="/legal/refunds" className="text-indigo-600 hover:underline">Refund policy</a></li>
+            <li><a href="/legal/disputes" className="text-indigo-600 hover:underline">Dispute policy</a></li>
+            <li><a href="/legal/booking-classification" className="text-indigo-600 hover:underline">Booking classification</a></li>
+            <li><a href="/legal/fees" className="text-indigo-600 hover:underline">Fee explanation</a></li>
+          </ul>
+        </section>
+
+        <section className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">7. Contact Information</h2>
           <p className="text-slate-700 mb-4">
             If you have any questions about these Terms of Service, please contact us at{' '}
             <a href="mailto:support@onehub.events" className="text-indigo-600 hover:underline">

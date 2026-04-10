@@ -14,41 +14,32 @@ model User {
   email                  String             @unique
   name                   String?
   image                  String?
-  password               String?            @db.Text
+  password               String?
   role                   Role               @default(CLIENT)
   accounts               Account[]
-  sessions               Session[]
-  memberships            Membership[]
-  userSettings           UserSettings?
-  auditLogs              AuditLog[]         @relation("UserAuditLogs")
-  reviews                Review[]
-  calendarAccounts       CalendarAccount[]
-  ownedOrgs              Organization[]     @relation("OrganizationOwner")
-  createdEvents          Event[]
-  assignedTasks          Task[]
-  assignedChecklistItems ChecklistItem[]
   activities             Activity[]
-  notifications          Notification[]
-  userFeatureFlags       UserFeatureFlag[]
-  paymentIntentsAsPayer  PaymentIntent[]    @relation("PaymentIntentPayer")
-  paymentIntentsAsPayee  PaymentIntent[]    @relation("PaymentIntentPayee")
-  transactionsAsPayer    Transaction[]      @relation("TransactionPayer")
-  transactionsAsPayee    Transaction[]      @relation("TransactionPayee")
-  eventStakeholders      EventStakeholder[] @relation("EventStakeholderUser")
-  addedEventStakeholders EventStakeholder[] @relation("EventStakeholderAddedBy")
-  eventSharesAsViewer    EventShare[]       @relation("EventShareViewer")
-  eventSharesAsCreator   EventShare[]       @relation("EventShareCreatedBy")
+  auditLogs              AuditLog[]         @relation("UserAuditLogs")
+  adminOverrides         AdminOverride[]    @relation("AdminOverrideActor")
+  calendarAccounts       CalendarAccount[]
+  assignedChecklistItems ChecklistItem[]
   depositsAsClient       Deposit[]          @relation("DepositClient")
-}
-
-enum Role {
-  DIY_PLANNER
-  PRO_PLANNER
-  VENDOR
-  VENUE
-  CLIENT
-  EVENT_DREAMER
-  ADMIN
+  createdEvents          Event[]
+  eventSharesAsCreator   EventShare[]       @relation("EventShareCreatedBy")
+  eventSharesAsViewer    EventShare[]       @relation("EventShareViewer")
+  addedEventStakeholders EventStakeholder[] @relation("EventStakeholderAddedBy")
+  eventStakeholders      EventStakeholder[] @relation("EventStakeholderUser")
+  memberships            Membership[]
+  notifications          Notification[]
+  ownedOrgs              Organization[]     @relation("OrganizationOwner")
+  paymentIntentsAsPayee  PaymentIntent[]    @relation("PaymentIntentPayee")
+  paymentIntentsAsPayer  PaymentIntent[]    @relation("PaymentIntentPayer")
+  reviews                Review[]
+  sessions               Session[]
+  assignedTasks          Task[]
+  transactionsAsPayee    Transaction[]      @relation("TransactionPayee")
+  transactionsAsPayer    Transaction[]      @relation("TransactionPayer")
+  userFeatureFlags       UserFeatureFlag[]
+  userSettings           UserSettings?
 }
 
 model Account {
@@ -57,12 +48,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -77,92 +68,63 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Wave 2: Organizations, Teams, Memberships, Invites, Settings, Flags, Audit
-
 model Organization {
-  id              String           @id @default(cuid())
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  name            String
-  slug            String           @unique
-  type            OrgType          @default(PLANNER)
-  ownerId         String
-  owner           User             @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members         Membership[]
-  teams           Team[]
-  settings        OrgSettings?
-  invites         Invite[]
-  auditLogs       AuditLog[]
-  listings        Listing[]
-  bookingRequests BookingRequest[]
-  proposals       Proposal[]
-  contracts       Contract[]
-  escrowAccounts  EscrowAccount[]
-  payouts         Payout[]
-  threads         Thread[]
-  disputes        Dispute[]
-  calendarEvents  CalendarEvent[]
-  events          Event[]
-  activities      Activity[]
-  notifications   Notification[]
-  orgFeatureFlags OrgFeatureFlag[]
-  deposits        Deposit[]
-
-  // Provider-specific fields (for VENDOR/VENUE organizations)
-  contactEmail String?
-  contactPhone String?
-  website      String?
-  instagram    String?
-  facebook     String?
-  addressLine1 String?
-  addressLine2 String?
-  city         String?
-  state        String?
-  postalCode   String?
-  country      String? @default("US")
-  about        String? @db.Text
-
-  // JSON fields for provider onboarding data
-  servicesJson      Json?
-  spacesJson        Json?
+  id                String           @id @default(cuid())
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  name              String
+  slug              String           @unique
+  type              OrgType          @default(PLANNER)
+  ownerId           String
+  about             String?
+  addressLine1      String?
+  addressLine2      String?
   availabilityJson  Json?
-  paymentsJson      Json?
+  city              String?
+  contactEmail      String?
+  contactPhone      String?
+  country           String?          @default("US")
+  facebook          String?
+  instagram         String?
   mediaJson         Json?
   notificationsJson Json?
-
-  // Status for draft vs published profiles
-  profileStatus String? // "DRAFT" | "PUBLISHED"
-}
-
-enum OrgType {
-  PLANNER
-  VENDOR
-  VENUE
-  CLIENT_AGENCY
-}
-
-enum OrgRole {
-  OWNER
-  ADMIN
-  MEMBER
-  VIEWER
-}
-
-enum StaffRole {
-  COORDINATOR
-  ASSISTANT
-  SALES
-  FINANCE
-  TECH
-  OTHER
+  paymentsJson      Json?
+  postalCode        String?
+  profileStatus     String?
+  servicesJson      Json?
+  spacesJson        Json?
+  stripeConnectAccountId String?     @unique
+  state             String?
+  website           String?
+  activities        Activity[]
+  auditLogs         AuditLog[]
+  bookingRequests   BookingRequest[]
+  calendarEvents    CalendarEvent[]
+  contracts         Contract[]
+  deposits          Deposit[]
+  disputes          Dispute[]
+  escrowAccounts    EscrowAccount[]
+  events            Event[]
+  invites           Invite[]
+  listings          Listing[]
+  members           Membership[]
+  notifications     Notification[]
+  orgFeatureFlags   OrgFeatureFlag[]
+  settings          OrgSettings?
+  owner             User             @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  payouts           Payout[]
+  proposals         Proposal[]
+  refundRequests    RefundRequest[]
+  teams             Team[]
+  threads           Thread[]
 }
 
 model Team {
   id      String       @id @default(cuid())
   name    String
   orgId   String
-  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   members Membership[]
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 }
 
 model Membership {
@@ -174,9 +136,9 @@ model Membership {
   staffRole StaffRole?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   team      Team?        @relation(fields: [teamId], references: [id])
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, orgId])
 }
@@ -262,98 +224,131 @@ model AuditLog {
   @@index([orgId, at])
 }
 
-// Wave 3: Event Domain Models
+model AdminOverride {
+  id                    String                     @id @default(cuid())
+  createdAt             DateTime                   @default(now())
+  actorId               String
+  actorRole             Role
+  orgId                 String?
+  targetType            AdminOverrideTargetType
+  targetId              String
+  bookingClassification BookingClassification?
+  feeProfileSnapshot    Json?
+  acceptanceCaptureId   String?
+  exceptionType         AdminOverrideExceptionType
+  decision              AdminOverrideDecision
+  authorityPath         String
+  reason                String
+  refundRequestId       String?
+  disputeId             String?
+  paymentHoldbackId     String?
+  payoutId              String?
+  paymentIntentId       String?
+  contractId            String?
+  proposalId            String?
+  milestoneId           String?
+  auditLogId            String                     @unique
+  metadata              Json?
+  actor                 User                       @relation("AdminOverrideActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId, createdAt])
+  @@index([proposalId, createdAt])
+  @@index([paymentIntentId, createdAt])
+  @@index([refundRequestId, createdAt])
+  @@index([disputeId, createdAt])
+  @@index([paymentHoldbackId, createdAt])
+  @@index([payoutId, createdAt])
+}
+
+model AcceptanceCapture {
+  id                 String   @id @default(cuid())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  actorId            String
+  actorRole          String
+  orgId              String?
+  bookingClassification String
+  feeProfileSnapshot Json
+  legalSurface       String
+  legalVersion       String
+  acceptedAt         DateTime
+  sourceSurface      String
+  requestContextId   String?
+  proposalId         String?
+  contractId         String?
+  paymentIntentId    String?
+  adminOverrideId    String?
+  metadata           Json?
+
+  @@index([proposalId, acceptedAt])
+  @@index([contractId, acceptedAt])
+  @@index([paymentIntentId, acceptedAt])
+  @@index([adminOverrideId, acceptedAt])
+  @@index([actorId, acceptedAt])
+}
 
 model Event {
-  id                 String      @id @default(cuid())
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  id                 String             @id @default(cuid())
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
   orgId              String
   createdById        String
   name               String
-  slug               String      @unique
-  type               EventType // Legacy enum - kept for backward compatibility
-  eventTypeRaw       String? // Free-text event type from user (nullable for migration)
-  eventTypeCanonical String? // AI-normalized canonical label (e.g., "wedding", "conference")
+  slug               String             @unique
+  type               EventType
   objective          String?
   description        String?
   startAt            DateTime
   endAt              DateTime
   venueCity          String?
   venueState         String?
-  venueCountry       String?     @default("US")
+  venueCountry       String?            @default("US")
   guestTarget        Int?
-  status             EventStatus @default(PLANNING)
-  budgetCents        Int         @default(0)
-  budgetRaw          String? // Free-text budget from user
-  budgetMin          Int? // Parsed min budget in cents
-  budgetMax          Int? // Parsed max budget in cents
-  budgetCurrency     String?     @db.VarChar(3) // ISO 4217 currency code (e.g., "USD", "EUR")
-
-  org             Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  createdBy       User               @relation(fields: [createdById], references: [id])
-  tasks           Task[]
-  checklists      Checklist[]
-  milestones      Milestone[]
-  budgetLines     BudgetLine[]
-  activities      Activity[]
-  media           Media[]
-  bookingRequests BookingRequest[]
-  proposals       Proposal[]
-  contracts       Contract[]
-  escrowAccounts  EscrowAccount[]
-  threads         Thread[]
-  disputes        Dispute[]
-  calendarEvents  CalendarEvent[]
-  guestLists      GuestList[]
-  seatingPlans    SeatingPlan[]
-  invitations     Invitation[]
-  shortlistItems  ShortlistItem[]
-  stakeholders    EventStakeholder[]
-  shares          EventShare[]
-  deposits        Deposit[]
+  status             EventStatus        @default(PLANNING)
+  budgetCents        Int                @default(0)
+  eventTypeRaw       String?
+  eventTypeCanonical String?
+  budgetRaw          String?
+  budgetMin          Int?
+  budgetMax          Int?
+  budgetCurrency     String?            @db.VarChar(3)
+  activities         Activity[]
+  bookingRequests    BookingRequest[]
+  budgetLines        BudgetLine[]
+  calendarEvents     CalendarEvent[]
+  checklists         Checklist[]
+  contracts          Contract[]
+  deposits           Deposit[]
+  disputes           Dispute[]
+  escrowAccounts     EscrowAccount[]
+  createdBy          User               @relation(fields: [createdById], references: [id])
+  org                Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  shares             EventShare[]
+  stakeholders       EventStakeholder[]
+  guestLists         GuestList?
+  invitations        Invitation[]
+  media              Media[]
+  milestones         Milestone[]
+  proposals          Proposal[]
+  seatingPlans       SeatingPlan?
+  shortlistItems     ShortlistItem[]
+  tasks              Task[]
+  threads            Thread[]
 }
 
 model ShortlistItem {
   id        String   @id @default(cuid())
   eventId   String
-  listingId String // Links to Listing (vendor or venue)
   createdAt DateTime @default(now())
-  notes     String? // Optional user notes about why this vendor/venue was shortlisted
-
-  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId String
+  notes     String?
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, listingId])
   @@index([eventId])
 }
 
-enum EventType {
-  WEDDING
-  CORPORATE_GALA
-  FUNDRAISER
-  BIRTHDAY
-  CONFERENCE
-  FESTIVAL
-  SPORTS
-  OTHER
-}
-
-enum EventStatus {
-  PLANNING
-  ACTIVE
-  ON_HOLD
-  COMPLETED
-  CANCELED
-}
-
-enum EventStakeholderRole {
-  CLIENT
-  STAKEHOLDER
-}
-
-// Phase 1: Event-scoped client relationship model
-// Clients are NOT org members by default. They are event-scoped stakeholders only.
 model EventStakeholder {
   id            String               @id @default(cuid())
   eventId       String
@@ -361,22 +356,15 @@ model EventStakeholder {
   role          EventStakeholderRole
   addedByUserId String
   createdAt     DateTime             @default(now())
-
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user    User  @relation("EventStakeholderUser", fields: [userId], references: [id], onDelete: Cascade)
-  addedBy User  @relation("EventStakeholderAddedBy", fields: [addedByUserId], references: [id])
+  addedBy       User                 @relation("EventStakeholderAddedBy", fields: [addedByUserId], references: [id])
+  event         Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user          User                 @relation("EventStakeholderUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
   @@index([eventId])
   @@index([userId])
 }
 
-enum EventShareScope {
-  SUMMARY
-}
-
-// Phase 2: Minimal sharing/forwarding
-// Clients can only view content explicitly shared by the Pro Planner
 model EventShare {
   id              String          @id @default(cuid())
   eventId         String
@@ -384,10 +372,9 @@ model EventShare {
   scope           EventShareScope @default(SUMMARY)
   createdByUserId String
   createdAt       DateTime        @default(now())
-
-  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  viewer    User  @relation("EventShareViewer", fields: [viewerUserId], references: [id], onDelete: Cascade)
-  createdBy User  @relation("EventShareCreatedBy", fields: [createdByUserId], references: [id])
+  createdBy       User            @relation("EventShareCreatedBy", fields: [createdByUserId], references: [id])
+  event           Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  viewer          User            @relation("EventShareViewer", fields: [viewerUserId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, viewerUserId, scope])
   @@index([eventId])
@@ -420,9 +407,9 @@ model Checklist {
   eventId    String
   title      String
   templateId String?
-  items      ChecklistItem[]
   event      Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   template   ChecklistTemplate? @relation(fields: [templateId], references: [id])
+  items      ChecklistItem[]
 }
 
 model ChecklistItem {
@@ -434,8 +421,8 @@ model ChecklistItem {
   dueAt       DateTime?
   done        Boolean   @default(false)
   order       Int       @default(0)
-  checklist   Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
   assignee    User?     @relation(fields: [assigneeId], references: [id])
+  checklist   Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
 }
 
 model Task {
@@ -449,22 +436,8 @@ model Task {
   dueAt       DateTime?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
   assignee    User?        @relation(fields: [assigneeId], references: [id])
-}
-
-enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  BLOCKED
-  DONE
-}
-
-enum TaskPriority {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
+  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
 
 model BudgetLine {
@@ -479,18 +452,6 @@ model BudgetLine {
   event        Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
 
-enum BudgetCategory {
-  VENUE
-  CATERING
-  DECOR
-  ENTERTAINMENT
-  PHOTO_VIDEO
-  TRANSPORT
-  STAFF
-  MARKETING
-  MISC
-}
-
 model Activity {
   id      String       @id @default(cuid())
   at      DateTime     @default(now())
@@ -500,9 +461,9 @@ model Activity {
   action  String
   target  String?
   meta    Json?
-  org     Organization @relation(fields: [orgId], references: [id])
-  event   Event?       @relation(fields: [eventId], references: [id])
   actor   User?        @relation(fields: [actorId], references: [id])
+  event   Event?       @relation(fields: [eventId], references: [id])
+  org     Organization @relation(fields: [orgId], references: [id])
 
   @@index([orgId, at])
 }
@@ -517,11 +478,9 @@ model Notification {
   read      Boolean      @default(false)
   link      String?
   createdAt DateTime     @default(now())
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
-// Wave 4: Marketplace & Booking
 
 model Listing {
   id              String             @id @default(cuid())
@@ -549,34 +508,16 @@ model Listing {
   coverImageUrl   String?
   ratingAvg       Float              @default(0)
   ratingCount     Int                @default(0)
+  availSlots      AvailabilitySlot[]
+  bookingRequests BookingRequest[]
   org             Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
   tags            ListingTag[]
   gallery         Media[]
-  availSlots      AvailabilitySlot[]
   offers          Offer[]
-  reviews         Review[]
-  bookingRequests BookingRequest[]
   proposals       Proposal[]
-  threads         Thread[]
+  reviews         Review[]
   shortlistItems  ShortlistItem[]
-}
-
-enum ListingType {
-  VENDOR
-  VENUE
-}
-
-enum ListingCategory {
-  VENUE_SPACE
-  CATERING
-  DECOR_FLORAL
-  ENTERTAINMENT
-  PHOTO_VIDEO
-  TRANSPORT
-  STAFFING
-  PLANNING_SERVICES
-  RENTALS
-  OTHER
+  threads         Thread[]
 }
 
 model ListingTag {
@@ -595,8 +536,8 @@ model Media {
   url       String
   caption   String?
   createdAt DateTime @default(now())
-  listing   Listing? @relation(fields: [listingId], references: [id])
   event     Event?   @relation(fields: [eventId], references: [id])
+  listing   Listing? @relation(fields: [listingId], references: [id])
 }
 
 model AvailabilitySlot {
@@ -609,13 +550,6 @@ model AvailabilitySlot {
   listing   Listing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@index([listingId, startAt, endAt])
-}
-
-enum AvailabilityStatus {
-  AVAILABLE
-  HOLD
-  BOOKED
-  UNAVAILABLE
 }
 
 model Offer {
@@ -644,20 +578,11 @@ model BookingRequest {
   status       BookingStatus @default(PENDING)
   quoteCents   Int?
   notes        String?
-  org          Organization  @relation(fields: [orgId], references: [id])
   event        Event         @relation(fields: [eventId], references: [id])
   listing      Listing       @relation(fields: [listingId], references: [id])
+  org          Organization  @relation(fields: [orgId], references: [id])
 
   @@index([listingId, createdAt])
-}
-
-enum BookingStatus {
-  PENDING
-  HOLD
-  QUOTED
-  DECLINED
-  EXPIRED
-  WITHDRAWN
 }
 
 model Review {
@@ -675,44 +600,35 @@ model Review {
   @@index([listingId])
 }
 
-// Wave 5: Contracts & Payments
-
 model Proposal {
-  id            String             @id @default(cuid())
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  orgId         String
-  eventId       String
-  listingId     String?
-  title         String
-  summary       String?
-  status        ProposalStatus     @default(DRAFT)
-  currency      String             @default("USD")
+  id                    String                @id @default(cuid())
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  orgId                 String
+  eventId               String
+  listingId             String?
+  title                 String
+  summary               String?
+  status                ProposalStatus        @default(DRAFT)
+  bookingClassification BookingClassification @default(DIRECT)
+  currency              String                @default("USD")
   subtotalCents Int                @default(0)
   taxCents      Int                @default(0)
   totalCents    Int                @default(0)
   validUntil    DateTime?
   terms         String?
-  org           Organization       @relation(fields: [orgId], references: [id])
+  contract      Contract?
+  disputes      Dispute[]
+  escrowAccount EscrowAccount?
+  milestones    PaymentMilestone[]
+  payouts       Payout[]
+  refundRequests RefundRequest[]
   event         Event              @relation(fields: [eventId], references: [id])
   listing       Listing?           @relation(fields: [listingId], references: [id])
+  org           Organization       @relation(fields: [orgId], references: [id])
   lineItems     ProposalLineItem[]
-  milestones    PaymentMilestone[]
   sections      ProposalSection[]
-  payouts       Payout[]
-  contract      Contract?
-  escrowAccount EscrowAccount?
   threads       Thread[]
-  disputes      Dispute[]
-}
-
-enum ProposalStatus {
-  DRAFT
-  SENT
-  ACCEPTED
-  REJECTED
-  EXPIRED
-  CONVERTED
 }
 
 model ProposalLineItem {
@@ -737,8 +653,9 @@ model PaymentMilestone {
   dueOffsetDays  Int?
   amountCents    Int
   status         MilestoneStatus  @default(PENDING)
-  proposal       Proposal         @relation(fields: [proposalId], references: [id], onDelete: Cascade)
   paymentIntents PaymentIntent[]
+  refundRequests RefundRequest[]
+  proposal       Proposal         @relation(fields: [proposalId], references: [id], onDelete: Cascade)
 }
 
 model ProposalSection {
@@ -750,21 +667,6 @@ model ProposalSection {
   proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
 
   @@index([proposalId, order])
-}
-
-enum MilestoneDueType {
-  DATE_ABSOLUTE
-  OFFSET_FROM_EVENT_START
-}
-
-enum MilestoneStatus {
-  PENDING
-  HELD
-  IN_ESCROW
-  PARTIALLY_PAID
-  PAID
-  REFUNDED
-  OVERDUE
 }
 
 model Contract {
@@ -779,26 +681,15 @@ model Contract {
   version            Int             @default(1)
   status             ContractStatus  @default(OUT_FOR_SIGNATURE)
   buyerId            String?
-  sellerId           String?
   platformFeePercent Float           @default(5.0)
-  org                Organization    @relation(fields: [orgId], references: [id])
-  event              Event           @relation(fields: [eventId], references: [id])
-  proposal           Proposal        @relation(fields: [proposalId], references: [id])
-  signatures         Signature[]
+  sellerId           String?
   changeOrders       ChangeOrder[]
+  event              Event           @relation(fields: [eventId], references: [id])
+  org                Organization    @relation(fields: [orgId], references: [id])
+  proposal           Proposal        @relation(fields: [proposalId], references: [id])
   paymentIntents     PaymentIntent[]
-}
-
-enum ContractStatus {
-  DRAFT
-  OUT_FOR_SIGNATURE
-  PARTIALLY_SIGNED
-  FULLY_SIGNED
-  ACCEPTED
-  IN_PAYMENT
-  ACTIVE
-  COMPLETED
-  CANCELED
+  refundRequests     RefundRequest[]
+  signatures         Signature[]
 }
 
 model Signature {
@@ -828,12 +719,6 @@ model ChangeOrder {
   contract   Contract          @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
 
-enum ChangeOrderStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
 model EscrowAccount {
   id           String       @id @default(cuid())
   orgId        String
@@ -843,18 +728,9 @@ model EscrowAccount {
   status       EscrowStatus @default(OPEN)
   balanceCents Int          @default(0)
   currency     String       @default("USD")
-  org          Organization @relation(fields: [orgId], references: [id])
   event        Event        @relation(fields: [eventId], references: [id])
+  org          Organization @relation(fields: [orgId], references: [id])
   proposal     Proposal     @relation(fields: [proposalId], references: [id])
-}
-
-enum EscrowStatus {
-  OPEN
-  FUNDED
-  PARTIALLY_RELEASED
-  RELEASED
-  REFUNDED
-  CLOSED
 }
 
 model Payout {
@@ -867,15 +743,8 @@ model Payout {
   stripeTransfer String?
   status         PayoutStatus @default(PENDING)
   createdAt      DateTime     @default(now())
-  proposal       Proposal     @relation(fields: [proposalId], references: [id], onDelete: Cascade)
   organization   Organization @relation(fields: [orgId], references: [id])
-}
-
-enum PayoutStatus {
-  PENDING
-  SENT
-  FAILED
-  CANCELED
+  proposal       Proposal     @relation(fields: [proposalId], references: [id], onDelete: Cascade)
 }
 
 model MoneyTx {
@@ -910,21 +779,15 @@ model PaymentIntent {
   amountCents    Int
   currency       String              @default("USD")
   status         PaymentIntentStatus @default(REQUIRES_PAYMENT)
+  fundedAt       DateTime?
   stripeIntentId String?             @unique
   paymentMethod  String?
   contract       Contract            @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  milestone      PaymentMilestone?   @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
-  payer          User                @relation("PaymentIntentPayer", fields: [payerId], references: [id])
+  milestone      PaymentMilestone?   @relation(fields: [milestoneId], references: [id])
+  refundRequests RefundRequest[]
   payee          User                @relation("PaymentIntentPayee", fields: [payeeId], references: [id])
-  transactions   Transaction[]
-}
-
-enum PaymentIntentStatus {
-  REQUIRES_PAYMENT
-  PROCESSING
-  SUCCEEDED
-  FAILED
-  CANCELLED
+  payer          User                @relation("PaymentIntentPayer", fields: [payerId], references: [id])
+  transactions   Transaction?
 }
 
 model Transaction {
@@ -939,41 +802,69 @@ model Transaction {
   currency         String        @default("USD")
   stripeChargeId   String?       @unique
   processedAt      DateTime?
-  paymentIntent    PaymentIntent @relation(fields: [paymentIntentId], references: [id], onDelete: Cascade)
-  payer            User          @relation("TransactionPayer", fields: [payerId], references: [id])
   payee            User          @relation("TransactionPayee", fields: [payeeId], references: [id])
+  payer            User          @relation("TransactionPayer", fields: [payerId], references: [id])
+  paymentIntent    PaymentIntent @relation(fields: [paymentIntentId], references: [id], onDelete: Cascade)
 }
 
-// Phase 7A: Event-scoped deposits for clients
-// Clients can make deposits for events where they are stakeholders
+model PaymentHoldback {
+  id                        String                @id @default(cuid())
+  createdAt                 DateTime              @default(now())
+  updatedAt                 DateTime              @updatedAt
+  paymentIntentId           String                @unique
+  proposalId                String
+  contractId                String?
+  milestoneId               String?
+  bookingClassification     BookingClassification
+  feeProfileSnapshot        Json
+  acceptanceCaptureId       String?
+  highRiskTriggers          Json
+  triggerSummary            String?
+  state                     HoldbackState         @default(NONE)
+  reason                    String?
+  holdbackAmountCents       Int?
+  holdbackPercent           Float?
+  actorAdminId              String?
+  actorAdminRole            String?
+  manualRiskFlag            Boolean               @default(false)
+  adminDecision             HoldbackDecision?
+  adminDecisionAt           DateTime?
+  adminDecisionById         String?
+  adminDecisionByRole       String?
+  adminDecisionReason       String?
+  releasedAt                DateTime?
+  releasedById              String?
+  releasedByRole            String?
+  releaseReason             String?
+  auditTrail                Json?
+
+  @@index([proposalId, createdAt])
+  @@index([milestoneId, state])
+  @@index([contractId, state])
+  @@index([state, updatedAt])
+}
+
 model Deposit {
-  id                 String         @id @default(cuid())
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  eventId            String
-  clientUserId       String
-  proOrgId           String
-  amountCents        Int
-  currency           String         @default("USD")
-  status             DepositStatus  @default(PENDING)
-  stripePaymentIntentId String?     @unique
-  stripeChargeId     String?
-  notes              String?
-  event              Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  clientUser         User           @relation("DepositClient", fields: [clientUserId], references: [id])
-  proOrg             Organization   @relation(fields: [proOrgId], references: [id])
+  id                    String        @id @default(cuid())
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  eventId               String
+  clientUserId          String
+  proOrgId              String
+  amountCents           Int
+  currency              String        @default("USD")
+  status                DepositStatus @default(PENDING)
+  stripePaymentIntentId String?       @unique
+  stripeChargeId        String?
+  notes                 String?
+  clientUser            User          @relation("DepositClient", fields: [clientUserId], references: [id])
+  event                 Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  proOrg                Organization  @relation(fields: [proOrgId], references: [id])
 
   @@index([eventId])
   @@index([clientUserId])
   @@index([proOrgId])
   @@index([status])
-}
-
-enum DepositStatus {
-  PENDING
-  SUCCEEDED
-  FAILED
-  REFUNDED
 }
 
 model Thread {
@@ -984,12 +875,12 @@ model Thread {
   proposalId   String?
   listingId    String?
   subject      String
-  org          Organization        @relation(fields: [orgId], references: [id])
-  event        Event?              @relation(fields: [eventId], references: [id])
-  proposal     Proposal?           @relation(fields: [proposalId], references: [id])
-  listing      Listing?            @relation(fields: [listingId], references: [id])
-  participants ThreadParticipant[]
   messages     Message[]
+  event        Event?              @relation(fields: [eventId], references: [id])
+  listing      Listing?            @relation(fields: [listingId], references: [id])
+  org          Organization        @relation(fields: [orgId], references: [id])
+  proposal     Proposal?           @relation(fields: [proposalId], references: [id])
+  participants ThreadParticipant[]
 }
 
 model ThreadParticipant {
@@ -1012,42 +903,92 @@ model Message {
 }
 
 model Dispute {
-  id          String        @id @default(cuid())
-  createdAt   DateTime      @default(now())
-  orgId       String
-  eventId     String?
-  proposalId  String
-  milestoneId String?
-  title       String
-  body        String?
-  status      DisputeStatus @default(OPEN)
-  resolution  String?
-  org         Organization  @relation(fields: [orgId], references: [id])
-  event       Event?        @relation(fields: [eventId], references: [id])
-  proposal    Proposal      @relation(fields: [proposalId], references: [id])
+  id                  String             @id @default(cuid())
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  orgId               String
+  eventId             String?
+  proposalId          String
+  contractId          String?
+  paymentIntentId     String?
+  milestoneId         String?
+  linkedRefundRequestId String?
+  actorId             String
+  actorRole           String
+  bookingClassification BookingClassification
+  feeProfileSnapshot  Json
+  acceptanceCaptureId String?
+  requestContextId    String?
+  title               String
+  body                String?
+  disputeReason       String
+  status              DisputeStatus      @default(OPEN)
+  freezeState         DisputeFreezeState @default(FROZEN)
+  resolutionType      DisputeResolutionType?
+  resolution          String?
+  adminDecisionAt     DateTime?
+  adminDecisionById   String?
+  adminDecisionReason String?
+  auditTrail          Json?
+  event               Event?             @relation(fields: [eventId], references: [id])
+  org                 Organization       @relation(fields: [orgId], references: [id])
+  proposal            Proposal           @relation(fields: [proposalId], references: [id])
+
+  @@index([proposalId, status, createdAt])
+  @@index([milestoneId, status])
+  @@index([linkedRefundRequestId])
+  @@index([contractId, status])
+  @@index([paymentIntentId, status])
 }
 
-enum DisputeStatus {
-  OPEN
-  NEEDS_INFO
-  ESCALATED
-  RESOLVED
-  REJECTED
-}
+model RefundRequest {
+  id                     String              @id @default(cuid())
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  orgId                  String
+  actorId                String
+  actorRole              String
+  proposalId             String
+  contractId             String?
+  paymentIntentId        String?
+  milestoneId            String?
+  acceptanceCaptureId    String?
+  bookingClassification  BookingClassification
+  feeProfileSnapshot     Json
+  amountRequestedCents   Int
+  currency               String              @default("USD")
+  reason                 String
+  processingFeeTreatment RefundFeeTreatment  @default(BUYER_ABSORBS)
+  platformFeeTreatment   RefundFeeTreatment  @default(NON_REFUNDABLE)
+  status                 RefundRequestStatus @default(OPEN)
+  requestContextId       String?
+  adminDecisionAt        DateTime?
+  adminDecisionById      String?
+  adminDecisionReason    String?
+  auditTrail             Json?
+  contract               Contract?           @relation(fields: [contractId], references: [id])
+  milestone              PaymentMilestone?   @relation(fields: [milestoneId], references: [id])
+  org                    Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  paymentIntent          PaymentIntent?      @relation(fields: [paymentIntentId], references: [id])
+  proposal               Proposal            @relation(fields: [proposalId], references: [id], onDelete: Cascade)
 
-// Wave 6: Calendar, Guests, Seating, Admin
+  @@index([proposalId, status, createdAt])
+  @@index([paymentIntentId, status])
+  @@index([milestoneId, status])
+  @@index([contractId, status])
+}
 
 model CalendarAccount {
   id               String             @id @default(cuid())
   userId           String
   provider         String
   email            String
-  accessToken      String?            @db.Text
-  refreshToken     String?            @db.Text
+  accessToken      String?
+  refreshToken     String?
   expiresAt        DateTime?
-  googleCalendarId String? // ID of the OneHub calendar in Google
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+  googleCalendarId String?
   user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   mappings         CalendarMapping[]
   syncState        CalendarSyncState?
@@ -1059,7 +1000,7 @@ model CalendarMapping {
   id                String          @id @default(cuid())
   userId            String
   calendarAccountId String
-  entityType        String // 'event'|'task'|'milestone'|'payment'|'other'
+  entityType        String
   entityId          String
   googleEventId     String
   googleCalendarId  String
@@ -1075,7 +1016,7 @@ model CalendarSyncState {
   userId            String          @unique
   calendarAccountId String          @unique
   googleCalendarId  String
-  syncMode          String          @default("one-way") // 'one-way'|'overlay'
+  syncMode          String          @default("one-way")
   watchResourceId   String?
   watchChannelId    String?
   watchExpiration   DateTime?
@@ -1097,8 +1038,8 @@ model CalendarEvent {
   source      String?
   visibility  String?
   createdById String?
-  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   event       Event?       @relation(fields: [eventId], references: [id])
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 }
 
 model GuestList {
@@ -1107,9 +1048,9 @@ model GuestList {
   title   String       @default("Guest List")
   invited Int          @default(0)
   rsvped  Int          @default(0)
-  event   Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
   guests  Guest[]
   groups  GuestGroup[]
+  event   Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
 
 model GuestGroup {
@@ -1117,12 +1058,12 @@ model GuestGroup {
   guestListId String
   name        String
   notes       String?
-  guestList   GuestList @relation(fields: [guestListId], references: [id], onDelete: Cascade)
   guests      Guest[]
+  guestList   GuestList @relation(fields: [guestListId], references: [id], onDelete: Cascade)
 }
 
 model Guest {
-  id          String       @id @default(cuid())
+  id          String      @id @default(cuid())
   guestListId String
   groupId     String?
   firstName   String
@@ -1130,25 +1071,18 @@ model Guest {
   email       String?
   phone       String?
   side        String?
-  plusOnes    Int          @default(0)
+  plusOnes    Int         @default(0)
   tags        Json?
-  status      RSVPStatus   @default(PENDING)
+  status      RSVPStatus  @default(PENDING)
   dietary     String?
   notes       String?
-  seatId      String?      @unique
-  guestList   GuestList    @relation(fields: [guestListId], references: [id], onDelete: Cascade)
-  group       GuestGroup?  @relation(fields: [groupId], references: [id])
-  seat        Seat?        @relation(fields: [seatId], references: [id])
-  invitations Invitation[]
+  seatId      String?     @unique
+  group       GuestGroup? @relation(fields: [groupId], references: [id])
+  guestList   GuestList   @relation(fields: [guestListId], references: [id], onDelete: Cascade)
+  seat        Seat?       @relation(fields: [seatId], references: [id])
+  invitations Invitation?
 
   @@index([email])
-}
-
-enum RSVPStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
-  WAITLIST
 }
 
 model Invitation {
@@ -1179,16 +1113,16 @@ model Table {
   capacity      Int
   x             Int         @default(0)
   y             Int         @default(0)
-  seatingPlan   SeatingPlan @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
   seats         Seat[]
+  seatingPlan   SeatingPlan @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
 }
 
 model Seat {
   id      String @id @default(cuid())
   tableId String
   number  Int
-  table   Table  @relation(fields: [tableId], references: [id], onDelete: Cascade)
   guest   Guest?
+  table   Table  @relation(fields: [tableId], references: [id], onDelete: Cascade)
 }
 
 model MetricDaily {
@@ -1209,4 +1143,286 @@ model AbuseReport {
   reason     String
   status     String   @default("OPEN")
   notes      String?
+}
+
+enum Role {
+  DIY_PLANNER
+  PRO_PLANNER
+  VENDOR
+  VENUE
+  CLIENT
+  ADMIN
+  EVENT_DREAMER
+}
+
+enum AdminOverrideTargetType {
+  REFUND_REQUEST
+  DISPUTE
+  PAYMENT_HOLDBACK
+  PAYOUT
+  FEE_PROFILE
+}
+
+enum AdminOverrideExceptionType {
+  REFUND_DECISION
+  REFUND_FEE_DEVIATION
+  DISPUTE_FREEZE_STATE
+  HOLDBACK_DECISION
+  PAYOUT_RELEASE
+  FEE_DEVIATION
+}
+
+enum AdminOverrideDecision {
+  APPROVED
+  DENIED
+  APPLIED
+  RELEASED
+  CLEARED
+}
+
+enum OrgType {
+  PLANNER
+  VENDOR
+  VENUE
+  CLIENT_AGENCY
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum StaffRole {
+  COORDINATOR
+  ASSISTANT
+  SALES
+  FINANCE
+  TECH
+  OTHER
+}
+
+enum EventType {
+  WEDDING
+  CORPORATE_GALA
+  FUNDRAISER
+  BIRTHDAY
+  CONFERENCE
+  FESTIVAL
+  SPORTS
+  OTHER
+}
+
+enum EventStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELED
+}
+
+enum EventStakeholderRole {
+  CLIENT
+  STAKEHOLDER
+}
+
+enum EventShareScope {
+  SUMMARY
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum BudgetCategory {
+  VENUE
+  CATERING
+  DECOR
+  ENTERTAINMENT
+  PHOTO_VIDEO
+  TRANSPORT
+  STAFF
+  MARKETING
+  MISC
+}
+
+enum ListingType {
+  VENDOR
+  VENUE
+}
+
+enum ListingCategory {
+  VENUE_SPACE
+  CATERING
+  DECOR_FLORAL
+  ENTERTAINMENT
+  PHOTO_VIDEO
+  TRANSPORT
+  STAFFING
+  PLANNING_SERVICES
+  RENTALS
+  OTHER
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  HOLD
+  BOOKED
+  UNAVAILABLE
+}
+
+enum BookingStatus {
+  PENDING
+  HOLD
+  QUOTED
+  DECLINED
+  EXPIRED
+  WITHDRAWN
+}
+
+enum BookingClassification {
+  MARKETPLACE
+  PLANNER_MEDIATED
+  DIRECT
+}
+
+enum ProposalStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CONVERTED
+}
+
+enum MilestoneDueType {
+  DATE_ABSOLUTE
+  OFFSET_FROM_EVENT_START
+}
+
+enum MilestoneStatus {
+  PENDING
+  HELD
+  PARTIALLY_PAID
+  PAID
+  REFUNDED
+  IN_ESCROW
+  OVERDUE
+}
+
+enum ContractStatus {
+  DRAFT
+  OUT_FOR_SIGNATURE
+  PARTIALLY_SIGNED
+  FULLY_SIGNED
+  CANCELED
+  ACCEPTED
+  IN_PAYMENT
+  ACTIVE
+  COMPLETED
+}
+
+enum ChangeOrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EscrowStatus {
+  OPEN
+  FUNDED
+  PARTIALLY_RELEASED
+  RELEASED
+  REFUNDED
+  CLOSED
+}
+
+enum PayoutStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELED
+}
+
+enum PaymentIntentStatus {
+  REQUIRES_PAYMENT
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum DepositStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum DisputeStatus {
+  OPEN
+  NEEDS_INFO
+  UNDER_ADMIN_REVIEW
+  ESCALATED
+  RESOLVED_SELLER_FAVOR
+  RESOLVED_REFUND
+  REJECTED
+}
+
+enum DisputeFreezeState {
+  FROZEN
+  ADMIN_REVIEW
+  RELEASE_ELIGIBLE
+  REFUND_PENDING
+  RELEASED
+}
+
+enum DisputeResolutionType {
+  SELLER_FAVOR
+  REFUND
+  REJECTED
+}
+
+enum RefundRequestStatus {
+  OPEN
+  APPROVED
+  DENIED
+  CANCELED
+}
+
+enum HoldbackState {
+  NONE
+  ACTIVE
+  RELEASED
+}
+
+enum HoldbackDecision {
+  AUTO_EVALUATED
+  APPLIED
+  OVERRIDDEN_NONE
+  RELEASED
+}
+
+enum RefundFeeTreatment {
+  BUYER_ABSORBS
+  REFUND_TO_BUYER
+  NON_REFUNDABLE
+}
+
+enum RSVPStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WAITLIST
 }

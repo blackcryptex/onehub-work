@@ -1,16 +1,18 @@
 import { KanbanBoard } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
+import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 import type { Task } from "@prisma/client";
 
 export default async function EventTasks({ params }: { params: { eventSlug: string } }) {
-  const ev = await prisma.event.findFirst({ where: { slug: params.eventSlug } });
-  if (!ev) return null;
+  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "manage");
+
   const [todo, inprog, blocked, done] = await Promise.all([
-    prisma.task.findMany({ where: { eventId: ev.id, status: "TODO" } }),
-    prisma.task.findMany({ where: { eventId: ev.id, status: "IN_PROGRESS" } }),
-    prisma.task.findMany({ where: { eventId: ev.id, status: "BLOCKED" } }),
-    prisma.task.findMany({ where: { eventId: ev.id, status: "DONE" } }),
+    prisma.task.findMany({ where: { eventId: authorizedEvent.id, status: "TODO" } }),
+    prisma.task.findMany({ where: { eventId: authorizedEvent.id, status: "IN_PROGRESS" } }),
+    prisma.task.findMany({ where: { eventId: authorizedEvent.id, status: "BLOCKED" } }),
+    prisma.task.findMany({ where: { eventId: authorizedEvent.id, status: "DONE" } }),
   ]);
+
   return (
     <KanbanBoard
       columns={[

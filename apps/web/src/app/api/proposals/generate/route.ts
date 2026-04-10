@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { generateProposalFromContext } from "@/lib/ai/generateProposal";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
+import {
+  resolveBookingClassification,
+  toPersistedBookingClassification,
+} from "@/lib/booking-classification";
+import { resolveFeeProfile } from "@/lib/fee-profile";
 
 /**
  * POST /api/proposals/generate
@@ -153,9 +158,25 @@ export async function POST(request: NextRequest) {
     const totalCents = generated.totalPriceEstimate || subtotalCents;
     console.log("[API] Calculated totals:", { subtotalCents, totalCents });
 
+    const bookingClassification = resolveBookingClassification({
+      proposal: {
+        listingId: listingId || null,
+      },
+      event,
+      source: {
+        sourcedViaMarketplace: Boolean(listingId),
+        plannerIsOperationalLead: event.org.type === "PLANNER",
+      },
+    });
+
+    const feeProfile = resolveFeeProfile({
+      bookingClassification,
+      grossAmountCents: totalCents,
+    });
+
     // Create proposal in database
-    console.log("[API] Saving proposal to database...");
-    const proposal = await prisma.proposal.create({
+    console.log("[API] Saving proposal to database...", { bookingClassification, feeProfile });
+    const proposal = await (prisma as any).proposal.create({
       data: {
         orgId: event.orgId,
         eventId: event.id,
@@ -163,6 +184,7 @@ export async function POST(request: NextRequest) {
         title: generated.title,
         summary: generated.summary,
         status: "DRAFT",
+        bookingClassification: toPersistedBookingClassification(bookingClassification),
         currency: generated.currency || "USD",
         subtotalCents,
         taxCents: 0,
@@ -206,8 +228,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log("[API] Proposal created successfully:", { proposalId: proposal.id, title: proposal.title });
-    return NextResponse.json(proposal);
+    console.log("[API] Proposal created successfully:", {
+      proposalId: proposal.id,
+      title: proposal.title,
+      feeProfile,
+    });
+    return NextResponse.json({
+      ...proposal,
+      feeProfile,
+    });
   } catch (error) {
     console.error("[API] Error generating proposal:", error);
     if (error instanceof Error) {

@@ -32,8 +32,8 @@ export function DeleteProposalButton({ proposalId }: DeleteProposalButtonProps) 
         throw new Error(data.error || "Failed to delete proposal");
       }
 
-      // Redirect to event vault or proposals list
-      router.push("/proposals");
+      // Return to the canonical in-app commercial surface after deletion.
+      router.push("/app/vault");
       router.refresh();
     } catch (err) {
       console.error("Error deleting proposal:", err);

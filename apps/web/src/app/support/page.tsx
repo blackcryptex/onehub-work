@@ -53,8 +53,8 @@ export default function SupportPage() {
               <p className="text-sm text-slate-600">Sign up for an account, then click “Create Events” on your dashboard. Follow the wizard to set up your event details.</p>
             </div>
             <div>
-              <h3 className="font-semibold mb-1">How does escrow work?</h3>
-              <p className="text-sm text-slate-600">When you pay a vendor, funds are held in escrow until you confirm the services are completed to your satisfaction.</p>
+              <h3 className="font-semibold mb-1">How do held funds pending release work?</h3>
+              <p className="text-sm text-slate-600">When you pay a vendor, funds are held pending release until you confirm the services are completed to your satisfaction.</p>
             </div>
             <div>
               <h3 className="font-semibold mb-1">Can I use OneHub for free?</h3>

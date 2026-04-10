@@ -1,51 +1,116 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { router, publicProcedure } from "@/server/trpc";
-import { auth } from "@/lib/auth";
+import { router, protectedProcedure } from "@/server/trpc";
 import { recordActivity } from "@/server/lib/activity";
+import { getBookingClassificationHooks } from "@/lib/booking-classification";
+import { createDisputeCase, getDisputeCaseForVerification, reviewDisputeCase } from "@/lib/dispute-case";
+
+const disputeStatusSchema = z.enum([
+  "OPEN",
+  "NEEDS_INFO",
+  "UNDER_ADMIN_REVIEW",
+  "ESCALATED",
+  "RESOLVED_SELLER_FAVOR",
+  "RESOLVED_REFUND",
+  "REJECTED",
+]);
 
 export const disputeRouter = router({
-  create: publicProcedure.input(z.object({
+  create: protectedProcedure.input(z.object({
     proposalId: z.string(),
     milestoneId: z.string().optional(),
     title: z.string(),
     body: z.string().optional(),
-  })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const proposal = await prisma.proposal.findUniqueOrThrow({ where: { id: input.proposalId }, include: { event: true } });
-    const mem = await prisma.membership.findFirst({ where: { userId, orgId: proposal.event.orgId } });
-    if (!mem) throw new Error("Forbidden");
-    const dispute = await prisma.dispute.create({
-      data: {
-        orgId: proposal.event.orgId,
-        eventId: proposal.eventId,
-        proposalId: input.proposalId,
-        milestoneId: input.milestoneId,
-        title: input.title,
-        body: input.body,
+    reason: z.string().min(10),
+  })).mutation(async ({ ctx, input }) => {
+    const proposal = await prisma.proposal.findUniqueOrThrow({
+      where: { id: input.proposalId },
+      include: { event: true },
+    });
+    const mem = await prisma.membership.findFirst({ where: { userId: ctx.user.id, orgId: proposal.event.orgId } });
+    if (!mem && ctx.user.role !== "ADMIN") throw new Error("Forbidden");
+
+    const dispute = await createDisputeCase({
+      actorId: ctx.user.id,
+      actorRole: ctx.user.role,
+      proposalId: input.proposalId,
+      milestoneId: input.milestoneId,
+      title: input.title,
+      body: input.body,
+      reason: input.reason,
+      orgId: proposal.event.orgId,
+    });
+
+    const bookingClassificationHooks = getBookingClassificationHooks(dispute.bookingClassification);
+
+    await recordActivity({
+      orgId: proposal.orgId,
+      eventId: proposal.eventId,
+      actorId: ctx.user.id,
+      action: "DISPUTE_OPENED",
+      target: dispute.id,
+      meta: {
+        bookingClassification: dispute.bookingClassification,
+        freezeState: dispute.freezeState,
+        refundDisputeRoute: bookingClassificationHooks.refundDisputeRoute,
       },
     });
-    await recordActivity({ orgId: proposal.orgId, eventId: proposal.eventId, actorId: userId, action: "DISPUTE_OPENED", target: dispute.id });
-    return dispute;
+
+    return {
+      ...dispute,
+      refundDisputeRoute: bookingClassificationHooks.refundDisputeRoute,
+    };
   }),
-  list: publicProcedure.input(z.object({ orgSlug: z.string(), status: z.enum(["OPEN", "NEEDS_INFO", "ESCALATED", "RESOLVED", "REJECTED"]).optional() })).query(async ({ input }) => {
+  list: protectedProcedure.input(z.object({ orgSlug: z.string(), status: disputeStatusSchema.optional() })).query(async ({ ctx, input }) => {
     const org = await prisma.organization.findUnique({ where: { slug: input.orgSlug } });
     if (!org) return [];
-    return prisma.dispute.findMany({ where: { orgId: org.id, ...(input.status ? { status: input.status } : {}) }, include: { proposal: true } });
-  }),
-  updateStatus: publicProcedure.input(z.object({
-    id: z.string(),
-    status: z.enum(["OPEN", "NEEDS_INFO", "ESCALATED", "RESOLVED", "REJECTED"]),
-    resolution: z.string().optional(),
-  })).mutation(async ({ input }) => {
-    const dispute = await prisma.dispute.update({
-      where: { id: input.id },
-      data: { status: input.status, resolution: input.resolution },
+
+    const membership = await prisma.membership.findFirst({ where: { userId: ctx.user.id, orgId: org.id } });
+    if (!membership && ctx.user.role !== "ADMIN") throw new Error("Forbidden");
+
+    const disputes = await (prisma as any).dispute.findMany({
+      where: { orgId: org.id, ...(input.status ? { status: input.status } : {}) },
+      include: { proposal: true },
+      orderBy: { createdAt: "desc" },
     });
-    await recordActivity({ orgId: dispute.orgId, eventId: dispute.eventId ?? undefined, actorId: undefined, action: "DISPUTE_RESOLVED", target: dispute.id });
+
+    return disputes.map((dispute: any) => ({
+      ...dispute,
+      refundDisputeRoute: getBookingClassificationHooks(dispute.bookingClassification).refundDisputeRoute,
+    }));
+  }),
+  adminReview: protectedProcedure.input(z.object({
+    id: z.string(),
+    action: z.enum(["REQUEST_INFO", "ESCALATE", "SELLER_FAVOR", "REFUND", "REJECT", "REOPEN"]),
+    decisionReason: z.string().min(3),
+  })).mutation(async ({ ctx, input }) => {
+    if (ctx.user.role !== "ADMIN") throw new Error("Forbidden");
+    const dispute = await reviewDisputeCase({
+      disputeId: input.id,
+      adminId: ctx.user.id,
+      action: input.action,
+      decisionReason: input.decisionReason,
+    });
+
+    await recordActivity({
+      orgId: dispute.orgId,
+      eventId: dispute.eventId ?? undefined,
+      actorId: ctx.user.id,
+      action: "DISPUTE_REVIEWED",
+      target: dispute.id,
+      meta: {
+        status: dispute.status,
+        freezeState: dispute.freezeState,
+        resolutionType: dispute.resolutionType,
+        linkedRefundRequestId: dispute.linkedRefundRequestId,
+      },
+    });
+
     return dispute;
+  }),
+  getForVerification: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+    if (ctx.user.role !== "ADMIN") throw new Error("Forbidden");
+    return getDisputeCaseForVerification(input.id);
   }),
 });
 

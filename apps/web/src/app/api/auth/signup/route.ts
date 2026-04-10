@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 
+const PUBLIC_SIGNUP_ROLES = new Set<Role>([
+  "DIY_PLANNER",
+  "PRO_PLANNER",
+  "VENDOR",
+  "VENUE",
+  "CLIENT",
+  "EVENT_DREAMER",
+]);
+
 // Dynamically import bcryptjs
 async function hashPassword(password: string): Promise<string> {
   const bcryptjsModule = await import("bcryptjs");
@@ -13,6 +22,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password, name, role = "DIY_PLANNER" } = body;
+    const requestedRole = typeof role === "string" ? role : "DIY_PLANNER";
+    const safeRole = PUBLIC_SIGNUP_ROLES.has(requestedRole as Role)
+      ? (requestedRole as Role)
+      : "DIY_PLANNER";
 
     if (!email || !password || !name) {
       return NextResponse.json({ error: "Email, password, and name are required" }, { status: 400 });
@@ -37,7 +50,7 @@ export async function POST(request: NextRequest) {
         email,
         name,
         password: hashedPassword,
-        role: role as Role,
+        role: safeRole,
       },
     });
 

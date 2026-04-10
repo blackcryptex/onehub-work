@@ -177,7 +177,7 @@ export default async function EventMilestonesPage({
   });
 
   // Calculate escrow summary (deposits only)
-  const escrowBalance = deposits
+  const heldFundsBalance = deposits
     .filter((d) => d.status === "IN_ESCROW")
     .reduce((sum, d) => sum + d.amountCents, 0);
 
@@ -239,7 +239,7 @@ export default async function EventMilestonesPage({
       isPlanner={isPlanner}
       demoModeActive={demoModeActive}
       hasAcceptedProposals={hasAcceptedProposals}
-      escrowBalance={escrowBalance}
+      heldFundsBalance={heldFundsBalance}
       fundedTotal={fundedTotal}
       releasedTotal={releasedTotal}
       pendingTotal={pendingTotal}

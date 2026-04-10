@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Card, Button, Input, Label } from "@/components/ui";
 import { X, Loader2, CheckCircle2 } from "lucide-react";
@@ -35,8 +36,16 @@ export function BookingRequestModal({
     message: demoMode ? "Interested in booking for our wedding event." : "",
   });
 
+  const hasEventContext = Boolean(eventId);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!eventId) {
+      setError("Select or create an event first, then open this listing from that event to send a booking request.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -110,6 +119,20 @@ export function BookingRequestModal({
         {demoMode && (
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
             <strong>DEMO DATA</strong> — Form pre-filled with demo values
+          </div>
+        )}
+
+        {!hasEventContext && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            Select or create an event to shortlist or request booking.
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button asChild size="sm" variant="secondary">
+                <Link href="/events/new">Create Event</Link>
+              </Button>
+              <Button asChild size="sm" variant="ghost">
+                <Link href="/app">Go to Dashboard</Link>
+              </Button>
+            </div>
           </div>
         )}
 
@@ -200,7 +223,7 @@ export function BookingRequestModal({
             <Button type="button" variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || !hasEventContext}>
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
