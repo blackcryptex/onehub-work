@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { Route } from "next";
 import { Button, Input, Label, Card } from "@/components/ui";
+import { getInitialSignupRole, SIGNUP_ROLE_OPTIONS, type PublicSignupRole } from "@/lib/signup-roles";
 import Link from "next/link";
 
 export default function SignUpPage() {
@@ -11,6 +13,7 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [selectedRole, setSelectedRole] = useState<PublicSignupRole | "">("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const createEvent = searchParams.get("createEvent") === "true";
@@ -19,7 +22,10 @@ export default function SignUpPage() {
   // Support both callbackUrl (NextAuth standard) and redirect (legacy)
   // Default to /app which will route based on user role
   const callbackUrl = searchParams.get("callbackUrl") || searchParams.get("redirect") || "/app";
-  const defaultRole = roleParam || "DIY_PLANNER";
+
+  useEffect(() => {
+    setSelectedRole(getInitialSignupRole(roleParam));
+  }, [roleParam]);
 
   // Check for pending event data
   useEffect(() => {
@@ -32,12 +38,16 @@ export default function SignUpPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!selectedRole) {
+      setError("Choose how you are using OneHub before creating an account.");
+      return;
+    }
     setIsLoading(true);
     try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name, role: defaultRole }),
+        body: JSON.stringify({ email, password, name, role: selectedRole }),
       });
 
       if (!response.ok) {
@@ -92,7 +102,7 @@ export default function SignUpPage() {
           } catch {
             relativeUrl = targetUrl;
           }
-          router.push(relativeUrl as any);
+          router.push(relativeUrl as Route);
         }
         router.refresh();
       } else {
@@ -130,6 +140,34 @@ export default function SignUpPage() {
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
             <p className="mt-1 text-xs text-slate-500">Must be at least 6 characters</p>
           </div>
+          <fieldset className="space-y-2" aria-describedby="role-help">
+            <legend className="text-sm font-medium text-slate-900">How are you using OneHub?</legend>
+            <p id="role-help" className="text-xs text-slate-500">
+              Choose one public MVP role. Client access is invite-only, and Admin accounts are provisioned internally.
+            </p>
+            <div className="grid gap-2">
+              {SIGNUP_ROLE_OPTIONS.map((option) => (
+                <label
+                  key={option.role}
+                  className="flex cursor-pointer gap-3 rounded-lg border border-slate-200 p-3 text-sm hover:border-indigo-300"
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value={option.role}
+                    checked={selectedRole === option.role}
+                    onChange={() => setSelectedRole(option.role)}
+                    required
+                    className="mt-1"
+                  />
+                  <span>
+                    <span className="block font-medium text-slate-900">{option.label}</span>
+                    <span className="block text-xs text-slate-500">{option.description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           {error && <p className="text-sm text-rose-600">{error}</p>}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Creating account..." : "Create Account"}

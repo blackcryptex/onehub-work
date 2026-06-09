@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
-
-const PUBLIC_SIGNUP_ROLES = new Set<Role>([
-  "DIY_PLANNER",
-  "PRO_PLANNER",
-  "VENDOR",
-  "VENUE",
-  "CLIENT",
-  "EVENT_DREAMER",
-]);
+import { db } from "@/server/db";
+import { validatePublicSignupRole } from "@/lib/signup-roles";
 
 // Dynamically import bcryptjs
 async function hashPassword(password: string): Promise<string> {
@@ -21,11 +12,12 @@ async function hashPassword(password: string): Promise<string> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, name, role = "DIY_PLANNER" } = body;
-    const requestedRole = typeof role === "string" ? role : "DIY_PLANNER";
-    const safeRole = PUBLIC_SIGNUP_ROLES.has(requestedRole as Role)
-      ? (requestedRole as Role)
-      : "DIY_PLANNER";
+    const { email, password, name, role } = body;
+    const roleValidation = validatePublicSignupRole(role);
+
+    if (!roleValidation.ok) {
+      return NextResponse.json({ error: roleValidation.error }, { status: 400 });
+    }
 
     if (!email || !password || !name) {
       return NextResponse.json({ error: "Email, password, and name are required" }, { status: 400 });
@@ -36,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await db.user.findUnique({ where: { email } });
     if (existingUser) {
       return NextResponse.json({ error: "An account with this email already exists" }, { status: 400 });
     }
@@ -45,12 +37,12 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hashPassword(password);
 
     // Create user
-    const user = await prisma.user.create({
+    const user = await db.user.create({
       data: {
         email,
         name,
         password: hashedPassword,
-        role: safeRole,
+        role: roleValidation.role,
       },
     });
 

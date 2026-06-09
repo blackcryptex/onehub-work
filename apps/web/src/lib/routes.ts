@@ -115,7 +115,7 @@ export function contractDetail(contractId: string): string {
 export function dashboard(role: Role | undefined): string {
   switch (role) {
     case "ADMIN":
-      return "/app/admin/overview";
+      return "/admin/overview";
     case "DIY_PLANNER":
       return "/diy-planner";
     case "PRO_PLANNER":
@@ -125,9 +125,9 @@ export function dashboard(role: Role | undefined): string {
     case "VENUE":
       return "/venue/dashboard";
     case "EVENT_DREAMER":
-      return "/event-dreamer";
+      return "/diy-planner";
     case "CLIENT":
-      return "/app";
+      return "/client";
     default:
       return "/app";
   }
