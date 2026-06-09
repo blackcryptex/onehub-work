@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { createStopImpersonationSessionUpdate } from "@/lib/auth";
+import { db } from "@/server/db";
 
 /**
  * API route to stop impersonation
  * 
  * This route validates admin access and confirms impersonation is active.
- * The actual session update happens on the client side using NextAuth's update() method,
- * which triggers the JWT callback with trigger === 'update' and clears actingUserId.
+ * The actual session update happens on the client side using NextAuth's update() method
+ * with a short-lived server-signed transition token from this route.
  * 
  * Security: Only works if there's an active impersonation session.
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await auth();
     const realUserId = session?.user?.realUserId || session?.user?.id;
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify the real user is an admin
-    const realUser = await prisma.user.findUnique({ where: { id: realUserId } });
+    const realUser = await db.user.findUnique({ where: { id: realUserId } });
     if (!realUser || realUser.role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
     }
@@ -32,10 +33,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not currently impersonating" }, { status: 400 });
     }
     
-    // Return success - client will call session.update({ actingUserId: null })
+    const sessionUpdate = createStopImpersonationSessionUpdate({
+      realUserId,
+      actingUserId,
+    });
+
+    // Return success and signed session update payload.
     return NextResponse.json({
       success: true,
       message: "Impersonation stopped",
+      sessionUpdate,
     });
   } catch (error) {
     console.error("[Impersonation] Error stopping impersonation:", error);

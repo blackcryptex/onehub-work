@@ -39,10 +39,15 @@ export function ImpersonationBanner() {
         return;
       }
 
-      // Update NextAuth session - clear actingUserId
-      await update({
-        actingUserId: null,
-      });
+      const data = await response.json();
+      if (!data.sessionUpdate) {
+        alert("Failed to stop impersonation");
+        setIsStopping(false);
+        return;
+      }
+
+      // Update NextAuth session with the server-authorized transition payload.
+      await update(data.sessionUpdate);
 
       // Redirect to admin dashboard
       router.push("/admin/overview");

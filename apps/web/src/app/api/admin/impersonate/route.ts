@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { createImpersonationSessionUpdate } from "@/lib/auth";
+import { db } from "@/server/db";
 import { recordAudit } from "@/server/lib/audit";
 import { GUARDED_MVP_PLATFORM_ADMIN_AUTHORITY, getGuardedMvpAuthorityForUserId } from "@/lib/rbac";
 
@@ -8,8 +9,8 @@ import { GUARDED_MVP_PLATFORM_ADMIN_AUTHORITY, getGuardedMvpAuthorityForUserId }
  * API route to start impersonation
  * 
  * This route validates admin access and returns the target user info.
- * The actual session update happens on the client side using NextAuth's update() method,
- * which triggers the JWT callback with trigger === 'update'.
+ * The actual session update happens on the client side using NextAuth's update() method
+ * with a short-lived server-signed transition token from this route.
  * 
  * Security: Only canonical guarded-MVP PLATFORM_ADMIN users can impersonate other users,
  * and only with break-glass evidence.
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify target user exists
-    const targetUser = await prisma.user.findUnique({
+    const targetUser = await db.user.findUnique({
       where: { id: targetUserId },
       select: { id: true, email: true, role: true },
     });
@@ -75,7 +76,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Return target user info, client will call session.update() with actingUserId
+    const sessionUpdate = createImpersonationSessionUpdate({
+      realUserId,
+      actingUserId: targetUser.id,
+    });
+
+    // Return target user info and signed session update payload.
     return NextResponse.json({
       success: true,
       targetUser: {
@@ -83,8 +89,7 @@ export async function POST(request: NextRequest) {
         email: targetUser.email,
         role: targetUser.role,
       },
-      // Client will use this to update the session
-      actingUserId: targetUser.id,
+      sessionUpdate,
       breakGlass: {
         authorityPath: `guarded-mvp.${GUARDED_MVP_PLATFORM_ADMIN_AUTHORITY}`,
         incidentTicketId: incidentTicketId.trim(),

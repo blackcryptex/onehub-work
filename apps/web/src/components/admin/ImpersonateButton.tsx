@@ -14,10 +14,9 @@ interface ImpersonateButtonProps {
 /**
  * Client component for starting/stopping impersonation
  * 
- * Uses NextAuth's update() method to modify the session token,
- * which triggers the JWT callback with trigger === 'update'.
+ * Uses NextAuth's update() method with a server-signed transition token.
  */
-export function ImpersonateButton({ userId, userEmail }: ImpersonateButtonProps) {
+export function ImpersonateButton({ userId, userEmail: _userEmail }: ImpersonateButtonProps) {
   const { data: session, update } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -44,11 +43,14 @@ export function ImpersonateButton({ userId, userEmail }: ImpersonateButtonProps)
 
       const data = await response.json();
 
-      // Update NextAuth session - this triggers JWT callback with trigger === 'update'
-      // The JWT callback will set actingUserId and load the target user's role
-      await update({
-        actingUserId: data.actingUserId,
-      });
+      if (!data.sessionUpdate) {
+        alert("Failed to start impersonation");
+        setIsLoading(false);
+        return;
+      }
+
+      // Update NextAuth session with the server-authorized transition payload.
+      await update(data.sessionUpdate);
 
       // Redirect to app dashboard (will route based on impersonated user's role)
       router.push("/app");
@@ -75,10 +77,15 @@ export function ImpersonateButton({ userId, userEmail }: ImpersonateButtonProps)
         return;
       }
 
-      // Update NextAuth session - clear actingUserId
-      await update({
-        actingUserId: null,
-      });
+      const data = await response.json();
+      if (!data.sessionUpdate) {
+        alert("Failed to stop impersonation");
+        setIsLoading(false);
+        return;
+      }
+
+      // Update NextAuth session with the server-authorized transition payload.
+      await update(data.sessionUpdate);
 
       // Redirect to admin dashboard
       router.push("/admin/overview");
