@@ -7,9 +7,9 @@ Commit only curated Markdown evidence reports from the dirty safety snapshot. Do
 ## Counts
 
 - Dirty snapshot report/evidence candidates reviewed: 156
-- Curated Markdown reports restored and committed: 51
-- Raw/generated/local artifacts intentionally left out: 101
-- Credential-shaped DB/runbook reports intentionally left out pending manual redaction: 4
+- Curated/redacted Markdown reports restored and committed: 56
+- Raw/generated/local artifacts intentionally left out by ignore policy: 100
+- Credential-shaped DB/runbook reports redacted and committed: 4
 
 ## Restored curated Markdown reports
 
@@ -31,6 +31,7 @@ Commit only curated Markdown evidence reports from the dirty safety snapshot. Do
 - `reports/production/gate1/phase1b/baseline-isolation/handoff.md`
 - `reports/production/gate1/phase1b/baseline-typecheck-repair/repair-notes.md`
 - `reports/production/gate2/GATE2_EXIT_SYNTHESIS.md`
+- `reports/production/gate2/phase2a/setup/database-operations-safety-audit.md`
 - `reports/production/gate2/phase2b/db-target-verification/handoff.md`
 - `reports/production/gate2/phase2b/db-target-verification/target-classification.md`
 - `reports/production/gate2/phase2b/schema-reconciliation/handoff.md`
@@ -39,9 +40,13 @@ Commit only curated Markdown evidence reports from the dirty safety snapshot. Do
 - `reports/production/gate2/phase2c/migration-history-reconciliation/db-target-classification.md`
 - `reports/production/gate2/phase2c/migration-history-reconciliation/handoff.md`
 - `reports/production/gate2/phase2c/migration-history-reconciliation/live-readonly-schema-evidence.md`
+- `reports/production/gate2/phase2c/migration-history-reconciliation/migration-row-after-resolve.md`
 - `reports/production/gate2/phase2c/migration-history-reconciliation/preflight-plan.md`
 - `reports/production/gate2/phase2c/runbook-hardening/evidence-index.md`
+- `reports/production/gate2/phase2c/runbook-hardening/migration-safety-checklist.md`
 - `reports/production/gate2/phase2c/runbook-hardening/maintenance-mode-recommendation.md`
+- `reports/production/gate2/phase2c/runbook-hardening/production-migration-runbook.md`
+- `reports/production/gate2/phase2c/runbook-hardening/verification-results.md`
 - `reports/production/gate3/GATE3_EXIT_SYNTHESIS.md`
 - `reports/production/gate3/phase3a/role-onboarding-audit.md`
 - `reports/production/gate3/phase3b/role-selection-routing/evidence.md`
@@ -65,7 +70,7 @@ Commit only curated Markdown evidence reports from the dirty safety snapshot. Do
 - `reports/stabilization/p2-canonical-lifecycle/2026-06-06-steward-canonical-proposal-contract-payment-lifecycle.md`
 - `reports/stabilization/source-of-truth/2026-06-06-steward-source-of-truth-checkpoint.md`
 
-## Explicitly excluded for credential-shaped content
+## Redacted before commit for credential-shaped content
 
 - `reports/production/gate2/phase2a/setup/database-operations-safety-audit.md`
 - `reports/production/gate2/phase2c/runbook-hardening/migration-safety-checklist.md`
@@ -75,12 +80,15 @@ Commit only curated Markdown evidence reports from the dirty safety snapshot. Do
 ## Policy added to .gitignore
 
 - Ignore raw report logs: `reports/**/*.log`
+- Ignore raw Markdown logs: `reports/**/*.log.md`
 - Ignore exit-code markers: `reports/**/*.exit`
 - Ignore screenshots: `reports/**/*.png`, `reports/**/screenshots/`
 - Ignore raw diffs and SQL previews: `reports/**/*.diff`, `reports/**/*.sql`
+- Ignore local report helper scripts: `reports/**/*.py`
 - Ignore command result and mock payment JSON dumps: `reports/**/command-results*.json`, `reports/**/mock-*.json`
+- Ignore raw production report JSON/TXT dumps: `reports/production/**/*.json`, `reports/production/**/*.txt`
 
 ## Notes
 
 - The safety snapshot branch `backup/dirty-snapshot` still preserves excluded artifacts for local recovery if needed.
-- Excluded credential-shaped reports should be redacted before any future commit.
+- Credential-shaped report examples were replaced with `[REDACTED]` placeholders before commit.

@@ -41,10 +41,12 @@ LINKCHECK.json
 
 # raw/local report artifacts; keep curated Markdown reports in git
 reports/**/*.log
+reports/**/*.log.md
 reports/**/*.exit
 reports/**/*.png
 reports/**/*.diff
 reports/**/*.sql
+reports/**/*.py
 reports/**/screenshots/
 reports/**/command-results*.json
 reports/**/mock-*.json
