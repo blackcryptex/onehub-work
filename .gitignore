@@ -38,3 +38,15 @@ node_modules/
 # generated verification/build artifacts
 *.tsbuildinfo
 LINKCHECK.json
+
+# raw/local report artifacts; keep curated Markdown reports in git
+reports/**/*.log
+reports/**/*.exit
+reports/**/*.png
+reports/**/*.diff
+reports/**/*.sql
+reports/**/screenshots/
+reports/**/command-results*.json
+reports/**/mock-*.json
+reports/production/**/*.json
+reports/production/**/*.txt

@@ -1,0 +1,156 @@
+# Gate 1 Phase 1B baseline isolation handoff
+
+Status: BLOCKED - cleanup-by-revert produced more than two distinct typecheck failure sites.
+
+Kept product files: none
+Kept evidence root: reports/production/
+Removed untracked product files: apps/web/src/server/prisma.ts
+Reverted/deferred tracked files: 124 files; full patch saved at reports/production/gate1/phase1b/baseline-isolation/deferred-product-tracked-changes.patch
+Reverted/deferred tracked file list:
+- apps/web/src/app/(app)/admin/abuse/page.tsx
+- apps/web/src/app/(app)/admin/overview/page.tsx
+- apps/web/src/app/(app)/admin/users/page.tsx
+- apps/web/src/app/(app)/admin/verification/detail/page.tsx
+- apps/web/src/app/(app)/admin/verification/disputes/[id]/page.tsx
+- apps/web/src/app/(app)/admin/verification/holdbacks/[id]/page.tsx
+- apps/web/src/app/(app)/admin/verification/overrides/[id]/page.tsx
+- apps/web/src/app/(app)/admin/verification/page.tsx
+- apps/web/src/app/(app)/admin/verification/payouts/[id]/page.tsx
+- apps/web/src/app/(app)/admin/verification/refunds/[id]/page.tsx
+- apps/web/src/app/(app)/billing/connect/page.tsx
+- apps/web/src/app/(app)/billing/payouts/page.tsx
+- apps/web/src/app/(app)/calendar/page.tsx
+- apps/web/src/app/(app)/client/events/[eventSlug]/page.tsx
+- apps/web/src/app/(app)/contracts/[id]/page.tsx
+- apps/web/src/app/(app)/disputes/page.tsx
+- apps/web/src/app/(app)/events/[eventSlug]/budget/page.tsx
+- apps/web/src/app/(app)/events/[eventSlug]/checklists/page.tsx
+- apps/web/src/app/(app)/events/[eventSlug]/guests/page.tsx
+- apps/web/src/app/(app)/events/[eventSlug]/milestones/page.tsx
+- apps/web/src/app/(app)/events/[eventSlug]/page.tsx
+- apps/web/src/app/(app)/events/[eventSlug]/seating/page.tsx
+- apps/web/src/app/(app)/events/[eventSlug]/tasks/page.tsx
+- apps/web/src/app/(app)/marketplace/manage/page.tsx
+- apps/web/src/app/(app)/messages/[threadId]/page.tsx
+- apps/web/src/app/(app)/proposals/[id]/fund/page.tsx
+- apps/web/src/app/(app)/proposals/[id]/page.tsx
+- apps/web/src/app/(app)/requests/page.tsx
+- apps/web/src/app/(app)/vault/[eventSlug]/page.tsx
+- apps/web/src/app/(app)/vault/page.tsx
+- apps/web/src/app/api/admin/impersonate/route.ts
+- apps/web/src/app/api/admin/override-history/route.ts
+- apps/web/src/app/api/admin/stop-impersonate/route.ts
+- apps/web/src/app/api/ai/source-vendors-venues/route.ts
+- apps/web/src/app/api/auth/signup/route.ts
+- apps/web/src/app/api/bookings/request/route.ts
+- apps/web/src/app/api/contracts/[id]/route.ts
+- apps/web/src/app/api/contracts/[id]/sign/route.ts
+- apps/web/src/app/api/contracts/from-proposal/route.ts
+- apps/web/src/app/api/contracts/sign/route.ts
+- apps/web/src/app/api/demo/milestones/[id]/fund/route.ts
+- apps/web/src/app/api/demo/preflight/route.ts
+- apps/web/src/app/api/diy/events/route.ts
+- apps/web/src/app/api/dreams/create/route.ts
+- apps/web/src/app/api/events/[eventSlug]/deposits/route.ts
+- apps/web/src/app/api/events/[eventSlug]/route.ts
+- apps/web/src/app/api/events/[eventSlug]/share/route.ts
+- apps/web/src/app/api/events/[eventSlug]/stakeholders/route.ts
+- apps/web/src/app/api/events/create/route.ts
+- apps/web/src/app/api/google/callback/route.ts
+- apps/web/src/app/api/google/connect/route.ts
+- apps/web/src/app/api/google/status/route.ts
+- apps/web/src/app/api/google/sync/push/route.ts
+- apps/web/src/app/api/notifications/[id]/read/route.ts
+- apps/web/src/app/api/notifications/route.ts
+- apps/web/src/app/api/orgs/create/route.ts
+- apps/web/src/app/api/payments/auto-build/route.ts
+- apps/web/src/app/api/payments/confirm/route.ts
+- apps/web/src/app/api/payments/create-intent/route.ts
+- apps/web/src/app/api/payments/deposits/auto/route.ts
+- apps/web/src/app/api/payments/lines/[id]/route.ts
+- apps/web/src/app/api/payments/lines/route.ts
+- apps/web/src/app/api/payments/mark-milestone-complete/route.ts
+- apps/web/src/app/api/payments/plan/from-accepted-proposals/route.ts
+- apps/web/src/app/api/payments/receipts/[id]/route.ts
+- apps/web/src/app/api/payments/release-milestone/route.ts
+- apps/web/src/app/api/proposals/[id]/approve/route.ts
+- apps/web/src/app/api/proposals/[id]/route.ts
+- apps/web/src/app/api/proposals/generate/route.ts
+- apps/web/src/app/api/providers/profile/route.ts
+- apps/web/src/app/api/refund-requests/route.ts
+- apps/web/src/app/api/shortlist/add/route.ts
+- apps/web/src/app/api/shortlist/route.ts
+- apps/web/src/app/api/stripe/webhook/route.ts
+- apps/web/src/app/api/users/invite-client/route.ts
+- apps/web/src/app/api/users/search/route.ts
+- apps/web/src/app/api/vendor-venue/check-profile/route.ts
+- apps/web/src/app/api/vendors/search/route.ts
+- apps/web/src/app/app/billing/connect/page.tsx
+- apps/web/src/app/app/page.tsx
+- apps/web/src/app/demo/start/page.tsx
+- apps/web/src/app/diy-planner/vault/[eventSlug]/page.tsx
+- apps/web/src/app/diy-planner/vault/page.tsx
+- apps/web/src/app/marketplace/[slug]/page.tsx
+- apps/web/src/app/marketplace/page.tsx
+- apps/web/src/app/pro/planner/page.tsx
+- apps/web/src/app/pro/planner/vault/[eventSlug]/page.tsx
+- apps/web/src/app/pro/planner/vault/page.tsx
+- apps/web/src/app/rsvp/[token]/page.tsx
+- apps/web/src/app/vendor/dashboard/page.tsx
+- apps/web/src/app/venue/dashboard/page.tsx
+- apps/web/src/server/routers/activity.ts
+- apps/web/src/server/routers/admin.ts
+- apps/web/src/server/routers/ai.ts
+- apps/web/src/server/routers/audit.ts
+- apps/web/src/server/routers/availability.ts
+- apps/web/src/server/routers/billing.ts
+- apps/web/src/server/routers/bookingRequest.ts
+- apps/web/src/server/routers/budget.ts
+- apps/web/src/server/routers/calendar.ts
+- apps/web/src/server/routers/checklist.ts
+- apps/web/src/server/routers/contract.ts
+- apps/web/src/server/routers/dispute.ts
+- apps/web/src/server/routers/event.ts
+- apps/web/src/server/routers/flags.ts
+- apps/web/src/server/routers/guest.ts
+- apps/web/src/server/routers/invite.ts
+- apps/web/src/server/routers/listing.ts
+- apps/web/src/server/routers/membership.ts
+- apps/web/src/server/routers/message.ts
+- apps/web/src/server/routers/milestone.ts
+- apps/web/src/server/routers/notification.ts
+- apps/web/src/server/routers/org.ts
+- apps/web/src/server/routers/proposal.ts
+- apps/web/src/server/routers/review.ts
+- apps/web/src/server/routers/search.ts
+- apps/web/src/server/routers/seating.ts
+- apps/web/src/server/routers/settings.ts
+- apps/web/src/server/routers/shortlist.ts
+- apps/web/src/server/routers/task.ts
+- apps/web/src/server/routers/thread.ts
+- packages/ui/package.json
+- pnpm-lock.yaml
+- scripts/seed.ts
+
+Validation:
+- pnpm -C apps/web typecheck: exit 2; 50 TS errors across 25 files
+- pnpm -C apps/web build: not-run-typecheck-failed (not run because typecheck failed)
+
+Evidence files:
+- reports/production/gate1/phase1b/baseline-isolation/build.exit
+- reports/production/gate1/phase1b/baseline-isolation/build.log
+- reports/production/gate1/phase1b/baseline-isolation/cleanup-classification.json
+- reports/production/gate1/phase1b/baseline-isolation/deferred-product-tracked-changes.patch
+- reports/production/gate1/phase1b/baseline-isolation/final-diff-name-status.txt
+- reports/production/gate1/phase1b/baseline-isolation/final-diff-stat.txt
+- reports/production/gate1/phase1b/baseline-isolation/final-git-status.txt
+- reports/production/gate1/phase1b/baseline-isolation/post-clean-pre-validation-diff-name-status.txt
+- reports/production/gate1/phase1b/baseline-isolation/post-clean-pre-validation-diff-stat.txt
+- reports/production/gate1/phase1b/baseline-isolation/post-clean-pre-validation-git-status.txt
+- reports/production/gate1/phase1b/baseline-isolation/pre-clean-diff-name-status.txt
+- reports/production/gate1/phase1b/baseline-isolation/pre-clean-diff-stat.txt
+- reports/production/gate1/phase1b/baseline-isolation/pre-clean-git-status.txt
+- reports/production/gate1/phase1b/baseline-isolation/pre-clean-untracked.txt
+- reports/production/gate1/phase1b/baseline-isolation/typecheck.exit
+- reports/production/gate1/phase1b/baseline-isolation/typecheck.log
+- reports/production/gate1/phase1b/baseline-isolation/validation-summary.json
