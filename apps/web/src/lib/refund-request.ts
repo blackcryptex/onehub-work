@@ -13,7 +13,7 @@ export async function buildRefundRequestContext(proposalId: string, milestoneId?
     where: { id: proposalId },
     include: {
       contract: true,
-      event: true,
+      event: { include: { org: { select: { type: true } } } },
       milestones: true,
     },
   });

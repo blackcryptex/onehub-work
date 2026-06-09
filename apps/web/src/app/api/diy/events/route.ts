@@ -241,9 +241,7 @@ function mapEvent(event: PrismaEventWithRelations): EventItem {
   const milestones = event.milestones.map(mapMilestone);
   const proposals = event.proposals.map(mapProposal);
   const contracts = event.contracts.map(mapContract);
-  const guests = event.guestLists.flatMap((list) =>
-    list.guests.map((guest: { firstName?: string | null; lastName?: string | null; email?: string | null; status: RSVPStatus }) => mapGuest(guest)),
-  );
+  const guests = event.guestLists?.guests.map((guest: { firstName?: string | null; lastName?: string | null; email?: string | null; status: RSVPStatus }) => mapGuest(guest)) ?? [];
   const vendors = event.shortlistItems.map(mapVendor);
 
   const budgetPlanned = event.budgetLines.reduce(

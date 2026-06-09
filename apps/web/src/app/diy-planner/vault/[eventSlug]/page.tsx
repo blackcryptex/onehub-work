@@ -206,7 +206,7 @@ export default async function DIYVaultDetailPage({
   const checklistDone = event.checklists.reduce((sum, c) => sum + c.items.filter((i) => i.done).length, 0);
   const progress = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
 
-  const guestList = event.guestLists[0];
+  const guestList = event.guestLists;
   const totalGuests = guestList?.guests.length || 0;
   const rsvped = guestList?.guests.filter((g) => g.status === "ACCEPTED").length || 0;
   const rsvpPending = guestList?.guests.filter((g) => g.status === "PENDING").length || 0;
@@ -675,7 +675,7 @@ export default async function DIYVaultDetailPage({
                           </Link>
                         </Button>
                         <Button asChild size="sm" variant="ghost">
-                          <Link href="/app/requests">View booking requests</Link>
+                          <Link href="/requests">View booking requests</Link>
                         </Button>
                       </div>
                     </div>

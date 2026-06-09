@@ -8,7 +8,7 @@ import { randomBytes } from "crypto";
 export const guestRouter = router({
   list: publicProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
     const event = await prisma.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { guestLists: { include: { guests: { include: { group: true, seat: true, invitations: true } } } } } });
-    const guestList = event.guestLists[0];
+    const guestList = event.guestLists;
     if (!guestList) return [];
     return guestList.guests;
   }),

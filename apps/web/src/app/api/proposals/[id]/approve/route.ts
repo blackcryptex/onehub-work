@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
 import { getLegalSurface } from "@/lib/legal-surface";
+import { toRuntimeBookingClassification } from "@/lib/booking-classification";
 
 /**
  * POST /api/proposals/[id]/approve
@@ -81,7 +82,7 @@ export async function POST(
     });
 
     const requestContextId = request.headers.get("x-request-id") || undefined;
-    const bookingClassification = String((proposal as any).bookingClassification || "DIRECT").toLowerCase();
+    const bookingClassification = toRuntimeBookingClassification((proposal as any).bookingClassification) ?? "direct";
     await recordAcceptance({
       actorId: user.id,
       actorRole: user.role,

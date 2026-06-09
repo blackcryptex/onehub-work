@@ -105,7 +105,7 @@ export const adminRouter = router({
       const proposal = await prisma.proposal.findUnique({
         where: { id: input.proposalId },
         include: {
-          event: true,
+          event: { include: { org: { select: { type: true } } } },
           contract: true,
         },
       });

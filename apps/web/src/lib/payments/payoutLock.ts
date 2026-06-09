@@ -33,6 +33,7 @@ export async function getLockMap(
 
   const lockMap: Record<string, boolean> = {};
   for (const record of lockRecords) {
+    if (!record.stripeId) continue;
     // Extract payoutId from stripeId (format: "payout_lock_${payoutId}")
     const payoutId = record.stripeId.replace("payout_lock_", "");
     lockMap[payoutId] = true;

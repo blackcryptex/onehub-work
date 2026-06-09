@@ -41,6 +41,9 @@ export async function POST(request: NextRequest) {
     if (!canManageHoldbacks(user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: user ? 403 : 401 });
     }
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const body = holdbackDecisionSchema.parse(await request.json());
     const holdback = await applyHoldbackDecision({

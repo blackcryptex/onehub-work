@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { isDemoMode } from "@/lib/demo-mode";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
 import { getLegalSurface } from "@/lib/legal-surface";
+import { toRuntimeBookingClassification } from "@/lib/booking-classification";
 
 export async function POST(
   request: NextRequest,
@@ -173,7 +174,7 @@ export async function POST(
       data: { status: newStatus },
     });
 
-    const bookingClassification = String((contract.proposal as any).bookingClassification || "DIRECT").toLowerCase();
+    const bookingClassification = toRuntimeBookingClassification((contract.proposal as any).bookingClassification) ?? "direct";
     await recordAcceptance({
       actorId: user.id,
       actorRole: user.role,

@@ -46,7 +46,7 @@ export type EventVaultPayload = Prisma.EventGetPayload<{
 // Helper types for component usage
 export type Checklist = EventVaultPayload["checklists"][number];
 export type ChecklistItem = Checklist["items"][number];
-export type GuestList = EventVaultPayload["guestLists"][number];
+export type GuestList = NonNullable<EventVaultPayload["guestLists"]>;
 export type Guest = GuestList["guests"][number];
 export type Milestone = EventVaultPayload["milestones"][number];
 export type Proposal = EventVaultPayload["proposals"][number];

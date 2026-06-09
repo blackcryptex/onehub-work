@@ -64,8 +64,8 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
     }
   }
   
-  const hasContent = proposal.summary || (proposal.sections && proposal.sections.length > 0) || (proposal.lineItems && proposal.lineItems.length > 0);
-  const canEdit = user && canManageEvent(user, proposal.event) && (proposal.status === "DRAFT" || proposal.status === "SENT");
+  const hasContent = Boolean(proposal.summary || (proposal.sections && proposal.sections.length > 0) || (proposal.lineItems && proposal.lineItems.length > 0));
+  const canEdit = Boolean(user && canManageEvent(user, proposal.event) && (proposal.status === "DRAFT" || proposal.status === "SENT"));
   
   return (
     <ProposalPageClient

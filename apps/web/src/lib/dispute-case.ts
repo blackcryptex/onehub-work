@@ -13,7 +13,7 @@ export async function buildDisputeCaseContext(proposalId: string, milestoneId?: 
     where: { id: proposalId },
     include: {
       contract: true,
-      event: true,
+      event: { include: { org: { select: { type: true } } } },
       milestones: true,
       refundRequests: { orderBy: { createdAt: "desc" }, take: 5 },
     },
@@ -159,10 +159,6 @@ export async function reviewDisputeCase(input: {
     status = "RESOLVED_SELLER_FAVOR";
     freezeState = "RELEASE_ELIGIBLE";
     resolutionType = "SELLER_FAVOR";
-  } else if (input.action === "REJECT") {
-    status = "REJECTED";
-    freezeState = "RELEASE_ELIGIBLE";
-    resolutionType = "REJECTED";
   } else if (input.action === "REOPEN") {
     status = "OPEN";
     freezeState = "FROZEN";
@@ -245,9 +241,7 @@ export async function reviewDisputeCase(input: {
     decision:
       input.action === "REFUND" || input.action === "SELLER_FAVOR"
         ? "APPROVED"
-        : input.action === "REJECT"
-          ? "DENIED"
-          : "APPLIED",
+        : "APPLIED",
     reason: input.decisionReason,
     proposalId: existing.proposalId,
     contractId: existing.contractId,
