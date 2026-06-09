@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 
 export const dynamic = "force-dynamic";
 
@@ -27,14 +27,18 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") || "";
     const role = searchParams.get("role") || "CLIENT";
 
+    if (role !== "CLIENT") {
+      return NextResponse.json({ error: "Only CLIENT user search is supported" }, { status: 400 });
+    }
+
     if (!query.trim()) {
       return NextResponse.json({ users: [] });
     }
 
     // Search for users by name or email, filtered by role
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
       where: {
-        role: role as any,
+        role: "CLIENT",
         OR: [
           { email: { contains: query, mode: "insensitive" } },
           { name: { contains: query, mode: "insensitive" } },
