@@ -34,3 +34,7 @@ node_modules/
 **/.next/
 .DS_Store
 *.swp
+
+# generated verification/build artifacts
+*.tsbuildinfo
+LINKCHECK.json

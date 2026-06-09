@@ -21,6 +21,7 @@ module.exports = {
       varsIgnorePattern: "^_",
       ignoreRestSiblings: true
     }],
+    "react/prop-types": "off",
     "react/no-unescaped-entities": "error"
   }
 };

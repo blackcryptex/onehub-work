@@ -351,8 +351,17 @@ async function main() {
       orgId: plannerAgency.id,
       eventId: ev.id,
       proposalId: proposal1.id,
+      actorId: pro.id,
+      actorRole: pro.role,
+      bookingClassification: "PLANNER_MEDIATED",
+      feeProfileSnapshot: {
+        source: "seed",
+        currency: "USD",
+        platformFeeBps: 1000,
+      },
       title: "Venue availability issue",
       body: "Requesting resolution for date conflict",
+      disputeReason: "Provider date conflict requires manual resolution",
       status: "OPEN",
     },
   });
@@ -745,7 +754,7 @@ async function main() {
       type: "PROPOSAL_CREATED",
       title: "New proposal created for Demo Wedding Event",
       body: "A proposal has been created for Elite Photography Studio",
-      link: demoProposal ? `/app/proposals/${demoProposal.id}` : `/app/events/demo-wedding`,
+      link: demoProposal ? `/proposals/${demoProposal.id}` : `/events/demo-wedding`,
     },
     {
       userId: pro.id,
