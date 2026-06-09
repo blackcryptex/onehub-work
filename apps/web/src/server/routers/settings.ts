@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, publicProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
@@ -27,28 +27,28 @@ export const settingsRouter = router({
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
     if (!userId) throw new Error("Unauthorized");
-    return prisma.userSettings.findUnique({ where: { userId } });
+    return db.userSettings.findUnique({ where: { userId } });
   }),
   updateUserSettings: publicProcedure.input(userSettingsPartial).mutation(async ({ input }) => {
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
     if (!userId) throw new Error("Unauthorized");
-    const settings = await prisma.userSettings.upsert({ where: { userId }, create: { userId, ...input }, update: { ...input } });
+    const settings = await db.userSettings.upsert({ where: { userId }, create: { userId, ...input }, update: { ...input } });
     await recordAudit({ actorId: userId, action: "user.settings.update", target: userId, metadata: input });
     return settings;
   }),
   getOrgSettings: publicProcedure.input(z.object({ orgId: z.string() })).query(({ input }) => {
-    return prisma.orgSettings.findUnique({ where: { orgId: input.orgId } });
+    return db.orgSettings.findUnique({ where: { orgId: input.orgId } });
   }),
   updateOrgSettings: publicProcedure.input(z.object({ orgId: z.string(), data: orgSettingsPartial })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
-    const org = await prisma.organization.findUnique({ where: { id: input.orgId }, include: { members: true } });
+    const org = await db.organization.findUnique({ where: { id: input.orgId }, include: { members: true } });
     if (!org) throw new Error("Org not found");
     // Centralized permission check: see apps/web/src/lib/rbac.ts
     const mem = org.members.find((m) => m.userId === user.id);
     if (!isOrgAdminOrOwner(user, org, mem)) throw new Error("Forbidden");
-    const settings = await prisma.orgSettings.upsert({ where: { orgId: input.orgId }, create: { orgId: input.orgId, ...input.data }, update: { ...input.data } });
+    const settings = await db.orgSettings.upsert({ where: { orgId: input.orgId }, create: { orgId: input.orgId, ...input.data }, update: { ...input.data } });
     await recordAudit({ actorId: user.id, orgId: input.orgId, action: "org.settings.update", target: input.orgId, metadata: input.data });
     return settings;
   }),

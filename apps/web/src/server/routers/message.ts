@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, publicProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 
@@ -11,7 +11,7 @@ export const messageRouter = router({
   })).mutation(async ({ input }) => {
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
-    return prisma.message.create({
+    return db.message.create({
       data: {
         threadId: input.threadId,
         senderId: userId ?? undefined,

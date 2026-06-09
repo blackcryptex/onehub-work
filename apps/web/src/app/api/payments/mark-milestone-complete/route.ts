@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canMarkMilestoneComplete } from "@/lib/rbac";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { z } from "zod";
 import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
 import { getRequestLogger } from "@/lib/logger";
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const { milestoneId } = markCompleteSchema.parse(body);
 
     // Fetch milestone with contract and event
-    const milestone = await prisma.paymentMilestone.findUnique({
+    const milestone = await db.paymentMilestone.findUnique({
       where: { id: milestoneId },
       include: {
         proposal: {
@@ -71,8 +71,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Centralized permission check: see apps/web/src/lib/rbac.ts
-    // Note: sellerId field will be available after Prisma migration
-    const isSeller = (contract as any).sellerId === user.id;
+    // Contract.sellerId is a seller organization id, not a user id.
+    const sellerOrgId = typeof contract.sellerId === "string" ? contract.sellerId : null;
+    const sellerMembership = sellerOrgId
+      ? await db.membership.findFirst({
+          where: {
+            orgId: sellerOrgId,
+            userId: user.id,
+            role: { in: ["OWNER", "ADMIN", "MEMBER"] },
+          },
+        })
+      : null;
+    const isSeller = Boolean(sellerMembership);
     if (!canMarkMilestoneComplete(user, event, isSeller)) {
       return NextResponse.json({ error: "Only the seller or planner can mark milestones as complete" }, { status: 403 });
     }

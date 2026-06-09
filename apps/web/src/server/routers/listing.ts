@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, publicProcedure } from "@/server/trpc";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner, canEditListing } from "@/lib/rbac";
@@ -23,14 +23,14 @@ export const listingRouter = router({
   create: publicProcedure.input(createSchema).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
-    const org = await prisma.organization.findUnique({ where: { slug: input.orgSlug }, include: { members: true } });
+    const org = await db.organization.findUnique({ where: { slug: input.orgSlug }, include: { members: true } });
     if (!org) throw new Error("Org not found");
     // Centralized permission check: see apps/web/src/lib/rbac.ts
     const mem = org.members.find((m) => m.userId === user.id);
     if (!isOrgAdminOrOwner(user, org, mem)) throw new Error("Forbidden");
     const slugBase = input.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 50);
     const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
-    const listing = await prisma.listing.create({
+    const listing = await db.listing.create({
       data: {
         orgId: org.id,
         slug,
@@ -59,52 +59,52 @@ export const listingRouter = router({
   update: publicProcedure.input(z.object({ listingId: z.string(), data: z.object({ title: z.string().optional(), description: z.string().optional(), category: z.enum(["VENUE_SPACE","CATERING","DECOR_FLORAL","ENTERTAINMENT","PHOTO_VIDEO","TRANSPORT","STAFFING","PLANNING_SERVICES","RENTALS","OTHER"]).optional(), priceTier: z.number().int().min(1).max(5).optional() }).partial() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
-    const listing = await prisma.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { org: { include: { members: true } } } });
+    const listing = await db.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { org: { include: { members: true } } } });
     // Centralized permission check: vendors/venues can edit their own listings: see apps/web/src/lib/rbac.ts
     if (!canEditListing(user, listing)) throw new Error("Forbidden");
-    const updated = await prisma.listing.update({ where: { id: input.listingId }, data: input.data });
+    const updated = await db.listing.update({ where: { id: input.listingId }, data: input.data });
     await recordActivity({ orgId: listing.orgId, actorId: user.id, action: "LISTING_UPDATED", target: listing.id });
     return updated;
   }),
-  getBySlug: publicProcedure.input(z.object({ slug: z.string() })).query(({ input }) => prisma.listing.findUnique({ where: { slug: input.slug }, include: { tags: true, gallery: true, offers: true, reviews: { include: { author: true } } } })),
+  getBySlug: publicProcedure.input(z.object({ slug: z.string() })).query(({ input }) => db.listing.findUnique({ where: { slug: input.slug }, include: { tags: true, gallery: true, offers: true, reviews: { include: { author: true } } } })),
   listByOrg: publicProcedure.input(z.object({ orgSlug: z.string() })).query(async ({ input }) => {
-    const org = await prisma.organization.findUnique({ where: { slug: input.orgSlug } });
+    const org = await db.organization.findUnique({ where: { slug: input.orgSlug } });
     if (!org) return [];
-    return prisma.listing.findMany({ where: { orgId: org.id }, include: { tags: true, gallery: { take: 1 } } });
+    return db.listing.findMany({ where: { orgId: org.id }, include: { tags: true, gallery: { take: 1 } } });
   }),
   addTag: publicProcedure.input(z.object({ listingId: z.string(), value: z.string() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
-    const listing = await prisma.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { org: { include: { members: true } } } });
+    const listing = await db.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { org: { include: { members: true } } } });
     // Centralized permission check: vendors/venues can edit their own listings: see apps/web/src/lib/rbac.ts
     if (!canEditListing(user, listing)) throw new Error("Forbidden");
-    return prisma.listingTag.create({ data: { listingId: input.listingId, value: input.value } });
+    return db.listingTag.create({ data: { listingId: input.listingId, value: input.value } });
   }),
   removeTag: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
-    const tag = await prisma.listingTag.findUniqueOrThrow({ where: { id: input.id }, include: { listing: { include: { org: { include: { members: true } } } } } });
+    const tag = await db.listingTag.findUniqueOrThrow({ where: { id: input.id }, include: { listing: { include: { org: { include: { members: true } } } } } });
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     // Centralized permission check: vendors/venues can edit their own listings: see apps/web/src/lib/rbac.ts
     if (!canEditListing(user, tag.listing)) throw new Error("Forbidden");
-    await prisma.listingTag.delete({ where: { id: input.id } });
+    await db.listingTag.delete({ where: { id: input.id } });
     return true;
   }),
   addMedia: publicProcedure.input(z.object({ listingId: z.string(), url: z.string().url(), caption: z.string().optional() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
-    const listing = await prisma.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { org: { include: { members: true } } } });
+    const listing = await db.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { org: { include: { members: true } } } });
     // Centralized permission check: vendors/venues can edit their own listings: see apps/web/src/lib/rbac.ts
     if (!canEditListing(user, listing)) throw new Error("Forbidden");
-    return prisma.media.create({ data: { listingId: input.listingId, url: input.url, caption: input.caption } });
+    return db.media.create({ data: { listingId: input.listingId, url: input.url, caption: input.caption } });
   }),
   removeMedia: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
-    const media = await prisma.media.findUniqueOrThrow({ where: { id: input.id }, include: { listing: { include: { org: { include: { members: true } } } } } });
+    const media = await db.media.findUniqueOrThrow({ where: { id: input.id }, include: { listing: { include: { org: { include: { members: true } } } } } });
     if (!media.listing) throw new Error("Not a listing media");
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     // Centralized permission check: vendors/venues can edit their own listings: see apps/web/src/lib/rbac.ts
     if (!canEditListing(user, media.listing)) throw new Error("Forbidden");
-    await prisma.media.delete({ where: { id: input.id } });
+    await db.media.delete({ where: { id: input.id } });
     return true;
   }),
 });

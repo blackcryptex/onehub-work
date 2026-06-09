@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, publicProcedure } from "@/server/trpc";
 
 export const threadRouter = router({
@@ -11,7 +11,7 @@ export const threadRouter = router({
     subject: z.string(),
     participants: z.array(z.object({ email: z.string().email(), userId: z.string().optional(), roleHint: z.string().optional() })),
   })).mutation(({ input }) =>
-    prisma.thread.create({
+    db.thread.create({
       data: {
         orgId: input.orgId,
         eventId: input.eventId,
@@ -26,9 +26,9 @@ export const threadRouter = router({
     eventId: z.string().optional(),
     proposalId: z.string().optional(),
     listingId: z.string().optional(),
-  })).query(({ input }) => prisma.thread.findMany({ where: input, include: { participants: true, messages: { take: 1, orderBy: { createdAt: "desc" } } } })),
+  })).query(({ input }) => db.thread.findMany({ where: input, include: { participants: true, messages: { take: 1, orderBy: { createdAt: "desc" } } } })),
   get: publicProcedure.input(z.object({ threadId: z.string() })).query(({ input }) =>
-    prisma.thread.findUnique({ where: { id: input.threadId }, include: { participants: true, messages: { include: { thread: true } } } })
+    db.thread.findUnique({ where: { id: input.threadId }, include: { participants: true, messages: { include: { thread: true } } } })
   ),
 });
 

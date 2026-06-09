@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, publicProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import type { Prisma, ListingCategory } from "@prisma/client";
@@ -9,7 +9,7 @@ export const aiRouter = router({
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
     if (!userId) throw new Error("Unauthorized");
-    const event = await prisma.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
+    const event = await db.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
     const membership = event.org.members.find((m) => m.userId === userId);
     if (!membership) throw new Error("Forbidden");
     // TODO: Use AI/ML to generate suggestions; for now, return template-based suggestions
@@ -31,7 +31,7 @@ export const aiRouter = router({
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
     if (!userId) throw new Error("Unauthorized");
-    const event = await prisma.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
+    const event = await db.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
     const membership = event.org.members.find((m) => m.userId === userId);
     if (!membership) throw new Error("Forbidden");
     // TODO: Use AI/ML to search marketplace based on event type, location, budget, etc.
@@ -43,7 +43,7 @@ export const aiRouter = router({
     if (event.venueCity) {
       where.city = event.venueCity;
     }
-    const listings = await prisma.listing.findMany({
+    const listings = await db.listing.findMany({
       where,
       include: { org: true, tags: true, gallery: true },
       take: 10,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, publicProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
@@ -13,7 +13,7 @@ export const calendarRouter = router({
     from: z.date().optional(),
     to: z.date().optional(),
   })).query(async ({ input }) => {
-    const org = await prisma.organization.findUnique({ where: { slug: input.orgSlug } });
+    const org = await db.organization.findUnique({ where: { slug: input.orgSlug } });
     if (!org) return [];
     const where: Prisma.CalendarEventWhereInput = { orgId: org.id };
     if (input.eventId) {
@@ -32,7 +32,7 @@ export const calendarRouter = router({
         where.startAt = { lte: input.to };
       }
     }
-    return prisma.calendarEvent.findMany({ where, orderBy: { startAt: "asc" } });
+    return db.calendarEvent.findMany({ where, orderBy: { startAt: "asc" } });
   }),
 
   create: publicProcedure.input(z.object({
@@ -48,11 +48,11 @@ export const calendarRouter = router({
   })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
-    const org = await prisma.organization.findUnique({ where: { slug: input.orgSlug }, include: { members: true } });
+    const org = await db.organization.findUnique({ where: { slug: input.orgSlug }, include: { members: true } });
     if (!org) throw new Error("Org not found");
     // Centralized permission check: see apps/web/src/lib/rbac.ts
     if (!isOrgMember(user, org)) throw new Error("Forbidden");
-    return prisma.calendarEvent.create({
+    return db.calendarEvent.create({
       data: {
         orgId: org.id,
         eventId: input.eventId,
@@ -80,20 +80,20 @@ export const calendarRouter = router({
   })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
-    const evt = await prisma.calendarEvent.findUniqueOrThrow({ where: { id: input.id }, include: { org: { include: { members: true } } } });
+    const evt = await db.calendarEvent.findUniqueOrThrow({ where: { id: input.id }, include: { org: { include: { members: true } } } });
     // Centralized permission check: see apps/web/src/lib/rbac.ts
     if (!isOrgMember(user, evt.org)) throw new Error("Forbidden");
     const { id, ...data } = input;
-    return prisma.calendarEvent.update({ where: { id: input.id }, data });
+    return db.calendarEvent.update({ where: { id: input.id }, data });
   }),
 
   delete: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
-    const evt = await prisma.calendarEvent.findUniqueOrThrow({ where: { id: input.id }, include: { org: { include: { members: true } } } });
+    const evt = await db.calendarEvent.findUniqueOrThrow({ where: { id: input.id }, include: { org: { include: { members: true } } } });
     // Centralized permission check: see apps/web/src/lib/rbac.ts
     if (!isOrgMember(user, evt.org)) throw new Error("Forbidden");
-    await prisma.calendarEvent.delete({ where: { id: input.id } });
+    await db.calendarEvent.delete({ where: { id: input.id } });
     return { success: true };
   }),
 
@@ -111,7 +111,7 @@ export const calendarRouter = router({
         const session = await auth();
         const userId = session?.user?.id as string | undefined;
         if (!userId) throw new Error("Unauthorized");
-        const account = await prisma.calendarAccount.findFirst({ where: { id: input.accountId, userId } });
+        const account = await db.calendarAccount.findFirst({ where: { id: input.accountId, userId } });
         if (!account) throw new Error("Account not found");
         // TODO: Pull events from Google Calendar API
         console.log("[STUB] Pulling events from Google Calendar for account", input.accountId);
@@ -121,7 +121,7 @@ export const calendarRouter = router({
         const session = await auth();
         const userId = session?.user?.id as string | undefined;
         if (!userId) throw new Error("Unauthorized");
-        const account = await prisma.calendarAccount.findFirst({ where: { id: input.accountId, userId } });
+        const account = await db.calendarAccount.findFirst({ where: { id: input.accountId, userId } });
         if (!account) throw new Error("Account not found");
         // TODO: Push events to Google Calendar API
         console.log("[STUB] Pushing events to Google Calendar for account", input.accountId, "events", input.eventIds);
@@ -141,7 +141,7 @@ export const calendarRouter = router({
         const session = await auth();
         const userId = session?.user?.id as string | undefined;
         if (!userId) throw new Error("Unauthorized");
-        const account = await prisma.calendarAccount.findFirst({ where: { id: input.accountId, userId } });
+        const account = await db.calendarAccount.findFirst({ where: { id: input.accountId, userId } });
         if (!account) throw new Error("Account not found");
         console.log("[STUB] Pulling events from Outlook Calendar for account", input.accountId);
         return { count: 0 };
@@ -150,7 +150,7 @@ export const calendarRouter = router({
         const session = await auth();
         const userId = session?.user?.id as string | undefined;
         if (!userId) throw new Error("Unauthorized");
-        const account = await prisma.calendarAccount.findFirst({ where: { id: input.accountId, userId } });
+        const account = await db.calendarAccount.findFirst({ where: { id: input.accountId, userId } });
         if (!account) throw new Error("Account not found");
         console.log("[STUB] Pushing events to Outlook Calendar for account", input.accountId, "events", input.eventIds);
         return { count: input.eventIds.length };

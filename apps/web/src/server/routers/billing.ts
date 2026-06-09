@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { auth as _auth } from "@/lib/auth";
@@ -14,7 +14,7 @@ export const billingRouter = router({
   // SECURITY HOTFIX: require auth (P0)
   // SECURITY: permission check - user must be org admin/owner
   connectOnboard: protectedProcedure.input(z.object({ orgId: z.string() })).mutation(async ({ input, ctx }) => {
-    const org = await prisma.organization.findUniqueOrThrow({
+    const org = await db.organization.findUniqueOrThrow({
       where: { id: input.orgId },
       include: { members: true },
     });
@@ -39,7 +39,7 @@ export const billingRouter = router({
         });
 
     if (!existingAccountId) {
-      await prisma.organization.update({
+      await db.organization.update({
         where: { id: org.id },
         data: { stripeConnectAccountId: account.id },
       });
@@ -55,7 +55,7 @@ export const billingRouter = router({
     return { url: accountLink.url, accountId: account.id };
   }),
   connectStatus: protectedProcedure.input(z.object({ orgId: z.string() })).query(async ({ input, ctx }) => {
-    const org = await prisma.organization.findUniqueOrThrow({
+    const org = await db.organization.findUniqueOrThrow({
       where: { id: input.orgId },
       include: { members: true },
     });
@@ -95,7 +95,7 @@ export const billingRouter = router({
     proposalId: z.string(),
     amountCents: z.number().int().nonnegative(),
   })).mutation(async ({ input, ctx }) => {
-    const proposal = await prisma.proposal.findUniqueOrThrow({
+    const proposal = await db.proposal.findUniqueOrThrow({
       where: { id: input.proposalId },
       include: {
         escrowAccount: true,
@@ -138,7 +138,7 @@ export const billingRouter = router({
     );
     
     // Update escrow account with Stripe intent (unique constraint prevents duplicates)
-    await prisma.escrowAccount.update({
+    await db.escrowAccount.update({
       where: { id: proposal.escrowAccount.id },
       data: { stripeIntent: intent.id },
     });
@@ -164,7 +164,7 @@ export const billingRouter = router({
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     
-    const milestone = await prisma.paymentMilestone.findUniqueOrThrow({
+    const milestone = await db.paymentMilestone.findUniqueOrThrow({
       where: { id: input.milestoneId },
       include: {
         proposal: {

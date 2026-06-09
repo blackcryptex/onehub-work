@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, publicProcedure } from "@/server/trpc";
 import type { Prisma } from "@prisma/client";
 
@@ -44,7 +44,7 @@ export const searchRouter = router({
         { state: { contains: input.q, mode: "insensitive" } },
       ];
     }
-    const items = await prisma.listing.findMany({
+    const items = await db.listing.findMany({
       where,
       include: { tags: true, gallery: { take: 1 } },
       take: input.limit + 1,
@@ -59,9 +59,9 @@ export const searchRouter = router({
     return { items, nextCursor };
   }),
   similarListings: publicProcedure.input(z.object({ listingId: z.string() })).query(async ({ input }) => {
-    const listing = await prisma.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { tags: true } });
+    const listing = await db.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { tags: true } });
     const tagValues = listing.tags.map((t) => t.value);
-    return prisma.listing.findMany({
+    return db.listing.findMany({
       where: { id: { not: input.listingId }, category: listing.category, OR: tagValues.length > 0 ? [{ tags: { some: { value: { in: tagValues } } } }, { city: listing.city }] : [{ city: listing.city }] },
       take: 6,
       include: { tags: true, gallery: { take: 1 } },

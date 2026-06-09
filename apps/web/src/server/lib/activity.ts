@@ -27,6 +27,7 @@ export const ACTIVITY_ACTIONS = {
 } as const;
 
 export async function recordActivity(params: {
+  db?: any;
   orgId: string;
   eventId?: string | null;
   actorId?: string | null;
@@ -34,7 +35,8 @@ export async function recordActivity(params: {
   target?: string | null;
   meta?: Prisma.JsonValue;
 }) {
-  return prisma.activity.create({
+  const db = params.db ?? prisma;
+  return db.activity.create({
     data: {
       orgId: params.orgId,
       eventId: params.eventId ?? undefined,
