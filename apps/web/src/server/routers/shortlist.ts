@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, publicProcedure } from "@/server/trpc";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
@@ -13,7 +13,7 @@ export const shortlistRouter = router({
       const user = await getCurrentUser();
       if (!user) throw new Error("Unauthorized");
 
-      const event = await prisma.event.findUnique({
+      const event = await db.event.findUnique({
         where: { id: input.eventId },
         include: {
           org: {
@@ -29,7 +29,7 @@ export const shortlistRouter = router({
       if (!event) throw new Error("Event not found");
       if (!canManageEvent(user, event)) throw new Error("Forbidden");
 
-      return prisma.shortlistItem.findMany({
+      return db.shortlistItem.findMany({
         where: { eventId: input.eventId },
         include: {
           listing: {
@@ -62,7 +62,7 @@ export const shortlistRouter = router({
       const user = await getCurrentUser();
       if (!user) throw new Error("Unauthorized");
 
-      const event = await prisma.event.findUnique({
+      const event = await db.event.findUnique({
         where: { id: input.eventId },
         include: {
           org: {
@@ -78,14 +78,14 @@ export const shortlistRouter = router({
       if (!event) throw new Error("Event not found");
       if (!canManageEvent(user, event)) throw new Error("Forbidden");
 
-      const listing = await prisma.listing.findUnique({
+      const listing = await db.listing.findUnique({
         where: { id: input.listingId },
       });
 
       if (!listing) throw new Error("Listing not found");
 
       // Check if already shortlisted
-      const existing = await prisma.shortlistItem.findFirst({
+      const existing = await db.shortlistItem.findFirst({
         where: {
           eventId: input.eventId,
           listingId: input.listingId,
@@ -95,7 +95,7 @@ export const shortlistRouter = router({
       if (existing) {
         // Update notes if provided
         if (input.notes !== undefined) {
-          return prisma.shortlistItem.update({
+          return db.shortlistItem.update({
             where: { id: existing.id },
             data: { notes: input.notes } as any, // TODO: Remove 'as any' after Prisma client regeneration
           });
@@ -103,7 +103,7 @@ export const shortlistRouter = router({
         return existing;
       }
 
-      const shortlistItem = await prisma.shortlistItem.create({
+      const shortlistItem = await db.shortlistItem.create({
         data: {
           eventId: input.eventId,
           listingId: input.listingId,
@@ -146,7 +146,7 @@ export const shortlistRouter = router({
       const user = await getCurrentUser();
       if (!user) throw new Error("Unauthorized");
 
-      const event = await prisma.event.findUnique({
+      const event = await db.event.findUnique({
         where: { id: input.eventId },
         include: {
           org: {
@@ -162,7 +162,7 @@ export const shortlistRouter = router({
       if (!event) throw new Error("Event not found");
       if (!canManageEvent(user, event)) throw new Error("Forbidden");
 
-      const shortlistItem = await prisma.shortlistItem.findFirst({
+      const shortlistItem = await db.shortlistItem.findFirst({
         where: {
           eventId: input.eventId,
           listingId: input.listingId,
@@ -171,7 +171,7 @@ export const shortlistRouter = router({
 
       if (!shortlistItem) throw new Error("Shortlist item not found");
 
-      await prisma.shortlistItem.delete({
+      await db.shortlistItem.delete({
         where: { id: shortlistItem.id },
       });
 
@@ -195,7 +195,7 @@ export const shortlistRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const shortlistItem = await prisma.shortlistItem.findFirst({
+      const shortlistItem = await db.shortlistItem.findFirst({
         where: {
           eventId: input.eventId,
           listingId: input.listingId,

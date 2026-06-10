@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, protectedProcedure } from "@/server/trpc";
 import { recordActivity } from "@/server/lib/activity";
 import { getBookingClassificationHooks } from "@/lib/booking-classification";
@@ -23,11 +23,11 @@ export const disputeRouter = router({
     body: z.string().optional(),
     reason: z.string().min(10),
   })).mutation(async ({ ctx, input }) => {
-    const proposal = await prisma.proposal.findUniqueOrThrow({
+    const proposal = await db.proposal.findUniqueOrThrow({
       where: { id: input.proposalId },
       include: { event: true },
     });
-    const mem = await prisma.membership.findFirst({ where: { userId: ctx.user.id, orgId: proposal.event.orgId } });
+    const mem = await db.membership.findFirst({ where: { userId: ctx.user.id, orgId: proposal.event.orgId } });
     if (!mem && ctx.user.role !== "ADMIN") throw new Error("Forbidden");
 
     const dispute = await createDisputeCase({
@@ -62,13 +62,13 @@ export const disputeRouter = router({
     };
   }),
   list: protectedProcedure.input(z.object({ orgSlug: z.string(), status: disputeStatusSchema.optional() })).query(async ({ ctx, input }) => {
-    const org = await prisma.organization.findUnique({ where: { slug: input.orgSlug } });
+    const org = await db.organization.findUnique({ where: { slug: input.orgSlug } });
     if (!org) return [];
 
-    const membership = await prisma.membership.findFirst({ where: { userId: ctx.user.id, orgId: org.id } });
+    const membership = await db.membership.findFirst({ where: { userId: ctx.user.id, orgId: org.id } });
     if (!membership && ctx.user.role !== "ADMIN") throw new Error("Forbidden");
 
-    const disputes = await (prisma as any).dispute.findMany({
+    const disputes = await (db as any).dispute.findMany({
       where: { orgId: org.id, ...(input.status ? { status: input.status } : {}) },
       include: { proposal: true },
       orderBy: { createdAt: "desc" },

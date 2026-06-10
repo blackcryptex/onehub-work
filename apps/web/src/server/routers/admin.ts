@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, publicProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
@@ -25,7 +25,7 @@ async function requireAdmin() {
     throw new Error("Forbidden: Admin access required");
   }
   // Verify the real user (not impersonated) is an admin
-  const realUser = await prisma.user.findUnique({ where: { id: realUserId } });
+  const realUser = await db.user.findUnique({ where: { id: realUserId } });
   if (!realUser || realUser.role !== "ADMIN") {
     throw new Error("Forbidden: Admin access required");
   }
@@ -39,7 +39,7 @@ export const adminRouter = router({
       to: z.date(),
     })).query(async ({ input }) => {
       await requireAdmin();
-      return prisma.metricDaily.findMany({
+      return db.metricDaily.findMany({
         where: { date: { gte: input.from, lte: input.to } },
         orderBy: { date: "asc" },
       });
@@ -54,7 +54,7 @@ export const adminRouter = router({
     })).mutation(async ({ input }) => {
       const session = await auth();
       const userId = session?.user?.id as string | undefined;
-      return prisma.abuseReport.create({
+      return db.abuseReport.create({
         data: {
           reporterId: userId,
           targetType: input.targetType,
@@ -71,7 +71,7 @@ export const adminRouter = router({
     })).mutation(async ({ input }) => {
       await requireAdmin();
       const { id, ...data } = input;
-      return prisma.abuseReport.update({ where: { id }, data });
+      return db.abuseReport.update({ where: { id }, data });
     }),
     list: publicProcedure.input(z.object({
       status: z.enum(["OPEN", "IN_REVIEW", "RESOLVED", "DISMISSED"]).optional(),
@@ -82,7 +82,7 @@ export const adminRouter = router({
       const limit = input.limit ?? 20;
       const where: Prisma.AbuseReportWhereInput = {};
       if (input.status) where.status = input.status;
-      const reports = await prisma.abuseReport.findMany({
+      const reports = await db.abuseReport.findMany({
         where,
         orderBy: { createdAt: "desc" },
         take: limit + 1,
@@ -102,7 +102,7 @@ export const adminRouter = router({
       proposalId: z.string(),
     })).query(async ({ input }) => {
       await requireAdmin();
-      const proposal = await prisma.proposal.findUnique({
+      const proposal = await db.proposal.findUnique({
         where: { id: input.proposalId },
         include: {
           event: { include: { org: { select: { type: true } } } },
@@ -134,7 +134,7 @@ export const adminRouter = router({
       status: z.enum(["OPEN", "APPROVED", "DENIED", "CANCELED"]).optional(),
     }).optional()).query(async ({ input }) => {
       await requireAdmin();
-      return (prisma as any).refundRequest.findMany({
+      return (db as any).refundRequest.findMany({
         where: input?.status ? { status: input.status } : undefined,
         orderBy: { createdAt: "desc" },
       });
@@ -160,7 +160,7 @@ export const adminRouter = router({
       refundRequestId: z.string(),
     })).query(async ({ input }) => {
       await requireAdmin();
-      return (prisma as any).refundRequest.findUnique({
+      return (db as any).refundRequest.findUnique({
         where: { id: input.refundRequestId },
       });
     }),
@@ -181,7 +181,7 @@ export const adminRouter = router({
           { name: { contains: input.q, mode: "insensitive" } },
         ];
       }
-      const users = await prisma.user.findMany({
+      const users = await db.user.findMany({
         where,
         take: limit + 1,
         cursor: input.cursor ? { id: input.cursor } : undefined,
@@ -211,7 +211,7 @@ export const adminRouter = router({
       const adminId = await requireAdmin();
       
       // Verify target user exists
-      const targetUser = await prisma.user.findUnique({
+      const targetUser = await db.user.findUnique({
         where: { id: input.targetUserId },
         select: { id: true, email: true, role: true },
       });
