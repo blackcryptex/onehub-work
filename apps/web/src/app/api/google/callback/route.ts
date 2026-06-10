@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/server/db';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +13,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // Get the account from NextAuth Account table
-    const account = await prisma.account.findFirst({
+    const account = await db.account.findFirst({
       where: {
         userId: session.user.id,
         provider: 'google',
@@ -22,12 +22,12 @@ export async function GET(_request: NextRequest) {
 
     if (account && account.access_token) {
       // Create or update CalendarAccount
-      const existing = await prisma.calendarAccount.findFirst({
+      const existing = await db.calendarAccount.findFirst({
         where: { userId: session.user.id, provider: 'google' },
       });
       
       if (existing) {
-        await prisma.calendarAccount.update({
+        await db.calendarAccount.update({
           where: { id: existing.id },
           data: {
             accessToken: account.access_token,
@@ -37,7 +37,7 @@ export async function GET(_request: NextRequest) {
           },
         });
       } else {
-        await prisma.calendarAccount.create({
+        await db.calendarAccount.create({
           data: {
             userId: session.user.id,
             provider: 'google',

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { db } from '@/server/db';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -26,8 +27,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { prisma } = await import('@/lib/prisma');
-    const account = await prisma.calendarAccount.findFirst({
+    const account = await db.calendarAccount.findFirst({
       where: { userId: session.user.id, provider: 'google' },
     });
 
