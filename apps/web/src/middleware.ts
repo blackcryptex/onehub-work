@@ -1,6 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+import {
+  getMaintenanceRedirectPath,
+  isMaintenanceModeEnabled,
+  maintenanceModeResponseBody,
+  shouldBlockForMaintenance,
+} from "@/lib/maintenance";
+
 function generateRequestId(): string {
   // Use Web Crypto API for Edge Runtime compatibility
   const array = new Uint32Array(4);
@@ -38,6 +45,35 @@ export default async function middleware(req: NextRequest) {
   const secureCookie =
     req.nextUrl.protocol === "https:" ||
     req.headers.get("x-forwarded-proto") === "https";
+
+  const maintenanceDecision = shouldBlockForMaintenance({
+    enabled: isMaintenanceModeEnabled(),
+    pathname,
+    method: req.method,
+  });
+
+  if (maintenanceDecision.blocked) {
+    if (maintenanceDecision.kind === "api") {
+      const res = NextResponse.json(maintenanceModeResponseBody(), { status: 503 });
+      res.headers.set("x-request-id", requestId);
+      res.headers.set("retry-after", "300");
+      setSecurityHeaders(res);
+      return res;
+    }
+
+    const maintenanceUrl = new URL(getMaintenanceRedirectPath(), req.url);
+    const res = NextResponse.redirect(maintenanceUrl, 307);
+    res.headers.set("x-request-id", requestId);
+    setSecurityHeaders(res);
+    return res;
+  }
+
+  if (pathname.startsWith("/api/")) {
+    const res = NextResponse.next();
+    res.headers.set("x-request-id", requestId);
+    setSecurityHeaders(res);
+    return res;
+  }
   
   // Get token to check auth state and role (lightweight, no DB)
   let token = await getToken({
@@ -92,9 +128,25 @@ export default async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/admin/:path*",
     "/app/:path*",
-    "/pro/planner/:path*",
-    "/diy-planner/:path*",
+    "/billing/:path*",
+    "/calendar/:path*",
     "/client/:path*",
+    "/contracts/:path*",
+    "/disputes/:path*",
+    "/diy-planner/:path*",
+    "/events/:path*",
+    "/messages/:path*",
+    "/notifications/:path*",
+    "/pro/planner/:path*",
+    "/proposals/:path*",
+    "/providers/onboarding/:path*",
+    "/requests/:path*",
+    "/vault/:path*",
+    "/vendor/:path*",
+    "/vendor-venue/setup/:path*",
+    "/venue/:path*",
+    "/api/:path*",
   ],
 };

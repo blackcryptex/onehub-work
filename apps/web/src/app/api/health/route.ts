@@ -15,23 +15,27 @@ import { performHealthChecks } from "@/lib/health";
 export async function GET() {
   try {
     const health = await performHealthChecks();
-    
-    // Return 503 if degraded or down, 200 if ok
+
+    // Return 503 if degraded or down, 200 if ok. Keep the public response
+    // intentionally minimal so unauthenticated monitors do not receive
+    // dependency names, provider status, stack traces, or config details.
     const statusCode = health.status === "ok" ? 200 : 503;
-    
-    return NextResponse.json(health, { status: statusCode });
-  } catch (error) {
-    // If health check itself fails, return down status
+
+    return NextResponse.json(
+      {
+        status: health.status,
+        timestamp: health.timestamp,
+      },
+      { status: statusCode },
+    );
+  } catch {
+    // If health check itself fails, return a minimal safe down status.
     return NextResponse.json(
       {
         status: "down" as const,
         timestamp: new Date().toISOString(),
-        checks: {
-          database: "error" as const,
-          stripe: "error" as const,
-        },
       },
-      { status: 503 }
+      { status: 503 },
     );
   }
 }
