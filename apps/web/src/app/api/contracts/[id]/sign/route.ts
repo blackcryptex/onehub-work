@@ -6,6 +6,18 @@ import { isDemoMode } from "@/lib/demo-mode";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
 import { getLegalSurface } from "@/lib/legal-surface";
 import { toRuntimeBookingClassification } from "@/lib/booking-classification";
+import {
+  buildAgreementSignedTransitionPlan,
+  buildTransactionAuditEntry,
+  extractBookingRequestIdFromProposalSummary,
+} from "@/lib/transaction-loop";
+import { recordActivity } from "@/server/lib/activity";
+import {
+  assertCanonicalContractSignableStatus,
+  canonicalLifecycleHttpStatusForError,
+  computeCanonicalSignatureStatus,
+  normalizeSignerEmail,
+} from "@/server/lib/lifecycle/proposal-contract-payment";
 
 export async function POST(
   request: NextRequest,
@@ -32,7 +44,8 @@ export async function POST(
       );
     }
 
-    if (!user.email || signerEmail.toLowerCase() !== user.email.toLowerCase()) {
+    const normalizedSignerEmail = normalizeSignerEmail(signerEmail);
+    if (!user.email || normalizedSignerEmail !== normalizeSignerEmail(user.email)) {
       return NextResponse.json(
         { error: "Signer email must match the authenticated user" },
         { status: 403 }
@@ -87,6 +100,15 @@ export async function POST(
       return NextResponse.json({ error: "Contract not found" }, { status: 404 });
     }
 
+    try {
+      assertCanonicalContractSignableStatus(contract.status);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Contract is not signable" },
+        { status: 400 }
+      );
+    }
+
     const canManageBuyerSide = canManageEvent(user, contract.proposal.event);
     const canSignSellerSide =
       !!contract.proposal.listing?.org &&
@@ -102,7 +124,7 @@ export async function POST(
 
     // Check if user already signed
     const existingSignature = contract.signatures.find(
-      (s) => s.signerEmail.toLowerCase() === signerEmail.toLowerCase()
+      (s) => normalizeSignerEmail(s.signerEmail) === normalizedSignerEmail
     );
 
     if (existingSignature && existingSignature.signedAt) {
@@ -113,6 +135,11 @@ export async function POST(
     }
 
     // Create or update signature
+    const ip =
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
+    const ua = request.headers.get("user-agent") || "unknown";
     let signature;
     if (existingSignature) {
       signature = await db.signature.update({
@@ -120,7 +147,9 @@ export async function POST(
         data: {
           signerId: user.id,
           signerName,
-          signerEmail,
+          signerEmail: normalizedSignerEmail,
+          ip,
+          ua,
           signedAt: new Date(),
           method: isDemoMode() ? "DEMO" : "ELECTRONIC",
         },
@@ -131,7 +160,9 @@ export async function POST(
           contractId: contract.id,
           signerId: user.id,
           signerName,
-          signerEmail,
+          signerEmail: normalizedSignerEmail,
+          ip,
+          ua,
           signedAt: new Date(),
           method: isDemoMode() ? "DEMO" : "ELECTRONIC",
         },
@@ -155,24 +186,43 @@ export async function POST(
       select: { signerId: true, signedAt: true },
     });
 
-    const buyerSigned = allSignatures.some(
-      (signature) => Boolean(signature.signedAt && signature.signerId && buyerMemberIds.has(signature.signerId))
-    );
-    const sellerSigned = allSignatures.some(
-      (signature) => Boolean(signature.signedAt && signature.signerId && sellerMemberIds.has(signature.signerId))
-    );
-
-    let newStatus = contract.status;
-    if (buyerSigned && sellerSigned) {
-      newStatus = "FULLY_SIGNED";
-    } else if (buyerSigned || sellerSigned) {
-      newStatus = "PARTIALLY_SIGNED";
-    }
+    const {
+      buyerSigned,
+      sellerSigned,
+      nextStatus: newStatus,
+    } = computeCanonicalSignatureStatus({
+      contractStatus: contract.status,
+      signatures: allSignatures,
+      buyerUserIds: buyerMemberIds,
+      sellerUserIds: sellerMemberIds,
+    });
 
     await db.contract.update({
       where: { id: contract.id },
       data: { status: newStatus },
     });
+
+    if (newStatus === "FULLY_SIGNED") {
+      const bookingRequestId = extractBookingRequestIdFromProposalSummary(contract.proposal.summary);
+      if (bookingRequestId) {
+        const transition = buildAgreementSignedTransitionPlan({ requesterSigned: buyerSigned, providerSigned: sellerSigned });
+        const audit = buildTransactionAuditEntry({
+          bookingRequestId,
+          actorRole: "SYSTEM",
+          fromState: transition.fromState,
+          toState: transition.toState,
+          reason: transition.reason,
+        });
+        await recordActivity({
+          orgId: contract.proposal.event.orgId,
+          eventId: contract.proposal.eventId,
+          actorId: user.id,
+          action: audit.action,
+          target: audit.target,
+          meta: audit.meta,
+        });
+      }
+    }
 
     const bookingClassification = toRuntimeBookingClassification((contract.proposal as UnsafeAny).bookingClassification) ?? "direct";
     await recordAcceptance({
@@ -204,7 +254,7 @@ export async function POST(
     if (isDemoMode()) {
       console.log("[DEMO_MODE] Contract signed:", {
         contractId: contract.id,
-        signerEmail,
+        signerEmail: normalizedSignerEmail,
         newStatus,
       });
     } else {
@@ -215,9 +265,10 @@ export async function POST(
     return NextResponse.json({ success: true, signature, status: newStatus });
   } catch (error) {
     console.error("[API] Error signing contract:", error);
+    const message = error instanceof Error ? error.message : "Failed to sign contract";
     return NextResponse.json(
-      { error: "Failed to sign contract" },
-      { status: 500 }
+      { error: message },
+      { status: canonicalLifecycleHttpStatusForError(error) }
     );
   }
 }

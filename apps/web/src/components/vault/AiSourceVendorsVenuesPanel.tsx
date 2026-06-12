@@ -35,7 +35,11 @@ type Result = VerifiedResult | UnverifiedResult;
 interface AiSourceVendorsVenuesPanelProps {
   eventId: string;
   eventName?: string;
+  eventType?: string;
   eventLocation?: string;
+  eventDate?: string;
+  guestCount?: number | null;
+  existingBookingRequests?: unknown[];
 }
 
 export function AiSourceVendorsVenuesPanel({ eventId, eventName, eventLocation }: AiSourceVendorsVenuesPanelProps) {

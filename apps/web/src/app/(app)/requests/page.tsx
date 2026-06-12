@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { isDemoMode } from "@/lib/demo-mode";
 import { Calendar, User, Mail, Phone, Users, MessageSquare } from "lucide-react";
+import { ProviderBookingResponseControls } from "@/components/bookings/ProviderBookingResponseControls";
+import { canProviderRespondToBookingRequest } from "@/lib/transaction-loop";
 import { vaultDetail } from "@/lib/routes";
 
 const getStatusBadgeColor = (status: string) => {
@@ -38,7 +40,21 @@ export default async function RequestsPage() {
         { listing: { orgId: { in: orgs.map((o) => o.id) } } },
       ],
     },
-    include: { listing: true, event: true, org: true },
+    include: {
+      listing: {
+        include: {
+          org: {
+            include: {
+              members: {
+                select: { userId: true, role: true },
+              },
+            },
+          },
+        },
+      },
+      event: true,
+      org: true,
+    },
     orderBy: { createdAt: "desc" },
     take: 20,
   });
@@ -133,6 +149,22 @@ export default async function RequestsPage() {
                       <p className="italic">{r.message}</p>
                     </div>
                   )}
+
+                  {r.notes && (
+                    <div className="mt-3 rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+                      <span className="font-medium">Provider note:</span> {r.notes}
+                    </div>
+                  )}
+
+                  <ProviderBookingResponseControls
+                    bookingRequestId={r.id}
+                    currentStatus={r.status}
+                    canRespond={canProviderRespondToBookingRequest({
+                      userId,
+                      listingOrgOwnerId: r.listing.org.ownerId,
+                      listingOrgMembers: r.listing.org.members,
+                    })}
+                  />
 
                   <div className="mt-3 text-xs text-slate-400">
                     Requested: {new Date(r.createdAt).toLocaleString()}

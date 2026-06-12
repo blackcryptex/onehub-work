@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const events = await listOverlayEvents(session.user.id, timeMin, timeMax);
 
     return NextResponse.json({ events });
-  } catch (error: unknown) {
+  } catch (error: UnsafeAny) {
     console.error('Overlay events error:', error);
     const message =
       error instanceof Error && error.message

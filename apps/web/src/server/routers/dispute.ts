@@ -74,7 +74,7 @@ export const disputeRouter = router({
       orderBy: { createdAt: "desc" },
     });
 
-    return disputes.map((dispute: any) => ({
+    return disputes.map((dispute: UnsafeAny) => ({
       ...dispute,
       refundDisputeRoute: getBookingClassificationHooks(dispute.bookingClassification).refundDisputeRoute,
     }));

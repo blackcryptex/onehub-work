@@ -3,106 +3,77 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripeOrThrow } from "@/server/lib/stripe";
 import { db } from "@/server/db";
+import {
+  applyPaymentFailureStateTransition,
+  applyPaymentSuccessStateTransition,
+  classifyStripeWebhookEventType,
+  classifyWebhookProcessingState,
+  ensureTestModeStripeSecret,
+} from "@/lib/payments/money-state";
 
-async function markWebhookProcessed(eventId: string, type: string, stripeIntentId?: string) {
+type WebhookClaim =
+  | { action: "claim" | "retry"; reason: string }
+  | { action: "duplicate" | "in-progress"; reason: string };
+
+function webhookProcessingMeta(status: "processing" | "completed" | "failed", extra: Record<string, unknown> = {}) {
+  const at = new Date().toISOString();
+  return {
+    processingStatus: status,
+    ...(status === "processing" ? { processingStartedAt: at } : {}),
+    ...(status === "completed" ? { completedAt: at } : {}),
+    ...(status === "failed" ? { failedAt: at } : {}),
+    ...extra,
+  };
+}
+
+async function claimWebhookProcessingAttempt(eventId: string, type: string, stripeIntentId?: string): Promise<WebhookClaim> {
   try {
     await db.webhookEvent.create({
       data: {
         eventId,
         type,
         stripeIntentId,
-        meta: {},
+        meta: webhookProcessingMeta("processing"),
       },
     });
-    return true;
+    return { action: "claim", reason: "event has not been seen" };
   } catch {
-    return false;
+    const existing = await db.webhookEvent.findUnique({ where: { eventId } });
+    const classification = classifyWebhookProcessingState({ existing });
+    if (classification.action !== "retry") return classification;
+
+    await db.webhookEvent.update({
+      where: { eventId },
+      data: {
+        type,
+        stripeIntentId,
+        meta: webhookProcessingMeta("processing", {
+          retryReason: classification.reason,
+        }),
+      },
+    });
+    return classification;
   }
 }
 
-async function findInternalPaymentIntent(paymentIntent: Stripe.PaymentIntent) {
-  const stripeIntentId = paymentIntent.id;
-  const metadataPaymentIntentId = paymentIntent.metadata?.paymentIntentId;
-
-  const internalPaymentIntent = await db.paymentIntent.findUnique({
-    where: { stripeIntentId },
-    include: {
-      contract: true,
-      milestone: true,
-    },
-  });
-
-  if (internalPaymentIntent) return internalPaymentIntent;
-  if (!metadataPaymentIntentId) return null;
-
-  return db.paymentIntent.update({
-    where: { id: metadataPaymentIntentId },
-    data: { stripeIntentId },
-    include: {
-      contract: true,
-      milestone: true,
+async function markWebhookCompleted(eventId: string, event: Stripe.Event, extra: Record<string, unknown> = {}) {
+  await db.webhookEvent.update({
+    where: { eventId },
+    data: {
+      processedAt: new Date(),
+      meta: webhookProcessingMeta("completed", { event, ...extra }),
     },
   });
 }
 
-async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  const internalPaymentIntent = await findInternalPaymentIntent(paymentIntent);
-
-  if (!internalPaymentIntent) return;
-  if (internalPaymentIntent.status === "SUCCEEDED") return;
-
-  await db.$transaction(async (tx: any) => {
-    const fundingApplied = await tx.paymentIntent.updateMany({
-      where: {
-        id: internalPaymentIntent.id,
-        status: {
-          not: "SUCCEEDED",
-        },
-      },
-      data: {
-        status: "SUCCEEDED",
-        paymentMethod: paymentIntent.payment_method ? String(paymentIntent.payment_method) : undefined,
-      },
-    });
-    if (fundingApplied.count === 0) return;
-
-    await tx.escrowAccount.updateMany({
-      where: { proposalId: internalPaymentIntent.contract.proposalId },
-      data: {
-        status: "FUNDED",
-        balanceCents: {
-          increment: internalPaymentIntent.amountCents,
-        },
-      },
-    });
-
-    if (internalPaymentIntent.milestoneId) {
-      await tx.paymentMilestone.update({
-        where: { id: internalPaymentIntent.milestoneId },
-        data: { status: "IN_ESCROW" },
-      });
-    }
-
-    await tx.contract.update({
-      where: { id: internalPaymentIntent.contractId },
-      data: {
-        status: internalPaymentIntent.contract.status === "FULLY_SIGNED"
-          ? "IN_PAYMENT"
-          : internalPaymentIntent.contract.status,
-      },
-    });
-  });
-}
-
-async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
-  const internalPaymentIntent = await findInternalPaymentIntent(paymentIntent);
-
-  if (!internalPaymentIntent) return;
-  if (internalPaymentIntent.status === "FAILED" || internalPaymentIntent.status === "SUCCEEDED") return;
-
-  await db.paymentIntent.update({
-    where: { id: internalPaymentIntent.id },
-    data: { status: "FAILED" },
+async function markWebhookFailed(eventId: string, error: unknown) {
+  await db.webhookEvent.update({
+    where: { eventId },
+    data: {
+      meta: webhookProcessingMeta("failed", {
+        error: error instanceof Error ? error.message : "unknown webhook handling error",
+      }),
+    },
   });
 }
 
@@ -110,6 +81,7 @@ export async function POST(request: Request) {
   let stripe: Stripe;
   try {
     stripe = getStripeOrThrow();
+    ensureTestModeStripeSecret(process.env.STRIPE_SECRET_KEY);
   } catch {
     return NextResponse.json({ error: "Stripe is not configured" }, { status: 503 });
   }
@@ -139,33 +111,53 @@ export async function POST(request: Request) {
     return object?.object === "payment_intent" ? object.id : undefined;
   })();
 
-  const processed = await markWebhookProcessed(event.id, event.type, stripeIntentId);
-  if (!processed) {
-    return NextResponse.json({ received: true, duplicate: true });
+  const claim = await claimWebhookProcessingAttempt(event.id, event.type, stripeIntentId);
+  if (claim.action === "duplicate" || claim.action === "in-progress") {
+    return NextResponse.json({ received: true, duplicate: claim.action === "duplicate", inProgress: claim.action === "in-progress" });
   }
 
   try {
+    const eventTypePolicy = classifyStripeWebhookEventType(event.type);
+    if (eventTypePolicy.kind === "manual-admin-only") {
+      await markWebhookCompleted(event.id, event, {
+        handled: false,
+        manualAdminOnly: true,
+        reason: eventTypePolicy.reason,
+      });
+      return NextResponse.json({ received: true, manualAdminOnly: true });
+    }
+
     switch (event.type) {
       case "payment_intent.succeeded":
-        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+        await applyPaymentSuccessStateTransition({
+          db,
+          stripePaymentIntent: event.data.object as Stripe.PaymentIntent,
+          source: "stripe.webhook",
+        });
         break;
       case "payment_intent.payment_failed":
-        await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
+        await applyPaymentFailureStateTransition({
+          db,
+          stripePaymentIntent: event.data.object as Stripe.PaymentIntent,
+          eventType: "payment_intent.payment_failed",
+        });
+        break;
+      case "payment_intent.canceled":
+        await applyPaymentFailureStateTransition({
+          db,
+          stripePaymentIntent: event.data.object as Stripe.PaymentIntent,
+          eventType: "payment_intent.canceled",
+        });
         break;
       default:
         break;
     }
 
-    await db.webhookEvent.update({
-      where: { eventId: event.id },
-      data: {
-        processedAt: new Date(),
-        meta: event as UnsafeAny,
-      },
-    });
+    await markWebhookCompleted(event.id, event, { handled: eventTypePolicy.handled });
 
     return NextResponse.json({ received: true });
   } catch (error) {
+    await markWebhookFailed(event.id, error);
     console.error("Stripe webhook handling failed:", error);
     return NextResponse.json({ error: "Webhook handling failed" }, { status: 500 });
   }

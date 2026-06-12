@@ -7,6 +7,8 @@ import { resolveBookingClassification } from "@/lib/booking-classification";
 import { resolveFeeProfile } from "@/lib/fee-profile";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
 import { getLegalSurface } from "@/lib/legal-surface";
+import { buildPaymentIntentFundingPlan, ensureTestModeStripeSecret, normalizeStripeCurrency, validatePaymentIntentCreationPolicy } from "@/lib/payments/money-state";
+import { assertFullContractAmountMatchesMilestones } from "@/server/lib/lifecycle/proposal-contract-payment";
 
 const createIntentSchema = z.object({
   contractId: z.string(),
@@ -76,7 +78,7 @@ export async function POST(request: NextRequest) {
       contract.buyerId === contract.event.orgId &&
       (
         contract.event.org.ownerId === userId ||
-        contract.event.org.members.some((member: any) => member.userId === userId)
+        contract.event.org.members.some((member: UnsafeAny) => member.userId === userId)
       )
     );
 
@@ -87,7 +89,6 @@ export async function POST(request: NextRequest) {
     if (!PAYABLE_CONTRACT_STATES.has(contract.status)) {
       return NextResponse.json({ error: "Contract is not in a payable state" }, { status: 400 });
     }
-
     if (!contract.sellerId) {
       return NextResponse.json({ error: "Contract seller not set" }, { status: 400 });
     }
@@ -120,6 +121,13 @@ export async function POST(request: NextRequest) {
       if (!PAYABLE_MILESTONE_STATES.has(milestone.status)) {
         return NextResponse.json({ error: "Milestone is not payable" }, { status: 400 });
       }
+      validatePaymentIntentCreationPolicy({
+        contractStatus: contract.status,
+        milestoneStatus: milestone.status,
+        amountCents: milestone.amountCents,
+        currency: contract.proposal.currency,
+        target: "milestone",
+      });
       amount = milestone.amountCents;
       targetMilestone = {
         id: milestone.id,
@@ -130,16 +138,34 @@ export async function POST(request: NextRequest) {
       if (!amountCents) {
         return NextResponse.json({ error: "Either milestoneId or amountCents must be provided" }, { status: 400 });
       }
-      const totalMilestoneAmount = contract.proposal.milestones.reduce((sum: number, milestone: { amountCents: number }) => sum + milestone.amountCents, 0);
-      if (amountCents !== totalMilestoneAmount) {
-        return NextResponse.json({ error: "Amount must match the server-derived contract total" }, { status: 400 });
+      let totalMilestoneAmount: number;
+      try {
+        totalMilestoneAmount = assertFullContractAmountMatchesMilestones({
+          requestedAmountCents: amountCents,
+          milestoneAmountsCents: contract.proposal.milestones.map((milestone: { amountCents: number }) => milestone.amountCents),
+        });
+      } catch (error) {
+        return NextResponse.json(
+          { error: error instanceof Error ? error.message : "Amount must match the server-derived contract total" },
+          { status: 400 }
+        );
       }
+      validatePaymentIntentCreationPolicy({
+        contractStatus: contract.status,
+        amountCents: totalMilestoneAmount,
+        currency: contract.proposal.currency,
+        target: "contract-total",
+      });
       amount = totalMilestoneAmount;
     }
 
     const feeProfile = resolveFeeProfile({
       bookingClassification,
       grossAmountCents: amount,
+    });
+    const fundingPlan = buildPaymentIntentFundingPlan({
+      grossAmountCents: amount,
+      feeProfile,
     });
 
     let escrowAccount = contract.proposal.escrowAccount;
@@ -164,16 +190,24 @@ export async function POST(request: NextRequest) {
     });
 
     const stripe = getStripeOrThrow();
+    ensureTestModeStripeSecret(process.env.STRIPE_SECRET_KEY);
 
     if (existingPaymentIntent?.stripeIntentId) {
       const existingStripeIntent = await stripe.paymentIntents.retrieve(existingPaymentIntent.stripeIntentId);
       const allowRedirects = existingStripeIntent.automatic_payment_methods?.allow_redirects;
+      const existingMatchesFundingPlan =
+        existingPaymentIntent.amountCents === fundingPlan.localPaymentIntentAmountCents &&
+        existingStripeIntent.amount === fundingPlan.stripeChargeAmountCents &&
+        normalizeStripeCurrency(existingPaymentIntent.currency) === normalizeStripeCurrency(contract.proposal.currency) &&
+        normalizeStripeCurrency(existingStripeIntent.currency) === normalizeStripeCurrency(contract.proposal.currency);
 
-      if (allowRedirects === "never") {
+      if (allowRedirects === "never" && existingMatchesFundingPlan) {
         return NextResponse.json({
           paymentIntentId: existingPaymentIntent.id,
           clientSecret: existingStripeIntent.client_secret,
-          amountCents: existingPaymentIntent.amountCents,
+          amountCents: fundingPlan.grossAmountCents,
+          chargeAmountCents: fundingPlan.stripeChargeAmountCents,
+          payoutBasisAmountCents: fundingPlan.payoutBasisAmountCents,
           currency: existingPaymentIntent.currency,
           feeProfile,
         });
@@ -195,7 +229,7 @@ export async function POST(request: NextRequest) {
         milestoneId: targetMilestone?.id,
         payerId: userId,
         payeeId: payeeUserId,
-        amountCents: amount,
+        amountCents: fundingPlan.localPaymentIntentAmountCents,
         currency: contract.proposal.currency,
         status: "REQUIRES_PAYMENT",
       },
@@ -228,12 +262,12 @@ export async function POST(request: NextRequest) {
     });
 
     const idempotencyKey = targetMilestone
-      ? `contract:${contract.id}:milestone:${targetMilestone.id}:amount:${amount}:redirects-never:v1`
-      : `contract:${contract.id}:full:${amount}:redirects-never:v1`;
+      ? `test:contract:${contract.id}:milestone:${targetMilestone.id}:gross:${amount}:charge:${fundingPlan.stripeChargeAmountCents}:currency:${contract.proposal.currency}:redirects-never:v3`
+      : `test:contract:${contract.id}:full:gross:${amount}:charge:${fundingPlan.stripeChargeAmountCents}:currency:${contract.proposal.currency}:redirects-never:v3`;
 
     const stripeIntent = await stripe.paymentIntents.create(
       {
-        amount,
+        amount: fundingPlan.stripeChargeAmountCents,
         currency: contract.proposal.currency.toLowerCase(),
         metadata: {
           contractId: contract.id,
@@ -244,6 +278,9 @@ export async function POST(request: NextRequest) {
           payeeId: payeeUserId,
           paymentIntentId: paymentIntent.id,
           bookingClassification,
+          grossAmountCents: String(fundingPlan.grossAmountCents),
+          chargeAmountCents: String(fundingPlan.stripeChargeAmountCents),
+          payoutBasisAmountCents: String(fundingPlan.payoutBasisAmountCents),
           feeProfileJson: JSON.stringify(feeProfile),
         },
         automatic_payment_methods: {
@@ -272,9 +309,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       paymentIntentId: paymentIntent.id,
       clientSecret: stripeIntent.client_secret,
-      amountCents: amount,
-      chargeAmountCents: feeProfile.totalChargeAmountCents,
-      payoutBasisAmountCents: feeProfile.payoutBasisAmountCents,
+      amountCents: fundingPlan.grossAmountCents,
+      chargeAmountCents: fundingPlan.stripeChargeAmountCents,
+      payoutBasisAmountCents: fundingPlan.payoutBasisAmountCents,
       currency: contract.proposal.currency,
       feeProfile,
     });

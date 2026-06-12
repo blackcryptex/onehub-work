@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/server/db";
+import { getRoleForCreatedOrg } from "@/lib/signup-roles";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,20 +27,32 @@ export async function POST(request: NextRequest) {
     const slugBase = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 40);
     const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
 
-    // Create organization
-    const org = await db.organization.create({
-      data: {
-        name,
-        slug,
-        type: orgType,
-        ownerId: userId,
-        members: { create: { userId, role: "OWNER" } },
-        settings: { create: {} },
-      },
+    // Create organization and convert existing planner setup users to PRO_PLANNER when appropriate.
+    const nextRole = getRoleForCreatedOrg(orgType, session.user.role);
+    const org = await db.$transaction(async (tx) => {
+      const createdOrg = await tx.organization.create({
+        data: {
+          name,
+          slug,
+          type: orgType,
+          ownerId: userId,
+          members: { create: { userId, role: "OWNER" } },
+          settings: { create: {} },
+        },
+      });
+
+      if (nextRole) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { role: nextRole },
+        });
+      }
+
+      return createdOrg;
     });
 
     return NextResponse.json({ orgId: org.id, slug: org.slug });
-  } catch (error: unknown) {
+  } catch (error: UnsafeAny) {
     console.error("Error creating organization:", error);
     const prismaError = error as { code?: unknown; message?: unknown };
     if (prismaError && prismaError.code === "P2002") {

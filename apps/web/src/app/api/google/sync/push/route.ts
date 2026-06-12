@@ -121,7 +121,7 @@ export async function POST(_request: NextRequest) {
     }
 
     return NextResponse.json({ ok: true, synced: synced.length });
-  } catch (error: unknown) {
+  } catch (error: UnsafeAny) {
     console.error('Sync push error:', error);
     const message =
       error instanceof Error && error.message ? error.message : 'Failed to sync';

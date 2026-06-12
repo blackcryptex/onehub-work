@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 
 import { recordLocalOnboardingCompletion } from "@/lib/onboarding-completion";
 import { getRoleOnboarding, type Gate3COnboardingRole } from "@/lib/role-onboarding";
@@ -13,7 +13,7 @@ export function RoleOnboardingPanel({
   source?: "dashboard" | "client-portal" | "admin-overview" | "manual";
 }) {
   const onboarding = getRoleOnboarding(role);
-  const [completed, setCompleted] = React.useState(false);
+  const [completed, setCompleted] = useState(false);
 
   return (
     <section

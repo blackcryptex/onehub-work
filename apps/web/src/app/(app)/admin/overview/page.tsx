@@ -1,4 +1,5 @@
 import { KPIStat, TrendSparkline, Card } from "@onehub/ui";
+import { RoleOnboardingPanel } from "@/components/onboarding/RoleOnboardingPanel";
 import { db } from "@/server/db";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
@@ -21,14 +22,21 @@ export default async function AdminOverviewPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
         <div className="flex gap-4 text-sm">
-          <a href="/app/admin/verification" className="text-indigo-600 hover:text-indigo-800">
+          <a href="/admin/verification" className="text-indigo-600 hover:text-indigo-800">
             Verification →
+          </a>
+          <a href="/admin/transactions" className="text-indigo-600 hover:text-indigo-800">
+            Transactions →
+          </a>
+          <a href="/admin/audit" className="text-indigo-600 hover:text-indigo-800">
+            Audit log →
           </a>
           <a href="/admin/users" className="text-indigo-600 hover:text-indigo-800">
             Manage Users →
           </a>
         </div>
       </div>
+      <RoleOnboardingPanel role="ADMIN" source="admin-overview" />
       <div className="grid gap-4 md:grid-cols-4">
         <KPIStat label="Organizations" value={orgs} />
         <KPIStat label="Users" value={users} />

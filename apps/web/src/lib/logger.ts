@@ -6,7 +6,18 @@ export const logger = pino({
   level,
   base: undefined,
   redact: {
-    paths: ["req.headers.authorization", "password", "token", "access_token"],
+    paths: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      "password",
+      "secret",
+      "token",
+      "access_token",
+      "refresh_token",
+      "apiKey",
+      "webhookSecret",
+      "stripeWebhookSecret",
+    ],
     remove: true,
   },
   formatters: {

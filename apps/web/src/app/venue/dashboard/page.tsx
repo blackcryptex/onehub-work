@@ -2,6 +2,7 @@ import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import { VenueDashboard } from "@/components/venue/Dashboard";
 import { canAccessDashboard } from "@/lib/rbac";
+import { db } from "@/server/db";
 
 export default async function VenueDashboardPage() {
   const user = await getCurrentUser();
@@ -14,7 +15,7 @@ export default async function VenueDashboardPage() {
 
   // Check if user has a Venue organization
   // Admin sees all venue orgs, normal user sees only their own
-  const { db } = await import("@/server/db");
+  
   const org = await db.organization.findFirst({
     where: admin
       ? { type: "VENUE" }

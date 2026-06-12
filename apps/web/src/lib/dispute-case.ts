@@ -2,11 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { resolveBookingClassification } from "@/lib/booking-classification";
 import { resolveFeeProfile } from "@/lib/fee-profile";
 import { createRefundRequest } from "@/lib/refund-request";
+import { PAYOUT_BLOCKING_DISPUTE_FREEZE_STATES, PAYOUT_BLOCKING_DISPUTE_STATUSES } from "@/lib/payments/money-state";
 import { recordAudit } from "@/server/lib/audit";
 import { recordAdminOverride } from "@/lib/admin-override";
 import { getGuardedMvpAuthorityForUserId } from "@/lib/rbac";
-
-const OPEN_DISPUTE_STATUSES = ["OPEN", "NEEDS_INFO", "UNDER_ADMIN_REVIEW", "ESCALATED"] as const;
 
 export async function buildDisputeCaseContext(proposalId: string, milestoneId?: string | null) {
   const proposal = await prisma.proposal.findUnique({
@@ -117,8 +116,11 @@ export async function getBlockingDisputeCase(proposalId: string, milestoneId?: s
   return (prisma as any).dispute.findFirst({
     where: {
       proposalId,
-      status: { in: [...OPEN_DISPUTE_STATUSES] },
-      ...(milestoneId ? { OR: [{ milestoneId }, { milestoneId: null }] } : {}),
+      OR: [
+        { status: { in: [...PAYOUT_BLOCKING_DISPUTE_STATUSES] } },
+        { status: "RESOLVED_REFUND", freezeState: { in: [...PAYOUT_BLOCKING_DISPUTE_FREEZE_STATES] } },
+      ],
+      ...(milestoneId ? { AND: [{ OR: [{ milestoneId }, { milestoneId: null }] }] } : {}),
     },
     orderBy: { createdAt: "desc" },
   });

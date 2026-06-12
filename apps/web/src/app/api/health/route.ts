@@ -28,7 +28,7 @@ export async function GET() {
       },
       { status: statusCode },
     );
-  } catch {
+  } catch (error) {
     // If health check itself fails, return a minimal safe down status.
     return NextResponse.json(
       {

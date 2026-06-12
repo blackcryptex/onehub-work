@@ -10,6 +10,7 @@ export const acceptanceInputSchema = z.object({
 });
 
 export async function recordAcceptance(input: {
+  db?: any;
   actorId: string;
   actorRole: string;
   orgId?: string | null;
@@ -31,7 +32,8 @@ export async function recordAcceptance(input: {
     grossAmountCents: input.grossAmountCents,
   });
 
-  return (prisma as any).acceptanceCapture.create({
+  const db = input.db ?? prisma;
+  return (db as any).acceptanceCapture.create({
     data: {
       actorId: input.actorId,
       actorRole: input.actorRole,

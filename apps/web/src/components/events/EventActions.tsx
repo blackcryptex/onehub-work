@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Role } from "@onehub/types/src/roles";
 import { vaultDetail } from "@/lib/routes";
+import { eventDeleteResultMessage, parseEventDeleteResult, type EventDeleteUiResult } from "@/lib/event-delete-lifecycle";
 
 interface EventActionsProps {
   /**
@@ -35,11 +36,11 @@ interface EventActionsProps {
   /**
    * Optional callback when event is deleted (for updating local state)
    */
-  onDeleted?: () => void;
+  onDeleted?: (result: EventDeleteUiResult) => void;
   /**
    * Optional custom delete handler (if not provided, uses default)
    */
-  onDelete?: (eventSlug: string, eventId: string, eventName: string) => Promise<void>;
+  onDelete?: (eventSlug: string, eventId: string, eventName: string) => Promise<EventDeleteUiResult | void>;
   /**
    * Size of buttons
    */
@@ -82,23 +83,29 @@ export function EventActions({
 
     setDeleting(true);
     try {
+      let result: EventDeleteUiResult;
       if (onDelete) {
-        await onDelete(eventSlug, eventId, eventName);
+        result = (await onDelete(eventSlug, eventId, eventName)) ?? parseEventDeleteResult(undefined);
       } else {
         // Default delete handler
         const response = await fetch(`/api/events/${eventSlug}`, {
           method: "DELETE",
         });
 
+        const responseBody = await response.json().catch(() => null);
         if (!response.ok) {
-          const error = await response.json().catch(() => ({ error: "Failed to delete event" }));
-          throw new Error(error.error || "Failed to delete event");
+          throw new Error(responseBody?.error || "Failed to delete event");
         }
+        result = parseEventDeleteResult(responseBody);
       }
 
       // Call onDeleted callback if provided
       if (onDeleted) {
-        onDeleted();
+        onDeleted(result);
+      }
+
+      if (result.action === "canceled") {
+        alert(eventDeleteResultMessage(result));
       }
     } catch (error) {
       console.error("Error deleting event:", error);

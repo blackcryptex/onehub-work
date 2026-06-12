@@ -62,6 +62,10 @@ export default async function AppPage() {
     redirect(dashboard(role) as any);
   }
 
+  if (role === "CLIENT") {
+    redirect(dashboard(role) as any);
+  }
+
   // Get user's organizations
   const orgs = await db.organization.findMany({
     where: admin ? {} : { members: { some: { userId } } },

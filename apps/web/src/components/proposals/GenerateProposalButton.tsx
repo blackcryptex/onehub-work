@@ -8,12 +8,16 @@ import { Sparkles } from "lucide-react";
 interface GenerateProposalButtonProps {
   eventId: string;
   listingId?: string;
+  label?: string;
+  loadingLabel?: string;
   onSuccess?: (proposalId: string) => void;
 }
 
 export function GenerateProposalButton({
   eventId,
   listingId,
+  label = "Generate AI Proposal",
+  loadingLabel = "Generating Proposal...",
   onSuccess,
 }: GenerateProposalButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -78,7 +82,7 @@ export function GenerateProposalButton({
         variant={loading ? "secondary" : "default"}
       >
         <Sparkles className={`w-4 h-4 ${loading ? "animate-pulse" : ""}`} />
-        {loading ? "Generating Proposal..." : "Generate AI Proposal"}
+        {loading ? loadingLabel : label}
       </Button>
       {error && (
         <div className="rounded-md bg-rose-50 border border-rose-200 p-2">

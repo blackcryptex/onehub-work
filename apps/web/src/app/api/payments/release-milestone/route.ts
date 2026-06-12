@@ -17,6 +17,7 @@ import { getBlockingDisputeCase } from "@/lib/dispute-case";
 import { getBlockingHoldbackForMilestone } from "@/lib/holdback";
 import { getLegalSurface } from "@/lib/legal-surface";
 import { recordAdminOverride } from "@/lib/admin-override";
+import { buildReleasePayoutPlan } from "@/lib/payments/money-state";
 
 const releaseMilestoneSchema = z.object({
   milestoneId: z.string(),
@@ -234,6 +235,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Amount override at release is disallowed in guarded MVP" }, { status: 409 });
     }
 
+    const releasePlan = buildReleasePayoutPlan({
+      milestoneId: milestone.id,
+      grossAmountCents: milestone.amountCents,
+      currency: milestone.proposal.currency,
+      escrowBalanceCents: escrowAccount.balanceCents,
+      feeProfile,
+      stripeAccountId: canonicalRecipient.stripeAccountId,
+    });
+
     // Guarded MVP: demo-mode release bypass is disabled because every successful release
     // path must emit the canonical audit and admin-override evidence package.
     if (isDemoMode()) {
@@ -271,7 +281,7 @@ export async function POST(request: NextRequest) {
           milestoneId: milestone.id,
           listingId: canonicalRecipient.listingId,
           orgId: canonicalRecipient.orgId,
-          amountCents: milestone.amountCents,
+          amountCents: releasePlan.payoutAmountCents,
           status: "PENDING",
         },
       });
@@ -293,18 +303,22 @@ export async function POST(request: NextRequest) {
             select: { stripeChargeId: true },
           });
 
-          const transfer = await stripe.transfers.create({
-            amount: milestone.amountCents,
-            currency: milestone.proposal.currency.toLowerCase(),
-            destination: canonicalRecipient.stripeAccountId,
-            source_transaction: sourceTransaction?.stripeChargeId || undefined,
-            metadata: {
-              payoutId: payout.id,
-              milestoneId: milestone.id,
-              proposalId: milestone.proposalId,
-              sourceTransaction: sourceTransaction?.stripeChargeId || "",
+          const transfer = await stripe.transfers.create(
+            {
+              amount: releasePlan.payoutAmountCents,
+              currency: milestone.proposal.currency.toLowerCase(),
+              destination: canonicalRecipient.stripeAccountId,
+              source_transaction: sourceTransaction?.stripeChargeId || undefined,
+              metadata: {
+                milestoneId: milestone.id,
+                proposalId: milestone.proposalId,
+                grossAmountCents: String(releasePlan.grossAmountCents),
+                payoutAmountCents: String(releasePlan.payoutAmountCents),
+                sourceTransaction: sourceTransaction?.stripeChargeId || "",
+              },
             },
-          });
+            { idempotencyKey: releasePlan.stripeTransferIdempotencyKey }
+          );
 
           stripeTransferId = transfer.id;
           payoutStatus = "SENT";
@@ -317,7 +331,7 @@ export async function POST(request: NextRequest) {
           });
         } catch (stripeError) {
           console.error("Stripe transfer error:", stripeError);
-          // Continue with payout creation even if Stripe transfer fails
+          throw stripeError;
         }
       }
 
@@ -331,8 +345,8 @@ export async function POST(request: NextRequest) {
       await tx.escrowAccount.update({
         where: { id: escrowAccount.id },
         data: {
-          balanceCents: { decrement: milestone.amountCents },
-          status: escrowAccount.balanceCents === milestone.amountCents ? "RELEASED" : "PARTIALLY_RELEASED",
+          balanceCents: { decrement: releasePlan.escrowDecrementAmountCents },
+          status: escrowAccount.balanceCents === releasePlan.escrowDecrementAmountCents ? "RELEASED" : "PARTIALLY_RELEASED",
         },
       });
 
@@ -357,7 +371,7 @@ export async function POST(request: NextRequest) {
             type: "RELEASE_ESCROW",
             proposalId: milestone.proposalId,
             milestoneId: milestone.id,
-            amountCents: milestone.amountCents,
+            amountCents: releasePlan.payoutAmountCents,
             currency: milestone.proposal.currency,
             stripeId: stripeTransferId,
             meta: {
@@ -365,7 +379,9 @@ export async function POST(request: NextRequest) {
               releasedBy: user?.id,
               releasedByRole: user?.role,
               escrowBalanceBefore: escrowAccount.balanceCents,
-              escrowBalanceAfter: escrowAccount.balanceCents - milestone.amountCents,
+              escrowBalanceAfter: escrowAccount.balanceCents - releasePlan.escrowDecrementAmountCents,
+              grossAmountCents: releasePlan.grossAmountCents,
+              payoutAmountCents: releasePlan.payoutAmountCents,
               feeProfile,
             },
           },
@@ -377,14 +393,16 @@ export async function POST(request: NextRequest) {
             type: "RELEASE_ESCROW",
             proposalId: milestone.proposalId,
             milestoneId: milestone.id,
-            amountCents: milestone.amountCents,
+            amountCents: releasePlan.payoutAmountCents,
             currency: milestone.proposal.currency,
             meta: {
               payoutId: payout.id,
               releasedBy: user?.id,
               releasedByRole: user?.role,
               escrowBalanceBefore: escrowAccount.balanceCents,
-              escrowBalanceAfter: escrowAccount.balanceCents - milestone.amountCents,
+              escrowBalanceAfter: escrowAccount.balanceCents - releasePlan.escrowDecrementAmountCents,
+              grossAmountCents: releasePlan.grossAmountCents,
+              payoutAmountCents: releasePlan.payoutAmountCents,
               feeProfile,
             },
           },
@@ -415,14 +433,15 @@ export async function POST(request: NextRequest) {
       meta: {
         milestoneId: milestone.id,
         milestoneTitle: milestone.title,
-        amountCents: milestone.amountCents,
+        amountCents: releasePlan.payoutAmountCents,
+        grossAmountCents: releasePlan.grossAmountCents,
         currency: milestone.proposal.currency,
         payoutId: payout.id,
         payoutStatus: payout.status,
         stripeTransferId: stripeTransferId || payout.stripeTransfer,
         releasedByRole: user.role,
         escrowStatusBefore: escrowAccount.status,
-        escrowStatusAfter: escrowAccount.balanceCents === milestone.amountCents ? "RELEASED" : "PARTIALLY_RELEASED",
+        escrowStatusAfter: escrowAccount.balanceCents === releasePlan.escrowDecrementAmountCents ? "RELEASED" : "PARTIALLY_RELEASED",
         contractStatusBefore,
         contractStatusAfter: allPaid && (contractStatusBefore as string) === "IN_PAYMENT" ? "COMPLETED" : contractStatusBefore,
         bookingClassification,
@@ -439,7 +458,8 @@ export async function POST(request: NextRequest) {
       metadata: {
         milestoneId: milestone.id,
         milestoneTitle: milestone.title,
-        amountCents: milestone.amountCents,
+        amountCents: releasePlan.payoutAmountCents,
+        grossAmountCents: releasePlan.grossAmountCents,
         currency: milestone.proposal.currency,
         payoutId: payout.id,
         stripeTransferId: stripeTransferId || payout.stripeTransfer,
@@ -482,7 +502,8 @@ export async function POST(request: NextRequest) {
       orgId: event.orgId,
       eventId: event.id,
       proposalId: milestone.proposalId,
-      amountCents: milestone.amountCents,
+      amountCents: releasePlan.payoutAmountCents,
+      grossAmountCents: releasePlan.grossAmountCents,
       currency: milestone.proposal.currency,
       route: "/api/payments/release-milestone",
     }, "payment.milestone_released");

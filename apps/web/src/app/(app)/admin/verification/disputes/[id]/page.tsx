@@ -11,14 +11,14 @@ export default async function DisputeVerificationDetail({ params }: { params: { 
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const dispute = await (db as any).dispute.findUnique({ where: { id: params.id } });
+  const dispute = await (db as UnsafeAny).dispute.findUnique({ where: { id: params.id } });
   if (!dispute) notFound();
 
-  const refund = dispute.linkedRefundRequestId ? await (db as any).refundRequest.findUnique({ where: { id: dispute.linkedRefundRequestId } }) : await (db as any).refundRequest.findFirst({ where: { proposalId: dispute.proposalId }, orderBy: { createdAt: "desc" } });
-  const holdback = dispute.paymentIntentId ? await (db as any).paymentHoldback.findUnique({ where: { paymentIntentId: dispute.paymentIntentId } }) : null;
+  const refund = dispute.linkedRefundRequestId ? await (db as UnsafeAny).refundRequest.findUnique({ where: { id: dispute.linkedRefundRequestId } }) : await (db as UnsafeAny).refundRequest.findFirst({ where: { proposalId: dispute.proposalId }, orderBy: { createdAt: "desc" } });
+  const holdback = dispute.paymentIntentId ? await (db as UnsafeAny).paymentHoldback.findUnique({ where: { paymentIntentId: dispute.paymentIntentId } }) : null;
   const payout = dispute.milestoneId ? await db.payout.findFirst({ where: { milestoneId: dispute.milestoneId } }) : await db.payout.findFirst({ where: { proposalId: dispute.proposalId }, orderBy: { createdAt: "desc" } });
-  const overrides = await (db as any).adminOverride.findMany({ where: { disputeId: dispute.id }, orderBy: { createdAt: "desc" } });
-  const acceptanceProof = dispute.acceptanceCaptureId ? await (db as any).acceptanceCapture.findUnique({ where: { id: dispute.acceptanceCaptureId } }) : null;
+  const overrides = await (db as UnsafeAny).adminOverride.findMany({ where: { disputeId: dispute.id }, orderBy: { createdAt: "desc" } });
+  const acceptanceProof = dispute.acceptanceCaptureId ? await (db as UnsafeAny).acceptanceCapture.findUnique({ where: { id: dispute.acceptanceCaptureId } }) : null;
 
   return (
     <div className="space-y-6">

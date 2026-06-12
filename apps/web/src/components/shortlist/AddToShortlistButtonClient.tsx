@@ -9,16 +9,20 @@ interface AddToShortlistButtonClientProps {
   eventId: string;
   listingId: string;
   className?: string;
+  allowRemove?: boolean;
+  initialAdded?: boolean;
 }
 
 export function AddToShortlistButtonClient({
   eventId,
   listingId,
   className,
+  allowRemove = false,
+  initialAdded = false,
 }: AddToShortlistButtonClientProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [added, setAdded] = useState(false);
+  const [added, setAdded] = useState(initialAdded);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -75,7 +79,7 @@ export function AddToShortlistButtonClient({
         type="button"
         variant={added ? "secondary" : "default"}
         onClick={handleAdd}
-        disabled={loading || added}
+        disabled={loading || (added && !allowRemove)}
         className={className}
       >
         {loading ? (

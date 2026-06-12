@@ -403,6 +403,12 @@ export default async function ProVaultDetailPage({
       ? `${event.venueCity}, ${event.venueState}`
       : event.venueCity || undefined;
   const sourceVendorsHref = `/marketplace?eventId=${event.id}&eventSlug=${event.slug}&eventName=${encodeURIComponent(event.name)}${eventLocation ? `&location=${encodeURIComponent(eventLocation)}` : ""}&returnTo=${encodeURIComponent(`/pro/planner/vault/${event.slug}`)}`;
+  const existingVendorRequests = event.bookingRequests.map((request) => ({
+    title: request.listing.title,
+    category: request.listing.category,
+    type: request.listing.type,
+    status: request.status,
+  }));
   const bookingRequestsByListingId = new Map(
     event.bookingRequests.map((request) => [request.listingId, request]),
   );
@@ -885,7 +891,11 @@ export default async function ProVaultDetailPage({
               <AiSourceVendorsVenuesPanel
                 eventId={event.id}
                 eventName={event.name}
+                eventType={event.type}
                 eventLocation={eventLocation}
+                eventDate={event.startAt.toISOString()}
+                guestCount={event.guestTarget}
+                existingBookingRequests={existingVendorRequests}
               />
             </section>
 
@@ -919,10 +929,14 @@ export default async function ProVaultDetailPage({
                             <GenerateProposalButton
                               eventId={event.id}
                               listingId={item.listingId}
+                              label="Prepare draft request"
+                              loadingLabel="Preparing draft..."
                             />
                             <AddToShortlistButtonClient
                               eventId={event.id}
                               listingId={item.listingId}
+                              allowRemove
+                              initialAdded
                             />
                           </div>
                         </div>

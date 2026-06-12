@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     const validatedFilters = validationResult.data;
 
     // Build Prisma query for internal vendors
-    const where: any = {
+    const where: UnsafeAny = {
       type: "VENDOR",
       // Only show vendors with published profiles OR vendors with listings (legacy support)
       OR: [
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform to InternalVendorResult format
-    const internalResults: InternalVendorResult[] = internalVendors
+    const internalResults: InternalVendorResult[] = (internalVendors as UnsafeAny[])
       .filter((org) => org.listings.length > 0)
       .map((org) => {
         const primaryListing = org.listings[0];
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
         }
         const reviews = primaryListing.reviews || [];
         const ratingAvg = reviews.length > 0
-          ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
+          ? reviews.reduce((sum: number, r: UnsafeAny) => sum + (r.rating || 0), 0) / reviews.length
           : primaryListing.ratingAvg || 0;
 
         return {
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
             country: primaryListing.country || org.country,
           },
           description: primaryListing.description || org.about || undefined,
-          tags: primaryListing.tags.map((t) => t.value),
+          tags: primaryListing.tags.map((t: UnsafeAny) => t.value),
           pricingSummary: {
             priceTier: primaryListing.priceTier,
           },

@@ -30,7 +30,9 @@ import {
   Folder
 } from "lucide-react";
 import { EventActions } from "@/components/events/EventActions";
+import { RoleOnboardingPanel } from "@/components/onboarding/RoleOnboardingPanel";
 import { vaultDetail } from "@/lib/routes";
+import { applyEventDeleteResult, parseEventDeleteResult, type EventDeleteUiResult } from "@/lib/event-delete-lifecycle";
 
 type UIRoute = "overview" | "services" | "availability" | "payments" | "portfolio" | "settings";
 
@@ -65,18 +67,19 @@ export function ProPlannerDashboard({ orgName, events, userId, userRole, orgOwne
   const [localEvents, setLocalEvents] = useState<Event[]>(events);
   const router = useRouter();
 
-  const handleDeleteEvent = async (eventSlug: string, eventId: string, eventName: string) => {
+  const handleDeleteEvent = async (eventSlug: string, eventId: string, _eventName: string): Promise<EventDeleteUiResult> => {
     const response = await fetch(`/api/events/${eventSlug}`, {
       method: "DELETE",
     });
 
+    const responseBody = await response.json().catch(() => null);
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: "Failed to delete event" }));
-      throw new Error(error.error || "Failed to delete event");
+      throw new Error(responseBody?.error || "Failed to delete event");
     }
 
-    // Remove event from local state
-    setLocalEvents((prev) => prev.filter((e) => e.id !== eventId));
+    const result = parseEventDeleteResult(responseBody);
+    setLocalEvents((prev) => applyEventDeleteResult(prev, eventId, result));
+    return result;
   };
 
   const canManageEvent = (event: Event): boolean => {
@@ -177,7 +180,7 @@ export function ProPlannerDashboard({ orgName, events, userId, userRole, orgOwne
                               canDelete={canManage}
                               onDelete={handleDeleteEvent}
                               onDeleted={() => {
-                                // Event already removed from state in handleDeleteEvent
+                                // Local state is updated by handleDeleteEvent: hard-deletes are removed; commerce-linked events stay visible as CANCELED.
                               }}
                               size="sm"
                             />
@@ -343,7 +346,8 @@ export function ProPlannerDashboard({ orgName, events, userId, userRole, orgOwne
           setMobileOpen={setMobileMenuOpen}
         />
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 space-y-6 p-6">
+          <RoleOnboardingPanel role="PRO_PLANNER" />
           <Main />
         </main>
       </div>

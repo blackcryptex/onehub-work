@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/server/db';
+import { db } from "@/server/db";
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';

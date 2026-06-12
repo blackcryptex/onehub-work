@@ -6,6 +6,10 @@ import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
 import { resolveBookingClassification } from "@/lib/booking-classification";
 import { resolveFeeProfile } from "@/lib/fee-profile";
+import {
+  resolveCanonicalContractGeneration,
+  verifyCanonicalContractOrgIds,
+} from "@/server/lib/lifecycle/proposal-contract-payment";
 
 /**
  * POST /api/contracts/from-proposal
@@ -70,31 +74,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if proposal is approved/accepted
-    if (proposal.status !== "ACCEPTED" && proposal.status !== "CONVERTED") {
-      return NextResponse.json(
-        {
-          error:
-            "Proposal must be accepted before generating a contract. Current status: " +
-            proposal.status,
-        },
-        { status: 400 }
-      );
-    }
-
     // Check if contract already exists
     const existingContract = await db.contract.findUnique({
       where: { proposalId: proposal.id },
     });
 
-    if (existingContract) {
+    let generationDecision;
+    try {
+      generationDecision = resolveCanonicalContractGeneration({
+        proposalStatus: proposal.status,
+        existingContractId: existingContract?.id ?? null,
+      });
+    } catch (error) {
       return NextResponse.json(
-        {
-          error: "Contract already exists for this proposal",
-          contractId: existingContract.id,
-        },
+        { error: error instanceof Error ? error.message : "Proposal cannot be converted into a contract" },
         { status: 400 }
       );
+    }
+
+    if (generationDecision.kind === "existing") {
+      return NextResponse.json({
+        ...existingContract,
+        contractId: generationDecision.contractId,
+        message: "Contract already exists for this proposal",
+      });
     }
 
     // Validate required listing context before contract generation
@@ -129,7 +132,7 @@ export async function POST(request: NextRequest) {
         title: proposal.title,
         summary: proposal.summary,
         terms: proposal.terms,
-        lineItems: proposal.lineItems.map((item: any) => ({
+        lineItems: proposal.lineItems.map((item: UnsafeAny) => ({
           label: item.label,
           description: item.description,
           qty: item.qty,
@@ -137,7 +140,7 @@ export async function POST(request: NextRequest) {
           unitPriceCents: item.unitPriceCents,
           totalCents: item.totalCents,
         })),
-        milestones: proposal.milestones.map((m: any) => ({
+        milestones: proposal.milestones.map((m: UnsafeAny) => ({
           title: m.title,
           description: m.description,
           dueType: m.dueType,
@@ -194,34 +197,36 @@ export async function POST(request: NextRequest) {
     // Generate contract using AI
     const generated = await generateContractFromProposal(contractContext);
 
-    // Determine buyer and seller IDs
-    // Buyer = planner's org, Seller = vendor/venue org
-    const buyerId = proposal.event.orgId;
-    const sellerId = listing?.orgId || null;
-
-    // Create contract in database
-    const contract = await db.contract.create({
-      data: {
-        proposalId: proposal.id,
-        orgId: proposal.orgId,
-        eventId: proposal.eventId,
-        title: generated.title,
-        bodyMd: generated.bodyMd,
-        version: 1,
-        status: "DRAFT",
-        buyerId,
-        sellerId,
-        platformFeePercent: feeProfile.platformFeePercent,
-      },
+    // Contract.buyerId and Contract.sellerId are canonical org ids until a schema rename is approved.
+    const { buyerId, sellerId } = verifyCanonicalContractOrgIds({
+      buyerOrgId: proposal.event.orgId,
+      sellerOrgId: listing.orgId,
+      actorUserId: user.id,
     });
 
-    // Update proposal status to CONVERTED if not already
-    if (proposal.status !== "CONVERTED") {
-      await db.proposal.update({
+    const contract = await db.$transaction(async (tx) => {
+      const created = await tx.contract.create({
+        data: {
+          proposalId: proposal.id,
+          orgId: proposal.orgId,
+          eventId: proposal.eventId,
+          title: generated.title,
+          bodyMd: generated.bodyMd,
+          version: 1,
+          status: "DRAFT",
+          buyerId,
+          sellerId,
+          platformFeePercent: feeProfile.platformFeePercent,
+        },
+      });
+
+      await tx.proposal.update({
         where: { id: proposal.id },
         data: { status: "CONVERTED" },
       });
-    }
+
+      return created;
+    });
 
     return NextResponse.json({
       ...contract,

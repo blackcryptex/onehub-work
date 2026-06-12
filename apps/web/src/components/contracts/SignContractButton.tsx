@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui";
 import { Pen } from "lucide-react";
 
@@ -10,75 +9,23 @@ interface SignContractButtonProps {
   disabled?: boolean;
 }
 
-export function SignContractButton({
-  contractId,
-  onSigned,
-  disabled = false,
-}: SignContractButtonProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [signed, setSigned] = useState(false);
-
-  const handleSign = async () => {
-    if (!contractId) {
-      setError("Contract ID is required");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/contracts/sign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contractId }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to sign contract");
-      }
-
-      const result = await response.json();
-      setSigned(true);
-
-      if (onSigned) {
-        onSigned();
-      } else {
-        // Reload page to show updated signatures
-        window.location.reload();
-      }
-    } catch (err) {
-      console.error("Error signing contract:", err);
-      setError(err instanceof Error ? err.message : "Failed to sign contract");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (signed) {
-    return (
-      <div className="flex items-center gap-2 text-green-600">
-        <span className="text-sm font-medium">✓ Signed</span>
-      </div>
-    );
-  }
-
+/**
+ * Deprecated legacy one-click signer.
+ * Product signing must use ContractSignatureForm so signer identity and legal acceptance proof
+ * are submitted to POST /api/contracts/[id]/sign.
+ */
+export function SignContractButton({ disabled = false }: SignContractButtonProps) {
   return (
     <div className="space-y-2">
-      <Button
-        onClick={handleSign}
-        disabled={loading || disabled}
-        className="flex items-center gap-2"
-      >
+      <Button disabled className="flex items-center gap-2" title="Use the canonical contract signature form">
         <Pen className="w-4 h-4" />
-        {loading ? "Signing..." : "Sign Contract"}
+        Sign in canonical form
       </Button>
-      {error && (
-        <p className="text-sm text-rose-600">{error}</p>
+      {!disabled && (
+        <p className="text-sm text-amber-700">
+          Legacy one-click signing is disabled. Use the contract signature form to provide signer identity and legal acceptance.
+        </p>
       )}
     </div>
   );
 }
-

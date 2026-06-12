@@ -13,14 +13,14 @@ export default async function RefundVerificationDetail({ params }: { params: { i
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const refund = await (db as any).refundRequest.findUnique({ where: { id: params.id } });
+  const refund = await (db as UnsafeAny).refundRequest.findUnique({ where: { id: params.id } });
   if (!refund) notFound();
 
-  const dispute = refund.proposalId ? await (db as any).dispute.findFirst({ where: { proposalId: refund.proposalId }, orderBy: { createdAt: "desc" } }) : null;
-  const holdback = refund.paymentIntentId ? await (db as any).paymentHoldback.findUnique({ where: { paymentIntentId: refund.paymentIntentId } }) : null;
+  const dispute = refund.proposalId ? await (db as UnsafeAny).dispute.findFirst({ where: { proposalId: refund.proposalId }, orderBy: { createdAt: "desc" } }) : null;
+  const holdback = refund.paymentIntentId ? await (db as UnsafeAny).paymentHoldback.findUnique({ where: { paymentIntentId: refund.paymentIntentId } }) : null;
   const payout = refund.milestoneId ? await db.payout.findFirst({ where: { milestoneId: refund.milestoneId } }) : await db.payout.findFirst({ where: { proposalId: refund.proposalId }, orderBy: { createdAt: "desc" } });
-  const overrides = await (db as any).adminOverride.findMany({ where: { refundRequestId: refund.id }, orderBy: { createdAt: "desc" } });
-  const acceptanceProof = refund.acceptanceCaptureId ? await (db as any).acceptanceCapture.findUnique({ where: { id: refund.acceptanceCaptureId } }) : null;
+  const overrides = await (db as UnsafeAny).adminOverride.findMany({ where: { refundRequestId: refund.id }, orderBy: { createdAt: "desc" } });
+  const acceptanceProof = refund.acceptanceCaptureId ? await (db as UnsafeAny).acceptanceCapture.findUnique({ where: { id: refund.acceptanceCaptureId } }) : null;
 
   return (
     <div className="space-y-6">

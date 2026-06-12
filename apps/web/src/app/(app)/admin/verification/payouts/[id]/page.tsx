@@ -14,12 +14,12 @@ export default async function PayoutVerificationDetail({ params }: { params: { i
   if (!payout) notFound();
 
   const proposal = await db.proposal.findUnique({ where: { id: payout.proposalId }, include: { event: true, contract: true } });
-  const paymentIntent = proposal?.contract?.id ? await (db as any).paymentIntent.findFirst({ where: { contractId: proposal.contract.id, ...(payout.milestoneId ? { milestoneId: payout.milestoneId } : {}) }, orderBy: { createdAt: 'desc' } }) : null;
-  const holdback = paymentIntent?.id ? await (db as any).paymentHoldback.findUnique({ where: { paymentIntentId: paymentIntent.id } }) : null;
-  const refunds = await (db as any).refundRequest.findMany({ where: { proposalId: payout.proposalId }, orderBy: { createdAt: 'desc' }, take: 10 });
-  const disputes = await (db as any).dispute.findMany({ where: { proposalId: payout.proposalId }, orderBy: { createdAt: 'desc' }, take: 10 });
-  const overrides = await (db as any).adminOverride.findMany({ where: { payoutId: payout.id }, orderBy: { createdAt: 'desc' } });
-  const acceptanceProof = paymentIntent?.id ? await (db as any).acceptanceCapture.findFirst({ where: { OR: [{ paymentIntentId: paymentIntent.id }, proposal?.contract?.id ? { contractId: proposal.contract.id } : undefined, { proposalId: payout.proposalId }].filter(Boolean) }, orderBy: { acceptedAt: 'desc' } }) : await (db as any).acceptanceCapture.findFirst({ where: { proposalId: payout.proposalId }, orderBy: { acceptedAt: 'desc' } });
+  const paymentIntent = proposal?.contract?.id ? await (db as UnsafeAny).paymentIntent.findFirst({ where: { contractId: proposal.contract.id, ...(payout.milestoneId ? { milestoneId: payout.milestoneId } : {}) }, orderBy: { createdAt: 'desc' } }) : null;
+  const holdback = paymentIntent?.id ? await (db as UnsafeAny).paymentHoldback.findUnique({ where: { paymentIntentId: paymentIntent.id } }) : null;
+  const refunds = await (db as UnsafeAny).refundRequest.findMany({ where: { proposalId: payout.proposalId }, orderBy: { createdAt: 'desc' }, take: 10 });
+  const disputes = await (db as UnsafeAny).dispute.findMany({ where: { proposalId: payout.proposalId }, orderBy: { createdAt: 'desc' }, take: 10 });
+  const overrides = await (db as UnsafeAny).adminOverride.findMany({ where: { payoutId: payout.id }, orderBy: { createdAt: 'desc' } });
+  const acceptanceProof = paymentIntent?.id ? await (db as UnsafeAny).acceptanceCapture.findFirst({ where: { OR: [{ paymentIntentId: paymentIntent.id }, proposal?.contract?.id ? { contractId: proposal.contract.id } : undefined, { proposalId: payout.proposalId }].filter(Boolean) }, orderBy: { acceptedAt: 'desc' } }) : await (db as UnsafeAny).acceptanceCapture.findFirst({ where: { proposalId: payout.proposalId }, orderBy: { acceptedAt: 'desc' } });
 
   return (
     <div className="space-y-6">

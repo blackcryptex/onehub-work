@@ -27,7 +27,7 @@ export default async function AdminVerificationPage({
   const q = searchParams.q?.trim() || "";
   const containsQ = q ? { contains: q, mode: "insensitive" as const } : undefined;
 
-  const refunds = await (db as any).refundRequest.findMany({
+  const refunds = await (db as UnsafeAny).refundRequest.findMany({
     where: {
       ...(searchParams.refundStatus ? { status: searchParams.refundStatus } : {}),
       ...(q
@@ -45,7 +45,7 @@ export default async function AdminVerificationPage({
     take: 20,
   });
 
-  const disputes = await (db as any).dispute.findMany({
+  const disputes = await (db as UnsafeAny).dispute.findMany({
     where: {
       ...(searchParams.disputeStatus ? { status: searchParams.disputeStatus } : {}),
       ...(q
@@ -64,7 +64,7 @@ export default async function AdminVerificationPage({
     take: 20,
   });
 
-  const holdbacks = await (db as any).paymentHoldback.findMany({
+  const holdbacks = await (db as UnsafeAny).paymentHoldback.findMany({
     where: {
       ...(searchParams.holdbackState ? { state: searchParams.holdbackState } : {}),
       ...(q
@@ -101,7 +101,7 @@ export default async function AdminVerificationPage({
     take: 20,
   });
 
-  const overrides = await (db as any).adminOverride.findMany({
+  const overrides = await (db as UnsafeAny).adminOverride.findMany({
     where: {
       ...(searchParams.targetType ? { targetType: searchParams.targetType } : {}),
       ...(q

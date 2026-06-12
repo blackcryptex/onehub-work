@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type ProviderType = "vendor" | "venue";
 

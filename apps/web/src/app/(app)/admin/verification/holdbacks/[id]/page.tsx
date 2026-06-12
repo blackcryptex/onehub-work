@@ -11,14 +11,14 @@ export default async function HoldbackVerificationDetail({ params }: { params: {
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const holdback = await (db as any).paymentHoldback.findUnique({ where: { paymentIntentId: params.id } });
+  const holdback = await (db as UnsafeAny).paymentHoldback.findUnique({ where: { paymentIntentId: params.id } });
   if (!holdback) notFound();
 
-  const refunds = await (db as any).refundRequest.findMany({ where: { proposalId: holdback.proposalId }, orderBy: { createdAt: "desc" }, take: 10 });
-  const disputes = await (db as any).dispute.findMany({ where: { proposalId: holdback.proposalId }, orderBy: { createdAt: "desc" }, take: 10 });
+  const refunds = await (db as UnsafeAny).refundRequest.findMany({ where: { proposalId: holdback.proposalId }, orderBy: { createdAt: "desc" }, take: 10 });
+  const disputes = await (db as UnsafeAny).dispute.findMany({ where: { proposalId: holdback.proposalId }, orderBy: { createdAt: "desc" }, take: 10 });
   const payout = holdback.milestoneId ? await db.payout.findFirst({ where: { milestoneId: holdback.milestoneId } }) : await db.payout.findFirst({ where: { proposalId: holdback.proposalId }, orderBy: { createdAt: "desc" } });
-  const overrides = await (db as any).adminOverride.findMany({ where: { paymentHoldbackId: holdback.id }, orderBy: { createdAt: "desc" } });
-  const acceptanceProof = holdback.acceptanceCaptureId ? await (db as any).acceptanceCapture.findUnique({ where: { id: holdback.acceptanceCaptureId } }) : null;
+  const overrides = await (db as UnsafeAny).adminOverride.findMany({ where: { paymentHoldbackId: holdback.id }, orderBy: { createdAt: "desc" } });
+  const acceptanceProof = holdback.acceptanceCaptureId ? await (db as UnsafeAny).acceptanceCapture.findUnique({ where: { id: holdback.acceptanceCaptureId } }) : null;
 
   return (
     <div className="space-y-6">

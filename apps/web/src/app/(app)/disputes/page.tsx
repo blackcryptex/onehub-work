@@ -13,7 +13,7 @@ export default async function DisputesPage() {
     include: { proposal: true },
     orderBy: { createdAt: "desc" },
   });
-  const refundRequests = await (db as any).refundRequest.findMany({
+  const refundRequests = await (db as UnsafeAny).refundRequest.findMany({
     where: { orgId: { in: orgs.map((o) => o.id) } },
     include: { proposal: true },
     orderBy: { createdAt: "desc" },

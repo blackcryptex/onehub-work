@@ -12,7 +12,7 @@ export async function POST(_request: NextRequest) {
     const calendarId = await ensureOneHubCalendar(session.user.id);
 
     return NextResponse.json({ ok: true, calendarId });
-  } catch (error: unknown) {
+  } catch (error: UnsafeAny) {
     console.error('Create calendar error:', error);
     const message =
       error instanceof Error && error.message

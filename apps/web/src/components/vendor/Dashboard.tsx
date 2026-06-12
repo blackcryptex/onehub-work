@@ -26,6 +26,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { VendorPaymentPanel } from "@/components/payments/VendorPaymentPanel";
+import { RoleOnboardingPanel } from "@/components/onboarding/RoleOnboardingPanel";
 
 type UIRoute = "overview" | "leads" | "payments" | "calendar" | "messages" | "settings";
 
@@ -315,7 +316,8 @@ export function VendorDashboard({
           setMobileOpen={setMobileMenuOpen}
         />
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 space-y-6 p-6">
+          <RoleOnboardingPanel role="VENDOR" />
           <Main />
         </main>
       </div>

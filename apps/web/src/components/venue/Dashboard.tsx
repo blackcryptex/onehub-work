@@ -25,6 +25,7 @@ import {
   Sparkles,
   TrendingUp,
 } from "lucide-react";
+import { RoleOnboardingPanel } from "@/components/onboarding/RoleOnboardingPanel";
 
 type UIRoute = "overview" | "leads" | "calendar" | "messages" | "settings";
 
@@ -158,7 +159,8 @@ export function VenueDashboard({ orgName }: VenueDashboardProps) {
           setMobileOpen={setMobileMenuOpen}
         />
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 space-y-6 p-6">
+          <RoleOnboardingPanel role="VENUE" />
           <Main />
         </main>
       </div>

@@ -27,7 +27,9 @@ import { aiAssist, type AssistKind } from "@/lib/aiAssist";
 import { useToast } from "@/hooks/useToast";
 import { EventActions } from "@/components/events/EventActions";
 import { EmptyStateOnboarding } from "@/components/overview/EmptyStateOnboarding";
+import { RoleOnboardingPanel } from "@/components/onboarding/RoleOnboardingPanel";
 import { useSession } from "next-auth/react";
+import type { EventDeleteUiResult } from "@/lib/event-delete-lifecycle";
 
 type UIRoute =
   | "overview"
@@ -180,13 +182,19 @@ export function DIYPlannerDashboard() {
     success('Event created successfully!');
   };
 
-  const handleEventDeleted = () => {
-    // Refetch events after deletion
+  const handleEventDeleted = (result: EventDeleteUiResult) => {
+    // Refetch events after deletion/cancellation so preserved commerce-linked events stay visible as canceled.
     void fetchEvents();
+
+    if (result.action === "canceled") {
+      success(result.message || "Event canceled and archived to preserve commerce records");
+      return;
+    }
+
     // Clear selection if deleted event was selected
     setSelectedEventId(null);
     setUiRoute('overview');
-    success('Event deleted successfully');
+    success(result.message || 'Event deleted successfully');
   };
 
   const Main = () => {
@@ -418,7 +426,8 @@ export function DIYPlannerDashboard() {
           setMobileOpen={setMobileMenuOpen}
         />
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 space-y-6 p-6">
+          <RoleOnboardingPanel role="DIY_PLANNER" />
           <Main />
         </main>
       </div>

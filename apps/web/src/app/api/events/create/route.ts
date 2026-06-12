@@ -62,7 +62,7 @@ function mapContractStatus(status: ContractStatus): Status {
   return CONTRACT_STATUS_MAP[status] ?? "pending";
 }
 
-function mapTask(task: any, fallback: Date): Task {
+function mapTask(task: UnsafeAny, fallback: Date): Task {
   return {
     id: task.id,
     title: task.title,
@@ -72,7 +72,7 @@ function mapTask(task: any, fallback: Date): Task {
   };
 }
 
-function mapMilestone(milestone: any): Milestone {
+function mapMilestone(milestone: UnsafeAny): Milestone {
   return {
     id: milestone.id,
     title: milestone.title,
@@ -139,23 +139,23 @@ function computeProgress(tasks: Task[], milestones: Milestone[]): number {
   return Math.min(100, Math.round((completed / total) * 100));
 }
 
-function mapEventToEventItem(event: any): EventItem {
-  const tasks = (event.tasks || []).map((task: any) => mapTask(task, event.startAt));
+function mapEventToEventItem(event: UnsafeAny): EventItem {
+  const tasks = (event.tasks || []).map((task: UnsafeAny) => mapTask(task, event.startAt));
   const milestones = (event.milestones || []).map(mapMilestone);
   const proposals = (event.proposals || []).map(mapProposal);
   const contracts = (event.contracts || []).map(mapContract);
-  const guests = (event.guestLists || []).flatMap((list: any) =>
-    (list.guests || []).map((guest: any) => mapGuest(guest))
+  const guests = (event.guestLists || []).flatMap((list: UnsafeAny) =>
+    (list.guests || []).map((guest: UnsafeAny) => mapGuest(guest))
   );
   // shortlistItems not included in query, so vendors will be empty array for newly created events
   const vendors: VendorLink[] = [];
 
   const budgetPlanned = (event.budgetLines || []).reduce(
-    (acc: number, line: any) => acc + (line.plannedCents ?? 0),
+    (acc: number, line: UnsafeAny) => acc + (line.plannedCents ?? 0),
     0,
   );
   const budgetActual = (event.budgetLines || []).reduce(
-    (acc: number, line: any) => acc + (line.actualCents ?? 0),
+    (acc: number, line: UnsafeAny) => acc + (line.actualCents ?? 0),
     0,
   );
 
@@ -316,7 +316,7 @@ export async function POST(request: NextRequest) {
           },
         });
         break; // Success, exit loop
-      } catch (createError: any) {
+      } catch (createError: UnsafeAny) {
         // If slug conflict, try again with a new slug
         if (createError?.code === "P2002" && createError?.meta?.target?.includes("slug")) {
           attempts++;
@@ -357,7 +357,7 @@ export async function POST(request: NextRequest) {
                 role: "CLIENT",
                 addedByUserId: userId,
               },
-            }).catch((error: any) => {
+            }).catch((error: UnsafeAny) => {
               // Ignore unique constraint violations (client already stakeholder)
               if (error?.code !== "P2002") {
                 logger.warn({ userId, eventId: event.id, clientId, error: error.message }, "Failed to create EventStakeholder");
@@ -377,7 +377,7 @@ export async function POST(request: NextRequest) {
                   scope: "SUMMARY",
                   createdByUserId: userId,
                 },
-              }).catch((error: any) => {
+              }).catch((error: UnsafeAny) => {
                 // Ignore unique constraint violations (share already exists)
                 if (error?.code !== "P2002") {
                   logger.warn({ userId, eventId: event.id, clientId, error: error.message }, "Failed to create EventShare");

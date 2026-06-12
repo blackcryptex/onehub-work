@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
       if (existingOrg) {
         // Update existing org with all provider profile data
-        const updatedOrg = await db.$transaction(async (tx: any) => {
+        const updatedOrg = await db.$transaction(async (tx: UnsafeAny) => {
           if (!draft) {
             await tx.user.update({
               where: { id: userId },
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
               mediaJson: profileData.mediaJson || null,
               notificationsJson: profileData.notificationsJson || null,
               profileStatus,
-            } as UnsafeAny, // Type assertion needed until TypeScript server picks up regenerated Prisma types
+            } as UnsafeAny,
           });
         });
         return NextResponse.json({
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         });
       } else {
         // Create new org with all provider profile data
-        const org = await db.$transaction(async (tx: any) => {  // typed as UnsafeAny to avoid ambient Prisma type drift in current repo state
+        const org = await db.$transaction(async (tx: UnsafeAny) => {
           if (!draft) {
             await tx.user.update({
               where: { id: userId },
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
               profileStatus,
               members: { create: { userId, role: "OWNER" } },
               settings: { create: {} },
-            } as UnsafeAny, // Type assertion needed until TypeScript server picks up regenerated Prisma types
+            } as UnsafeAny,
           });
         });
         return NextResponse.json({
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-  } catch (error: unknown) {
+  } catch (error: UnsafeAny) {
     console.error("Error saving provider profile:", error);
     const prismaError = error as { code?: unknown; message?: unknown };
     if (prismaError && prismaError.code === "P2002") {

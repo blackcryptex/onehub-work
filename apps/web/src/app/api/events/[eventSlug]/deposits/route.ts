@@ -171,7 +171,7 @@ export async function GET(
     }
 
     // Build where clause based on role
-    const where: any = { eventId: event.id };
+    const where: UnsafeAny = { eventId: event.id };
     
     if (user.role === "CLIENT") {
       // Clients can only see their own deposits
@@ -198,7 +198,7 @@ export async function GET(
     });
 
     return NextResponse.json({
-      deposits: deposits.map((d) => ({
+      deposits: (deposits as UnsafeAny[]).map((d) => ({
         id: d.id,
         amountCents: d.amountCents,
         currency: d.currency,

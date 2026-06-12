@@ -99,7 +99,7 @@ export async function POST(
           user: stakeholder.user,
         },
       });
-    } catch (error: any) {
+    } catch (error: UnsafeAny) {
       // Handle unique constraint violation (stakeholder already exists)
       if (error?.code === "P2002") {
         return NextResponse.json({ error: "User is already a stakeholder for this event" }, { status: 409 });

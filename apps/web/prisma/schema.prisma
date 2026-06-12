@@ -24,6 +24,7 @@ model User {
   assignedChecklistItems ChecklistItem[]
   depositsAsClient       Deposit[]          @relation("DepositClient")
   createdEvents          Event[]
+  dreamResponsesCreated  DreamResponse[]
   eventSharesAsCreator   EventShare[]       @relation("EventShareCreatedBy")
   eventSharesAsViewer    EventShare[]       @relation("EventShareViewer")
   addedEventStakeholders EventStakeholder[] @relation("EventStakeholderAddedBy")
@@ -33,8 +34,10 @@ model User {
   ownedOrgs              Organization[]     @relation("OrganizationOwner")
   paymentIntentsAsPayee  PaymentIntent[]    @relation("PaymentIntentPayee")
   paymentIntentsAsPayer  PaymentIntent[]    @relation("PaymentIntentPayer")
+  sentMessages           Message[]           @relation("MessageSender")
   reviews                Review[]
   sessions               Session[]
+  threadParticipants     ThreadParticipant[]
   assignedTasks          Task[]
   transactionsAsPayee    Transaction[]      @relation("TransactionPayee")
   transactionsAsPayer    Transaction[]      @relation("TransactionPayer")
@@ -103,6 +106,7 @@ model Organization {
   contracts         Contract[]
   deposits          Deposit[]
   disputes          Dispute[]
+  dreamResponses    DreamResponse[]
   escrowAccounts    EscrowAccount[]
   events            Event[]
   invites           Invite[]
@@ -330,6 +334,7 @@ model Event {
   media              Media[]
   milestones         Milestone[]
   proposals          Proposal[]
+  dreamResponses     DreamResponse[]
   seatingPlans       SeatingPlan?
   shortlistItems     ShortlistItem[]
   tasks              Task[]
@@ -480,6 +485,33 @@ model Notification {
   createdAt DateTime     @default(now())
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DreamResponse {
+  id                String                    @id @default(cuid())
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  eventId           String
+  providerOrgId     String
+  providerType      DreamResponseProviderType
+  status            DreamResponseStatus       @default(OPEN)
+  responseType      DreamResponseType
+  message           String
+  roughPriceMin     Int?
+  roughPriceMax     Int?
+  currency          String?                   @default("USD") @db.VarChar(3)
+  preferredNextStep String?
+  createdByUserId   String
+  viewedAt          DateTime?
+  interestedAt      DateTime?
+  archivedAt        DateTime?
+  event             Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  providerOrg       Organization              @relation(fields: [providerOrgId], references: [id], onDelete: Cascade)
+  createdBy         User                      @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, createdAt])
+  @@index([providerOrgId, createdAt])
+  @@index([status, createdAt])
 }
 
 model Listing {
@@ -881,6 +913,11 @@ model Thread {
   org          Organization        @relation(fields: [orgId], references: [id])
   proposal     Proposal?           @relation(fields: [proposalId], references: [id])
   participants ThreadParticipant[]
+
+  @@index([orgId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([proposalId, createdAt])
+  @@index([listingId, createdAt])
 }
 
 model ThreadParticipant {
@@ -890,6 +927,11 @@ model ThreadParticipant {
   email    String
   roleHint String?
   thread   Thread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user     User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([threadId, email])
+  @@index([threadId])
+  @@index([userId])
 }
 
 model Message {
@@ -900,6 +942,10 @@ model Message {
   attachments Json?
   createdAt   DateTime @default(now())
   thread      Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender      User?    @relation("MessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([threadId, createdAt])
+  @@index([senderId, createdAt])
 }
 
 model Dispute {
@@ -1220,6 +1266,25 @@ enum EventStatus {
   ON_HOLD
   COMPLETED
   CANCELED
+}
+
+enum DreamResponseStatus {
+  OPEN
+  VIEWED
+  INTERESTED
+  ARCHIVED
+}
+
+enum DreamResponseType {
+  IDEAS
+  ROUGH_PRICING
+  PACKAGE_SUGGESTION
+  VENUE_RECOMMENDATION
+}
+
+enum DreamResponseProviderType {
+  VENDOR
+  VENUE
 }
 
 enum EventStakeholderRole {

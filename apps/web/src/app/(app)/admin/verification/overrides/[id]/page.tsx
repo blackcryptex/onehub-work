@@ -10,14 +10,14 @@ export default async function OverrideVerificationDetail({ params }: { params: {
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const override = await (db as any).adminOverride.findUnique({ where: { id: params.id } });
+  const override = await (db as UnsafeAny).adminOverride.findUnique({ where: { id: params.id } });
   if (!override) notFound();
 
-  const refund = override.refundRequestId ? await (db as any).refundRequest.findUnique({ where: { id: override.refundRequestId } }) : null;
-  const dispute = override.disputeId ? await (db as any).dispute.findUnique({ where: { id: override.disputeId } }) : null;
-  const holdback = override.paymentHoldbackId ? await (db as any).paymentHoldback.findUnique({ where: { id: override.paymentHoldbackId } }) : override.paymentIntentId ? await (db as any).paymentHoldback.findUnique({ where: { paymentIntentId: override.paymentIntentId } }) : null;
+  const refund = override.refundRequestId ? await (db as UnsafeAny).refundRequest.findUnique({ where: { id: override.refundRequestId } }) : null;
+  const dispute = override.disputeId ? await (db as UnsafeAny).dispute.findUnique({ where: { id: override.disputeId } }) : null;
+  const holdback = override.paymentHoldbackId ? await (db as UnsafeAny).paymentHoldback.findUnique({ where: { id: override.paymentHoldbackId } }) : override.paymentIntentId ? await (db as UnsafeAny).paymentHoldback.findUnique({ where: { paymentIntentId: override.paymentIntentId } }) : null;
   const payout = override.payoutId ? await db.payout.findUnique({ where: { id: override.payoutId } }) : null;
-  const acceptanceProof = override.acceptanceCaptureId ? await (db as any).acceptanceCapture.findUnique({ where: { id: override.acceptanceCaptureId } }) : null;
+  const acceptanceProof = override.acceptanceCaptureId ? await (db as UnsafeAny).acceptanceCapture.findUnique({ where: { id: override.acceptanceCaptureId } }) : null;
   const proposal = override.proposalId ? await db.proposal.findUnique({ where: { id: override.proposalId }, include: { event: true, contract: true } }) : null;
 
   return (

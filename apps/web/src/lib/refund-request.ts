@@ -4,6 +4,7 @@ import { resolveFeeProfile } from "@/lib/fee-profile";
 import { recordAudit } from "@/server/lib/audit";
 import { feeOverrideRequiresAdminOverride, recordAdminOverride } from "@/lib/admin-override";
 import { getGuardedMvpAuthorityForUserId } from "@/lib/rbac";
+import { PAYOUT_BLOCKING_REFUND_STATUSES } from "@/lib/payments/money-state";
 
 export type RefundFeeTreatment = "BUYER_ABSORBS" | "REFUND_TO_BUYER" | "NON_REFUNDABLE";
 export type RefundRequestStatus = "OPEN" | "APPROVED" | "DENIED" | "CANCELED";
@@ -241,7 +242,7 @@ export async function hasBlockingRefundRequest(proposalId: string, milestoneId?:
   const openRequest = await (prisma as any).refundRequest.findFirst({
     where: {
       proposalId,
-      status: "OPEN",
+      status: { in: [...PAYOUT_BLOCKING_REFUND_STATUSES] },
       ...(milestoneId ? { OR: [{ milestoneId }, { milestoneId: null }] } : {}),
     },
     orderBy: { createdAt: "desc" },

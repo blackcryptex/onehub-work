@@ -23,46 +23,61 @@ pnpm test:e2e
 
 ## Observability
 
-### Sentry
+### Error tracking
 
-Configure Sentry DSN in `.env`:
+OneHub currently uses a provider-neutral error tracking adapter at
+`apps/web/src/lib/errorTracker.ts`. The safe local default is console logging
+with redaction. No paid/external provider, Sentry project, DSN, or alert route is
+configured by code in this lane.
+
+Non-secret placeholders live in `apps/web/.env.example`:
 
 ```env
-SENTRY_DSN=...
-NEXT_PUBLIC_SENTRY_DSN=...
+ERROR_TRACKING_PROVIDER=console
+SENTRY_DSN=
+NEXT_PUBLIC_SENTRY_DSN=
+ONEHUB_ERROR_LOG_SAMPLE_RATE=0
 ```
 
-Sentry is initialized in:
-- `apps/web/src/instrumentation.ts` (server)
-- `apps/web/src/app/layout.tsx` (client)
+Before production launch, Marlon must approve the monitoring provider, budget,
+retention, alert recipients, DSN ownership, and sampling policy. Provider setup
+and credentials are out of scope for local pre-work.
 
 ### Logging
 
-- **Server**: Pino logger with structured JSON output
-- **Client**: Console logger (dev) / Sentry (prod)
-- **Request ID**: Included in all server logs via middleware
+- **Server**: Pino logger with structured JSON output and secret redaction
+- **Client/local fallback**: console through `errorTracker.ts`, with context redaction
+- **Request ID**: Middleware assigns `x-request-id` on API/app responses
 
 ### Error Handling
 
 - **Global Error Boundary**: `apps/web/src/app/error.tsx`
-- **Error IDs**: Generated for each error for tracking
-- **User-friendly Messages**: Displayed in UI
+- **Global Root Error Boundary**: `apps/web/src/app/global-error.tsx`
+- **User-friendly Messages**: Displayed in UI without stack traces or secrets
 
 ## Rate Limiting
 
-Rate limiting is configured via environment variables:
+Rate limiting is configured via environment variables listed in
+`apps/web/.env.example`:
 
 ```env
-RATE_LIMIT_ENABLED=true
-RATE_LIMIT_WINDOW_MS=60000  # 1 minute
+RATE_LIMIT_ENABLED=false
+RATE_LIMIT_WINDOW_MS=60000
 RATE_LIMIT_MAX_REQUESTS=100
+RATE_LIMIT_TRUST_PROXY=false
 ```
 
-Applied to:
-- Public endpoints (`/rsvp/**`, `/api/stripe/webhook`)
-- tRPC procedures (via middleware)
+Current implementation: `apps/web/src/server/lib/rateLimit.ts` provides a local
+in-memory helper. It is acceptable for local/test-mode safety checks only.
+Production launch still requires an approved Redis/shared-store design, proxy IP
+trust policy, bypass policy for webhooks, and alerting/false-positive procedure.
 
-**Note**: Wave 6 uses in-memory rate limiting. For production, migrate to Redis-based solution.
+Documented intended coverage:
+- Public endpoints such as RSVP/share/webhook routes where explicitly wrapped
+- Server route handlers that call the helper
+
+**Note**: Do not treat the local in-memory helper as launch-ready for horizontally
+scaled production traffic.
 
 ## Feature Flags
 
@@ -98,13 +113,16 @@ pnpm prisma migrate status
 
 ### Environment Variables
 
-Required variables (see `.env.example`):
+Required/non-secret manifest entries are listed in `apps/web/.env.example`.
+Production values must come from approved secret storage and must not be pasted
+into docs or reports.
 
 - Database: `DATABASE_URL`
-- Auth: `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
-- Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
-- Sentry: `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`
-- Rate Limiting: `RATE_LIMIT_ENABLED`, etc.
+- Auth and canonical URLs: `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, `ONEHUB_CANONICAL_URL`, `ONEHUB_PRIMARY_DOMAIN`
+- Maintenance/write freeze: `ONEHUB_MAINTENANCE_MODE`
+- Stripe placeholders: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- Error tracking placeholders: `ERROR_TRACKING_PROVIDER`, `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `ONEHUB_ERROR_LOG_SAMPLE_RATE`
+- Rate limiting placeholders: `RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX_REQUESTS`, `RATE_LIMIT_TRUST_PROXY`
 
 ### Build
 

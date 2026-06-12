@@ -14,7 +14,7 @@ async function main() {
         orgId: ev.orgId,
         type: "TASK_DUE",
         title: `Task due soon: ${t.title}`,
-        link: `/app/events/${ev.slug}/tasks`,
+        link: `/events/${ev.slug}/tasks`,
       },
     });
   }
@@ -26,7 +26,7 @@ async function main() {
         orgId: ev.orgId,
         type: "CHECKLIST_ITEM_DUE",
         title: `Checklist item due: ${ci.title}`,
-        link: `/app/events/${ev.slug}/checklists`,
+        link: `/events/${ev.slug}/checklists`,
       },
     });
   }

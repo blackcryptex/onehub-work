@@ -36,7 +36,7 @@ export function DemoTour({ eventSlug, eventId, proposalId, contractId, show = fa
           size="sm"
           className="justify-start text-xs"
         >
-          <Link href={`/app/vault/${eventSlug}`}>
+          <Link href={`/app/vault/${eventSlug}` as Route}>
             <MapPin className="w-3 h-3 mr-1" />
             Event Vault
           </Link>
@@ -99,7 +99,7 @@ export function DemoTour({ eventSlug, eventId, proposalId, contractId, show = fa
           size="sm"
           className="justify-start text-xs"
         >
-          <Link href={`/app/vault/${eventSlug}`}>
+          <Link href={`/app/vault/${eventSlug}` as Route}>
             <Sparkles className="w-3 h-3 mr-1" />
             AI Source
           </Link>

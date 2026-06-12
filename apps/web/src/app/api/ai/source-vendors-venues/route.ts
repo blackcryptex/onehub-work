@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     const categories = getCategoriesForEventType(event.type);
 
     // Build where clause for verified listings
-    const whereClause: any = {
+    const whereClause: UnsafeAny = {
       category: { in: categories },
     };
 
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Build verified results
-    const verifiedResults: VerifiedResult[] = verifiedListings.map((listing) => ({
+    const verifiedResults: VerifiedResult[] = (verifiedListings as UnsafeAny[]).map((listing) => ({
       kind: "VERIFIED",
       listingId: listing.id,
       title: listing.title,

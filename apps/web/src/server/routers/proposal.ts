@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { auth } from "@/lib/auth";
@@ -40,12 +40,12 @@ export const proposalRouter = router({
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
     if (!userId) throw new Error("Unauthorized");
-    const ev = await prisma.event.findUniqueOrThrow({ where: { id: input.eventId } });
-    const mem = await prisma.membership.findFirst({ where: { userId, orgId: ev.orgId } });
+    const ev = await db.event.findUniqueOrThrow({ where: { id: input.eventId } });
+    const mem = await db.membership.findFirst({ where: { userId, orgId: ev.orgId } });
     if (!mem) throw new Error("Forbidden");
     const subtotal = input.lineItems.reduce((sum, li) => sum + li.qty * li.unitPriceCents, 0);
     const total = subtotal; // tax calculation would go here
-    const proposal = await prisma.proposal.create({
+    const proposal = await db.proposal.create({
       data: {
         orgId: ev.orgId,
         eventId: input.eventId,
@@ -74,7 +74,7 @@ export const proposalRouter = router({
     return proposal;
   }),
   calculateTotals: publicProcedure.input(z.object({ proposalId: z.string() })).query(async ({ input }) => {
-    const proposal = await prisma.proposal.findUniqueOrThrow({
+    const proposal = await db.proposal.findUniqueOrThrow({
       where: { id: input.proposalId },
       include: { lineItems: true },
     });
@@ -84,7 +84,7 @@ export const proposalRouter = router({
   // SECURITY HOTFIX: require auth (P0)
   // SECURITY: permission check - user must be able to send proposals for the event
   send: protectedProcedure.input(z.object({ proposalId: z.string() })).mutation(async ({ input, ctx }) => {
-    const proposal = await prisma.proposal.findUniqueOrThrow({
+    const proposal = await db.proposal.findUniqueOrThrow({
       where: { id: input.proposalId },
       include: {
         event: {
@@ -102,7 +102,7 @@ export const proposalRouter = router({
         message: "You do not have permission to send this proposal",
       });
     }
-    const updated = await prisma.proposal.update({ where: { id: input.proposalId }, data: { status: "SENT" } });
+    const updated = await db.proposal.update({ where: { id: input.proposalId }, data: { status: "SENT" } });
     // TODO: Create thread and post message
     await recordActivity({ orgId: proposal.orgId, eventId: proposal.eventId, actorId: ctx.user.id, action: "PROPOSAL_SENT", target: proposal.id });
     
@@ -117,69 +117,12 @@ export const proposalRouter = router({
     
     return updated;
   }),
-  // SECURITY: permission check - user must be able to manage the event
-  accept: publicProcedure.input(z.object({ proposalId: z.string() })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Authentication required",
-      });
-    }
-    const proposal = await prisma.proposal.findUniqueOrThrow({
-      where: { id: input.proposalId },
-      include: {
-        event: {
-          include: {
-            org: {
-              include: { members: true },
-            },
-          },
-        },
-        org: true,
-      },
+  // Canonical proposal acceptance is POST /api/proposals/[id]/approve with legal acceptance proof.
+  accept: protectedProcedure.input(z.object({ proposalId: z.string() })).mutation(async () => {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Legacy tRPC proposal.accept is disabled. Use POST /api/proposals/[id]/approve with acceptance proof.",
     });
-    if (!canManageEvent(user, proposal.event)) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "You do not have permission to accept this proposal",
-      });
-    }
-    // Create contract
-    const _contract = await prisma.contract.create({
-      data: {
-        proposalId: proposal.id,
-        orgId: proposal.orgId,
-        eventId: proposal.eventId,
-        title: `Contract for ${proposal.title}`,
-        bodyMd: "Contract template content", // Will be resolved from template
-      },
-    });
-    // Create escrow
-    await prisma.escrowAccount.create({
-      data: {
-        orgId: proposal.event.orgId,
-        eventId: proposal.eventId,
-        proposalId: proposal.id,
-        currency: proposal.currency,
-      },
-    });
-    const updated = await prisma.proposal.update({ where: { id: input.proposalId }, data: { status: "ACCEPTED" } });
-    await recordActivity({ orgId: proposal.orgId, eventId: proposal.eventId, actorId: userId, action: "PROPOSAL_ACCEPTED", target: proposal.id });
-    
-    // Structured logging
-    logger.info({
-      userId,
-      orgId: proposal.orgId,
-      eventId: proposal.eventId,
-      proposalId: proposal.id,
-      route: "trpc.proposal.accept",
-    }, "proposal.accepted");
-    
-    return updated;
   }),
   // SECURITY: permission check - user must be able to manage the event
   reject: publicProcedure.input(z.object({ proposalId: z.string() })).mutation(async ({ input }) => {
@@ -192,7 +135,7 @@ export const proposalRouter = router({
         message: "Authentication required",
       });
     }
-    const proposal = await prisma.proposal.findUniqueOrThrow({
+    const proposal = await db.proposal.findUniqueOrThrow({
       where: { id: input.proposalId },
       include: {
         event: {
@@ -211,7 +154,7 @@ export const proposalRouter = router({
       });
     }
     const previousStatus = proposal.status;
-    const updated = await prisma.proposal.update({
+    const updated = await db.proposal.update({
       where: { id: input.proposalId },
       data: { status: "REJECTED" },
     });

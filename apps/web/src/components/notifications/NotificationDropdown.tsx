@@ -92,7 +92,12 @@ export function NotificationDropdown() {
       {isOpen && (
         <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-slate-200 bg-white shadow-lg">
           <div className="flex items-center justify-between border-b border-slate-200 p-3">
-            <h3 className="font-semibold">Notifications</h3>
+            <div>
+              <h3 className="font-semibold">Notifications</h3>
+              <Link href={"/notifications" as any} className="text-xs text-indigo-600 hover:underline" onClick={() => setIsOpen(false)}>
+                View all
+              </Link>
+            </div>
             <button
               onClick={() => setIsOpen(false)}
               className="text-slate-400 hover:text-slate-600"

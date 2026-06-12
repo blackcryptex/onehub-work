@@ -6,6 +6,16 @@ import { canManageEvent } from "@/lib/rbac";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
 import { getLegalSurface } from "@/lib/legal-surface";
 import { toRuntimeBookingClassification } from "@/lib/booking-classification";
+import {
+  buildRequesterAcceptanceTransitionPlan,
+  buildTransactionAuditEntry,
+  extractBookingRequestIdFromProposalSummary,
+} from "@/lib/transaction-loop";
+import { recordActivity } from "@/server/lib/activity";
+import {
+  assertCanonicalProposalApprovalStatus,
+  canonicalLifecycleHttpStatusForError,
+} from "@/server/lib/lifecycle/proposal-contract-payment";
 
 /**
  * POST /api/proposals/[id]/approve
@@ -67,43 +77,70 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if already approved
-    if (proposal.status === "ACCEPTED" || proposal.status === "CONVERTED") {
-      return NextResponse.json({
-        message: "Proposal already approved",
-        proposal,
-      });
+    try {
+      assertCanonicalProposalApprovalStatus(proposal.status);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Proposal cannot be approved from its current status" },
+        { status: 400 }
+      );
     }
 
-    // Update proposal status to ACCEPTED
-    const updatedProposal = await db.proposal.update({
-      where: { id: proposalId },
-      data: { status: "ACCEPTED" },
-    });
-
+    const bookingRequestId = extractBookingRequestIdFromProposalSummary(proposal.summary);
     const requestContextId = request.headers.get("x-request-id") || undefined;
     const bookingClassification = toRuntimeBookingClassification((proposal as UnsafeAny).bookingClassification) ?? "direct";
-    await recordAcceptance({
-      actorId: user.id,
-      actorRole: user.role,
-      orgId: proposal.event.orgId,
-      grossAmountCents: proposal.totalCents,
-      legalSurface: getLegalSurface("proposal", bookingClassification),
-      legalVersion: acceptance.legalVersion,
-      sourceSurface: "proposal.approve",
-      requestContextId,
-      proposalId: proposal.id,
-      bookingClassificationInput: {
-        proposal: {
-          bookingClassification: (proposal as UnsafeAny).bookingClassification,
-          listingId: proposal.listingId,
+    const updatedProposal = await db.$transaction(async (tx) => {
+      const updated = await tx.proposal.update({
+        where: { id: proposalId },
+        data: { status: "ACCEPTED" },
+      });
+
+      if (bookingRequestId) {
+        const transition = buildRequesterAcceptanceTransitionPlan();
+        const audit = buildTransactionAuditEntry({
+          bookingRequestId,
+          actorId: user.id,
+          actorRole: "REQUESTER",
+          fromState: transition.fromState,
+          toState: transition.toState,
+          reason: transition.reason,
+        });
+        await recordActivity({
+          db: tx,
+          orgId: proposal.event.orgId,
+          eventId: proposal.eventId,
+          actorId: user.id,
+          action: audit.action,
+          target: audit.target,
+          meta: audit.meta,
+        });
+      }
+
+      await recordAcceptance({
+        db: tx,
+        actorId: user.id,
+        actorRole: user.role,
+        orgId: proposal.event.orgId,
+        grossAmountCents: proposal.totalCents,
+        legalSurface: getLegalSurface("proposal", bookingClassification),
+        legalVersion: acceptance.legalVersion,
+        sourceSurface: "proposal.approve",
+        requestContextId,
+        proposalId: proposal.id,
+        bookingClassificationInput: {
+          proposal: {
+            bookingClassification: (proposal as UnsafeAny).bookingClassification,
+            listingId: proposal.listingId,
+          },
+          event: { org: { type: (proposal.event as UnsafeAny)?.org?.type } },
         },
-        event: { org: { type: (proposal.event as UnsafeAny)?.org?.type } },
-      },
-      metadata: {
-        requiredVersion: CURRENT_ACCEPTANCE_VERSIONS.proposal,
-        proposalStatusAfter: "ACCEPTED",
-      },
+        metadata: {
+          requiredVersion: CURRENT_ACCEPTANCE_VERSIONS.proposal,
+          proposalStatusAfter: "ACCEPTED",
+        },
+      });
+
+      return updated;
     });
 
     console.log("[API] Proposal approved:", {
@@ -116,6 +153,6 @@ export async function POST(
     console.error("[API] Error approving proposal:", error);
     const message =
       error instanceof Error ? error.message : "Failed to approve proposal";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: canonicalLifecycleHttpStatusForError(error) });
   }
 }
