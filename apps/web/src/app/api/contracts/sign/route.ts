@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser } from "@/lib/auth-helpers";
 
 /**
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Load contract with relations
-    const contract = await prisma.contract.findUnique({
+    const contract = await db.contract.findUnique({
       where: { id: contractId },
       include: {
         proposal: {
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     // Create or update signature
     if (existingSignature) {
-      await prisma.signature.update({
+      await db.signature.update({
         where: { id: existingSignature.id },
         data: {
           signedAt: new Date(),
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
         },
       });
     } else {
-      await prisma.signature.create({
+      await db.signature.create({
         data: {
           contractId: contract.id,
           signerId: user.id,
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Reload contract to get updated signatures
-    const updatedContract = await prisma.contract.findUnique({
+    const updatedContract = await db.contract.findUnique({
       where: { id: contractId },
       include: {
         signatures: true,
@@ -172,14 +172,14 @@ export async function POST(request: NextRequest) {
 
     // Update contract status if changed
     if (newStatus !== contract.status) {
-      await prisma.contract.update({
+      await db.contract.update({
         where: { id: contractId },
         data: { status: newStatus },
       });
     }
 
     // Reload final contract
-    const finalContract = await prisma.contract.findUnique({
+    const finalContract = await db.contract.findUnique({
       where: { id: contractId },
       include: {
         signatures: {

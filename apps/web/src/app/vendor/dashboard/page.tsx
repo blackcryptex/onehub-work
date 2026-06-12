@@ -1,7 +1,7 @@
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import { VendorDashboard } from "@/components/vendor/Dashboard";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canAccessDashboard } from "@/lib/rbac";
 
 export default async function VendorDashboardPage() {
@@ -16,7 +16,7 @@ export default async function VendorDashboardPage() {
 
   // Check if user has a Vendor organization
   // Admin sees all vendor orgs, normal user sees only their own
-  const org = await prisma.organization.findFirst({
+  const org = await db.organization.findFirst({
     where: admin
       ? { type: "VENDOR" }
       : { ownerId: userId, type: "VENDOR" },
@@ -30,7 +30,7 @@ export default async function VendorDashboardPage() {
 
   // Fetch vendor dashboard data
   // Admin sees all listings, normal user sees only listings from their org
-  const listings = await prisma.listing.findMany({
+  const listings = await db.listing.findMany({
     where: admin ? {} : { orgId: org.id },
     select: { id: true, orgId: true },
   });
@@ -46,7 +46,7 @@ export default async function VendorDashboardPage() {
 
   const allBookingRequests =
     listingIds.length > 0 || admin
-      ? await prisma.bookingRequest.findMany({
+      ? await db.bookingRequest.findMany({
           where: admin
             ? {}
             : {
@@ -87,7 +87,7 @@ export default async function VendorDashboardPage() {
   ).length;
 
   // Get unread notifications for this org
-  const unreadMessages = await prisma.notification.count({
+  const unreadMessages = await db.notification.count({
     where: {
       userId,
       orgId: org.id,
@@ -101,7 +101,7 @@ export default async function VendorDashboardPage() {
   // Fetch contracts where this vendor is the seller
   // Admin sees all contracts, normal user sees only contracts for their org
   // Note: ContractStatus enum values need Prisma migration - using type assertion for now
-  const contracts = await prisma.contract.findMany({
+  const contracts = await db.contract.findMany({
     where: admin
       ? ({
           status: {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
 import { submitDisputeReview } from "../../actions";
@@ -11,18 +11,18 @@ export default async function DisputeVerificationDetail({ params }: { params: { 
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const dispute = await (prisma as any).dispute.findUnique({ where: { id: params.id } });
+  const dispute = await (db as any).dispute.findUnique({ where: { id: params.id } });
   if (!dispute) notFound();
 
-  const refund = dispute.linkedRefundRequestId ? await (prisma as any).refundRequest.findUnique({ where: { id: dispute.linkedRefundRequestId } }) : await (prisma as any).refundRequest.findFirst({ where: { proposalId: dispute.proposalId }, orderBy: { createdAt: "desc" } });
-  const holdback = dispute.paymentIntentId ? await (prisma as any).paymentHoldback.findUnique({ where: { paymentIntentId: dispute.paymentIntentId } }) : null;
-  const payout = dispute.milestoneId ? await prisma.payout.findFirst({ where: { milestoneId: dispute.milestoneId } }) : await prisma.payout.findFirst({ where: { proposalId: dispute.proposalId }, orderBy: { createdAt: "desc" } });
-  const overrides = await (prisma as any).adminOverride.findMany({ where: { disputeId: dispute.id }, orderBy: { createdAt: "desc" } });
-  const acceptanceProof = dispute.acceptanceCaptureId ? await (prisma as any).acceptanceCapture.findUnique({ where: { id: dispute.acceptanceCaptureId } }) : null;
+  const refund = dispute.linkedRefundRequestId ? await (db as any).refundRequest.findUnique({ where: { id: dispute.linkedRefundRequestId } }) : await (db as any).refundRequest.findFirst({ where: { proposalId: dispute.proposalId }, orderBy: { createdAt: "desc" } });
+  const holdback = dispute.paymentIntentId ? await (db as any).paymentHoldback.findUnique({ where: { paymentIntentId: dispute.paymentIntentId } }) : null;
+  const payout = dispute.milestoneId ? await db.payout.findFirst({ where: { milestoneId: dispute.milestoneId } }) : await db.payout.findFirst({ where: { proposalId: dispute.proposalId }, orderBy: { createdAt: "desc" } });
+  const overrides = await (db as any).adminOverride.findMany({ where: { disputeId: dispute.id }, orderBy: { createdAt: "desc" } });
+  const acceptanceProof = dispute.acceptanceCaptureId ? await (db as any).acceptanceCapture.findUnique({ where: { id: dispute.acceptanceCaptureId } }) : null;
 
   return (
     <div className="space-y-6">
-      <div><Link href="/app/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link><h1 className="mt-2 text-2xl font-bold">Dispute case {dispute.id}</h1></div>
+      <div><Link href="/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link><h1 className="mt-2 text-2xl font-bold">Dispute case {dispute.id}</h1></div>
       <div className="grid gap-3 md:grid-cols-2">{[["Status", dispute.status],["Freeze state", dispute.freezeState],["Proposal", dispute.proposalId],["Payment intent", dispute.paymentIntentId || "none"],["Milestone", dispute.milestoneId || "none"],["Booking classification", String(dispute.bookingClassification)]].map(([k,v]) => <div key={String(k)} className="rounded-xl border bg-white p-4"><div className="text-xs uppercase text-slate-500">{k}</div><div className="mt-1 break-all font-medium">{v}</div></div>)}</div>
       <form action={submitDisputeReview} className="grid gap-3 rounded-xl border bg-white p-4">
         <input type="hidden" name="disputeId" value={dispute.id} />

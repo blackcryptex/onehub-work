@@ -1,9 +1,9 @@
 import { Card, Money } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { notFound } from "next/navigation";
 
 export default async function FundProposalPage({ params }: { params: { id: string } }) {
-  const proposal = await prisma.proposal.findUnique({
+  const proposal = await db.proposal.findUnique({
     where: { id: params.id },
     include: { milestones: true, escrowAccount: true },
   });

@@ -1,10 +1,10 @@
 import { Card } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { notFound } from "next/navigation";
 import { RSVPForm } from "./rsvp-form";
 
 export default async function RSVPPage({ params }: { params: { token: string } }) {
-  const invitation = await prisma.invitation.findUnique({
+  const invitation = await db.invitation.findUnique({
     where: { token: params.token },
     include: { guest: true, event: true },
   });

@@ -1,13 +1,13 @@
 import { CalendarView } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { auth } from "@/lib/auth";
 
 export default async function CalendarPage() {
   const session = await auth();
   const userId = session?.user?.id as string | undefined;
   if (!userId) return <div>Unauthorized</div>;
-  const orgs = await prisma.organization.findMany({ where: { members: { some: { userId } } } });
-  const events = await prisma.calendarEvent.findMany({
+  const orgs = await db.organization.findMany({ where: { members: { some: { userId } } } });
+  const events = await db.calendarEvent.findMany({
     where: { orgId: { in: orgs.map((o) => o.id) } },
     orderBy: { startAt: "asc" },
   });

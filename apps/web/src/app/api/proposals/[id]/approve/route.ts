@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
@@ -38,7 +38,7 @@ export async function POST(
     }
 
     // Load proposal with event
-    const proposal = await prisma.proposal.findUnique({
+    const proposal = await db.proposal.findUnique({
       where: { id: proposalId },
       include: {
         event: {
@@ -76,13 +76,13 @@ export async function POST(
     }
 
     // Update proposal status to ACCEPTED
-    const updatedProposal = await prisma.proposal.update({
+    const updatedProposal = await db.proposal.update({
       where: { id: proposalId },
       data: { status: "ACCEPTED" },
     });
 
     const requestContextId = request.headers.get("x-request-id") || undefined;
-    const bookingClassification = toRuntimeBookingClassification((proposal as any).bookingClassification) ?? "direct";
+    const bookingClassification = toRuntimeBookingClassification((proposal as UnsafeAny).bookingClassification) ?? "direct";
     await recordAcceptance({
       actorId: user.id,
       actorRole: user.role,
@@ -95,10 +95,10 @@ export async function POST(
       proposalId: proposal.id,
       bookingClassificationInput: {
         proposal: {
-          bookingClassification: (proposal as any).bookingClassification,
+          bookingClassification: (proposal as UnsafeAny).bookingClassification,
           listingId: proposal.listingId,
         },
-        event: { org: { type: (proposal.event as any)?.org?.type } },
+        event: { org: { type: (proposal.event as UnsafeAny)?.org?.type } },
       },
       metadata: {
         requiredVersion: CURRENT_ACCEPTANCE_VERSIONS.proposal,

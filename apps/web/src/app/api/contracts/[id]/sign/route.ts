@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent, isOrgMember } from "@/lib/rbac";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { isDemoMode } from "@/lib/demo-mode";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
 import { getLegalSurface } from "@/lib/legal-surface";
@@ -40,7 +40,7 @@ export async function POST(
     }
 
     // Get contract with proposal, event, buyer org, and seller org context
-    const contract = await prisma.contract.findUnique({
+    const contract = await db.contract.findUnique({
       where: { id: resolvedParams.id },
       include: {
         proposal: {
@@ -115,7 +115,7 @@ export async function POST(
     // Create or update signature
     let signature;
     if (existingSignature) {
-      signature = await prisma.signature.update({
+      signature = await db.signature.update({
         where: { id: existingSignature.id },
         data: {
           signerId: user.id,
@@ -126,7 +126,7 @@ export async function POST(
         },
       });
     } else {
-      signature = await prisma.signature.create({
+      signature = await db.signature.create({
         data: {
           contractId: contract.id,
           signerId: user.id,
@@ -150,7 +150,7 @@ export async function POST(
       ].filter((id): id is string => Boolean(id))
     );
 
-    const allSignatures = await prisma.signature.findMany({
+    const allSignatures = await db.signature.findMany({
       where: { contractId: contract.id },
       select: { signerId: true, signedAt: true },
     });
@@ -169,12 +169,12 @@ export async function POST(
       newStatus = "PARTIALLY_SIGNED";
     }
 
-    await prisma.contract.update({
+    await db.contract.update({
       where: { id: contract.id },
       data: { status: newStatus },
     });
 
-    const bookingClassification = toRuntimeBookingClassification((contract.proposal as any).bookingClassification) ?? "direct";
+    const bookingClassification = toRuntimeBookingClassification((contract.proposal as UnsafeAny).bookingClassification) ?? "direct";
     await recordAcceptance({
       actorId: user.id,
       actorRole: user.role,
@@ -188,10 +188,10 @@ export async function POST(
       contractId: contract.id,
       bookingClassificationInput: {
         proposal: {
-          bookingClassification: (contract.proposal as any).bookingClassification,
+          bookingClassification: (contract.proposal as UnsafeAny).bookingClassification,
           listingId: contract.proposal.listingId,
         },
-        event: { org: { type: (contract.proposal.event as any)?.org?.type } },
+        event: { org: { type: (contract.proposal.event as UnsafeAny)?.org?.type } },
       },
       metadata: {
         requiredVersion: CURRENT_ACCEPTANCE_VERSIONS.contract,

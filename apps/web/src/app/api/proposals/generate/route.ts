@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { generateProposalFromContext } from "@/lib/ai/generateProposal";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Load event with relations
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId },
       include: {
         org: {
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     let vendorOrg = null;
 
     if (listingId) {
-      listing = await prisma.listing.findUnique({
+      listing = await db.listing.findUnique({
         where: { id: listingId },
         include: {
           org: true,
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
 
     // Create proposal in database
     console.log("[API] Saving proposal to database...", { bookingClassification, feeProfile });
-    const proposal = await (prisma as any).proposal.create({
+    const proposal = await (db as UnsafeAny).proposal.create({
       data: {
         orgId: event.orgId,
         eventId: event.id,

@@ -421,8 +421,8 @@ export const contractRouter = router({
       },
     });
     // Check if user is buyer/seller (via contract.buyerId/sellerId) OR can manage the event
-    const isBuyer = (changeOrder.contract as any).buyerId === user.id;
-    const isSeller = (changeOrder.contract as any).sellerId === user.id;
+    const isBuyer = (changeOrder.contract as UnsafeAny).buyerId === user.id;
+    const isSeller = (changeOrder.contract as UnsafeAny).sellerId === user.id;
     const canManage = canManageEvent(user, changeOrder.contract.proposal.event);
     if (!isBuyer && !isSeller && !canManage) {
       throw new TRPCError({

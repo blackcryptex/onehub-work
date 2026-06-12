@@ -1,5 +1,5 @@
 import { Card, MediaGrid, Stars, AvailabilityCalendar, Button } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { notFound } from "next/navigation";
 import { LandingHeader } from "@/components/layout/LandingHeader";
 import { BookingRequestButtonClient } from "@/components/bookings/BookingRequestButtonClient";
@@ -17,7 +17,7 @@ interface ListingProfileProps {
 }
 
 export default async function ListingProfile({ params, searchParams }: ListingProfileProps) {
-  const listing = await prisma.listing.findUnique({
+  const listing = await db.listing.findUnique({
     where: { slug: params.slug },
     include: { tags: true, gallery: true, offers: true, availSlots: { orderBy: { startAt: "asc" } }, reviews: { where: { flagged: false }, take: 5, include: { author: true } } },
   });

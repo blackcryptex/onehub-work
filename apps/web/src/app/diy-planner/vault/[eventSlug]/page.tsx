@@ -1,5 +1,5 @@
 import { Card, Button } from "@/components/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { canManageEvent, canEditEvent, canDeleteEvent, isPlanner, canAccessDashboard } from "@/lib/rbac";
 import { redirect, notFound } from "next/navigation";
@@ -56,7 +56,7 @@ export default async function DIYVaultDetailPage({
 
   let event;
   try {
-    event = await prisma.event.findUnique({
+    event = await db.event.findUnique({
       where: { id: authorizedEvent.id },
       include: {
         createdBy: { select: { name: true, email: true } },
@@ -131,7 +131,7 @@ export default async function DIYVaultDetailPage({
   } catch (error) {
     console.error("[DIY Vault] Error loading event:", error);
     if (error instanceof Error && error.message.includes("shortlistItems")) {
-      event = await prisma.event.findUnique({
+      event = await db.event.findUnique({
         where: { id: authorizedEvent.id },
         include: {
           createdBy: { select: { name: true, email: true } },
@@ -232,7 +232,7 @@ export default async function DIYVaultDetailPage({
   };
 
   const firstProposal = event.proposals[0];
-  const firstContract = firstProposal ? await prisma.contract.findUnique({
+  const firstContract = firstProposal ? await db.contract.findUnique({
     where: { proposalId: firstProposal.id },
     select: { id: true },
   }) : null;

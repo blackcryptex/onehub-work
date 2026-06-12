@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canManageEvent } from "@/lib/rbac";
 import { encodeDepositMetadata } from "@/lib/payment-plan-helpers";
 import { computePayoutAmountFromProposal } from "@/lib/payout-lock-helpers";
@@ -31,7 +31,7 @@ export async function PATCH(
     const { label, amountCents, payeeListingId, mode, lockedToProposal } = body;
 
     // Try to find as PaymentMilestone (deposit) first
-    const milestone = await prisma.paymentMilestone.findUnique({
+    const milestone = await db.paymentMilestone.findUnique({
       where: { id: lineId },
       include: {
         proposal: {
@@ -54,7 +54,7 @@ export async function PATCH(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
-      const updated = await prisma.paymentMilestone.update({
+      const updated = await db.paymentMilestone.update({
         where: { id: lineId },
         data: {
           title: label || milestone.title,
@@ -66,7 +66,7 @@ export async function PATCH(
     }
 
     // Try to find as Payout
-    const payout = await prisma.payout.findUnique({
+    const payout = await db.payout.findUnique({
       where: { id: lineId },
       include: {
         proposal: {
@@ -96,7 +96,7 @@ export async function PATCH(
           // Locking: sync amount to proposal total and set lock state
           finalAmountCents = payout.proposal.totalCents;
           await setLocked(
-            prisma,
+            db,
             payout.id,
             payout.proposalId,
             payout.milestoneId,
@@ -105,7 +105,7 @@ export async function PATCH(
         } else {
           // Unlocking: keep current amount and remove lock state
           await setLocked(
-            prisma,
+            db,
             payout.id,
             payout.proposalId,
             payout.milestoneId,
@@ -114,7 +114,7 @@ export async function PATCH(
         }
       }
 
-      const updated = await prisma.payout.update({
+      const updated = await db.payout.update({
         where: { id: lineId },
         data: {
           amountCents: finalAmountCents,
@@ -123,7 +123,7 @@ export async function PATCH(
       });
 
       // Return updated payout with lock state
-      const lockMap = await getLockMap(prisma, [payout.id]);
+      const lockMap = await getLockMap(db, [payout.id]);
       return NextResponse.json({
         ...updated,
         isLocked: !!lockMap[payout.id],
@@ -165,7 +165,7 @@ export async function DELETE(
     const lineId = resolvedParams.id;
 
     // Try to find as PaymentMilestone (deposit) first
-    const milestone = await prisma.paymentMilestone.findUnique({
+    const milestone = await db.paymentMilestone.findUnique({
       where: { id: lineId },
       include: {
         proposal: {
@@ -188,7 +188,7 @@ export async function DELETE(
       }
 
       // Delete milestone (deposits can be deleted)
-      await prisma.paymentMilestone.delete({
+      await db.paymentMilestone.delete({
         where: { id: lineId },
       });
 
@@ -196,7 +196,7 @@ export async function DELETE(
     }
 
     // Try to find as Payout
-    const payout = await prisma.payout.findUnique({
+    const payout = await db.payout.findUnique({
       where: { id: lineId },
       include: {
         proposal: {
@@ -219,7 +219,7 @@ export async function DELETE(
       }
 
       // Soft delete: set status to CANCELED
-      await prisma.payout.update({
+      await db.payout.update({
         where: { id: lineId },
         data: { status: "CANCELED" },
       });

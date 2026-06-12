@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canViewEvent, isEventSharedWithUser } from "@/lib/rbac";
 import { redirect, notFound } from "next/navigation";
@@ -32,7 +32,7 @@ export default async function ClientEventSummaryPage({
   }
 
   // Fetch event with stakeholders, shares, and deposits
-  const event = await prisma.event.findFirst({
+  const event = await db.event.findFirst({
     where: { slug: params.eventSlug },
     include: {
       createdBy: { select: { name: true, email: true } },

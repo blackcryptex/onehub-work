@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 
 /**
  * GET /demo/start?role=pro|diy
@@ -17,7 +17,7 @@ export default async function DemoStartPage({
 
   // Check if demo event exists (preflight check)
   try {
-    const demoEvent = await prisma.event.findUnique({
+    const demoEvent = await db.event.findUnique({
       where: { slug: "demo-wedding" },
       select: { id: true },
     });

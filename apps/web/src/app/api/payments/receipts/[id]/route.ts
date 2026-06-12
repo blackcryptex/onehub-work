@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { generateReceiptHTML } from "@/server/lib/receipt";
 import { resolveBookingClassification } from "@/lib/booking-classification";
 import { resolveFeeProfile } from "@/lib/fee-profile";
@@ -16,7 +16,7 @@ export async function GET(
     }
 
     const resolvedParams = await params;
-    const payout = await (prisma as any).payout.findUnique({
+    const payout = await (db as UnsafeAny).payout.findUnique({
       where: { id: resolvedParams.id },
       include: {
         proposal: {

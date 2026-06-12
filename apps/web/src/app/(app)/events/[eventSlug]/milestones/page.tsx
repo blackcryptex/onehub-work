@@ -1,5 +1,5 @@
 import { Card, Button, Money } from "@/components/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canViewEvent, canManageEvent } from "@/lib/rbac";
@@ -24,7 +24,7 @@ export default async function EventMilestonesPage({
     notFound();
   }
 
-  const event = await prisma.event.findFirst({
+  const event = await db.event.findFirst({
     where: { slug: params.eventSlug },
     include: {
       org: true,
@@ -68,7 +68,7 @@ export default async function EventMilestonesPage({
 
   // Fetch payouts for this event (through proposals)
   const proposalIds = event.proposals.map((p) => p.id);
-  const payoutsRaw = await prisma.payout.findMany({
+  const payoutsRaw = await db.payout.findMany({
     where: {
       proposalId: { in: proposalIds },
       status: { not: "CANCELED" }, // Exclude soft-deleted payouts
@@ -79,7 +79,7 @@ export default async function EventMilestonesPage({
   // Fetch listings for payouts (Payout model has listingId but no relation)
   const listingIds = payoutsRaw.map((p) => p.listingId).filter((id): id is string => !!id);
   const payoutListings = listingIds.length > 0
-    ? await prisma.listing.findMany({
+    ? await db.listing.findMany({
         where: { id: { in: listingIds } },
         select: {
           id: true,
@@ -95,7 +95,7 @@ export default async function EventMilestonesPage({
   // Fetch proposals for payouts to check lock state
   const payoutProposalIds = payoutsRaw.map((p) => p.proposalId);
   const payoutProposals = payoutProposalIds.length > 0
-    ? await prisma.proposal.findMany({
+    ? await db.proposal.findMany({
         where: { id: { in: payoutProposalIds } },
         select: {
           id: true,
@@ -110,7 +110,7 @@ export default async function EventMilestonesPage({
 
   // Get lock state map for all payouts
   const payoutIds = payoutsRaw.map((p) => p.id);
-  const lockMap = await getLockMap(prisma, payoutIds);
+  const lockMap = await getLockMap(db, payoutIds);
 
   // Sync locked payouts that are out of sync with their proposals
   const payoutsToSync = payoutsRaw.filter((payout) => {
@@ -128,7 +128,7 @@ export default async function EventMilestonesPage({
       payoutsToSync.map((payout) => {
         const proposal = proposalMap.get(payout.proposalId);
         if (!proposal) return Promise.resolve();
-        return prisma.payout
+        return db.payout
           .update({
             where: { id: payout.id },
             data: { amountCents: proposal.totalCents },
@@ -160,7 +160,7 @@ export default async function EventMilestonesPage({
   });
 
   // Fetch listings for payee selection (listings for the event city/category)
-  const listings = await prisma.listing.findMany({
+  const listings = await db.listing.findMany({
     where: {
       OR: [
         { city: event.venueCity || undefined },

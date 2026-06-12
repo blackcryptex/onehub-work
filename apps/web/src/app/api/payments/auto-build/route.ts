@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canManageEvent } from "@/lib/rbac";
 import { encodeDepositMetadata } from "@/lib/payment-plan-helpers";
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch event with accepted proposals
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId },
       include: {
         org: {
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       if (!proposal.listingId) continue;
 
       // Check if payout already exists for this proposal
-      const existing = await prisma.payout.findFirst({
+      const existing = await db.payout.findFirst({
         where: {
           proposalId: proposal.id,
           status: { not: "CANCELED" },
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!existing) {
-        await prisma.payout.create({
+        await db.payout.create({
           data: {
             proposalId: proposal.id,
             listingId: proposal.listingId,

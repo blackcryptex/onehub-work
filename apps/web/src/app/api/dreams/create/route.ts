@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { parseBudget } from "@/lib/parsers/budget";
 import { canonicalizeEventType } from "@/lib/parsers/eventType";
 import { z } from "zod";
@@ -53,13 +53,13 @@ export async function POST(request: NextRequest) {
     const eventTypeCanonical = canonicalizeEventType(eventTypeRaw);
 
     // Get or create a default org for the user
-    let org = await prisma.organization.findFirst({
+    let org = await db.organization.findFirst({
       where: { ownerId: userId },
     });
 
     if (!org) {
       const slug = `user-${userId.slice(0, 8)}`;
-      org = await prisma.organization.create({
+      org = await db.organization.create({
         data: {
           name: "My Events",
           slug,
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     else if (validated.timeline === "1_YEAR") futureDate.setFullYear(futureDate.getFullYear() + 1);
     else futureDate.setFullYear(futureDate.getFullYear() + 2); // "Someday"
 
-    const event = await prisma.event.create({
+    const event = await db.event.create({
       data: {
         orgId: org.id,
         createdById: userId,

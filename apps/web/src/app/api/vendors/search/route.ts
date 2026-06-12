@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { VendorSearchFilters, VendorSearchResults, InternalVendorResult } from "@/lib/types.vendor-search";
 import { z } from "zod";
 
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       minBudget: searchParams.get("minBudget") ? parseFloat(searchParams.get("minBudget")!) : undefined,
       maxBudget: searchParams.get("maxBudget") ? parseFloat(searchParams.get("maxBudget")!) : undefined,
       categories: searchParams.get("categories")?.split(",").filter(Boolean) || undefined,
-      sort: (searchParams.get("sort") as any) || "best_match",
+      sort: (searchParams.get("sort") as UnsafeAny) || "best_match",
     };
 
     const validationResult = searchFiltersSchema.safeParse(filters);
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch internal vendors
-    const internalVendors = await prisma.organization.findMany({
+    const internalVendors = await db.organization.findMany({
       where,
       include: {
         listings: {

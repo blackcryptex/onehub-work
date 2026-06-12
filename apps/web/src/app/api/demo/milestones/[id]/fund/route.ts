@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canManageEvent } from "@/lib/rbac";
 import { isDemoMode } from "@/lib/demo-mode";
 
@@ -30,7 +30,7 @@ export async function POST(
     const milestoneId = resolvedParams.id;
 
     // Load milestone with proposal and event
-    const milestone = await prisma.paymentMilestone.findUnique({
+    const milestone = await db.paymentMilestone.findUnique({
       where: { id: milestoneId },
       include: {
         proposal: {
@@ -72,7 +72,7 @@ export async function POST(
     }
 
     // Update milestone status to IN_ESCROW (funded)
-    const updatedMilestone = await prisma.paymentMilestone.update({
+    const updatedMilestone = await db.paymentMilestone.update({
       where: { id: milestoneId },
       data: { status: "IN_ESCROW" },
     });

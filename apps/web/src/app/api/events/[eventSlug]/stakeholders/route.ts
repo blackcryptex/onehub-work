@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canManageEvent } from "@/lib/rbac";
 import { z } from "zod";
 
@@ -31,7 +31,7 @@ export async function POST(
     }
 
     // Get event
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { slug: params.eventSlug },
       include: {
         org: {
@@ -57,7 +57,7 @@ export async function POST(
     const { userId, role } = addStakeholderSchema.parse(body);
 
     // Verify the user exists and is a CLIENT (if role is CLIENT)
-    const targetUser = await prisma.user.findUnique({
+    const targetUser = await db.user.findUnique({
       where: { id: userId },
       select: { id: true, role: true },
     });
@@ -72,7 +72,7 @@ export async function POST(
 
     // Create EventStakeholder record
     try {
-      const stakeholder = await prisma.eventStakeholder.create({
+      const stakeholder = await db.eventStakeholder.create({
         data: {
           eventId: event.id,
           userId,
@@ -137,7 +137,7 @@ export async function DELETE(
     }
 
     // Get event
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { slug: params.eventSlug },
       include: {
         org: {
@@ -167,7 +167,7 @@ export async function DELETE(
     }
 
     // Delete EventStakeholder record
-    const deleted = await prisma.eventStakeholder.deleteMany({
+    const deleted = await db.eventStakeholder.deleteMany({
       where: {
         eventId: event.id,
         userId,
@@ -179,7 +179,7 @@ export async function DELETE(
     }
 
     // Optionally remove EventShare records for this user (cleanup)
-    await prisma.eventShare.deleteMany({
+    await db.eventShare.deleteMany({
       where: {
         eventId: event.id,
         viewerUserId: userId,

@@ -1,5 +1,5 @@
 import { Card, Button } from "@/components/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { isPlanner, canAccessDashboard } from "@/lib/rbac";
 import { redirect } from "next/navigation";
@@ -33,7 +33,7 @@ export default async function ProVaultPage() {
   // Get all user's events with data for progress/budget/contacts/feed
   // Admin sees all orgs, normal user sees only orgs they're a member of
   // Planner isolation: planners only see events they created
-  const orgs = await prisma.organization.findMany({
+  const orgs = await db.organization.findMany({
     where: admin ? {} : { members: { some: { userId } } },
     include: {
       events: {

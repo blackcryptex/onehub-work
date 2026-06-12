@@ -1,7 +1,7 @@
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import { ProPlannerDashboard } from "@/components/pro-planner/Dashboard";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canAccessDashboard, isPlanner } from "@/lib/rbac";
 
 export default async function ProPlannerPage() {
@@ -16,7 +16,7 @@ export default async function ProPlannerPage() {
 
   // Check if user has a Pro Planner organization
   // Admin sees all planner orgs, normal user sees only their own
-  const org = await prisma.organization.findFirst({
+  const org = await db.organization.findFirst({
     where: admin
       ? { type: { in: ["PLANNER", "CLIENT_AGENCY"] } }
       : { ownerId: user.id, type: { in: ["PLANNER", "CLIENT_AGENCY"] } },
@@ -35,7 +35,7 @@ export default async function ProPlannerPage() {
     where.createdById = user.id;
   }
 
-  const events = await prisma.event.findMany({
+  const events = await db.event.findMany({
     where,
     orderBy: { createdAt: "desc" },
     include: {

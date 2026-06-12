@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { createRefundRequest } from "@/lib/refund-request";
 import { recordActivity } from "@/server/lib/activity";
 
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       amountRequestedCents: Number(rawBody.amountRequestedCents),
       milestoneId: rawBody.milestoneId ? String(rawBody.milestoneId) : undefined,
     });
-    const proposal = await prisma.proposal.findUnique({
+    const proposal = await db.proposal.findUnique({
       where: { id: body.proposalId },
       include: { event: true },
     });
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     }
 
-    const membership = await prisma.membership.findFirst({
+    const membership = await db.membership.findFirst({
       where: {
         userId: user.id,
         orgId: proposal.event.orgId,

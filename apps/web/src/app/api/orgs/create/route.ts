@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
 
     // Create organization
-    const org = await prisma.organization.create({
+    const org = await db.organization.create({
       data: {
         name,
         slug,

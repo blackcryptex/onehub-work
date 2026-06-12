@@ -1,5 +1,6 @@
 import { ListingCard } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import type { Route } from "next";
+import { db } from "@/server/db";
 import { Card, Button } from "@/components/ui";
 import Link from "next/link";
 import { LandingHeader } from "@/components/layout/LandingHeader";
@@ -14,7 +15,7 @@ interface MarketplacePageProps {
 }
 
 export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
-  const listings = await prisma.listing.findMany({ 
+  const listings = await db.listing.findMany({ 
     take: 20, 
     include: { tags: true, gallery: { take: 1 } },
     orderBy: { createdAt: "desc" }
@@ -54,7 +55,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
                 </div>
                 {returnTo ? (
                   <Button asChild variant="secondary">
-                    <Link href={returnTo}>Back to event</Link>
+                    <Link href={returnTo as Route}>Back to event</Link>
                   </Button>
                 ) : null}
               </div>

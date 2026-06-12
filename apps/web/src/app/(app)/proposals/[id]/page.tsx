@@ -1,5 +1,5 @@
 import { Card, Button, LineItemsTable, TotalsSummary, ThreadPanel } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { notFound } from "next/navigation";
 import { GenerateContractButton } from "@/components/contracts/GenerateContractButton";
 import { ApproveProposalButton } from "@/components/proposals/ApproveProposalButton";
@@ -17,7 +17,7 @@ type ThreadMessage = {
 
 export default async function ProposalPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  const proposal = await prisma.proposal.findUnique({
+  const proposal = await db.proposal.findUnique({
     where: { id: resolvedParams.id },
     include: { 
       lineItems: true, 
@@ -49,7 +49,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
     },
   });
   if (!proposal) return notFound();
-  const thread = await prisma.thread.findFirst({ where: { proposalId: proposal.id }, include: { messages: true } });
+  const thread = await db.thread.findFirst({ where: { proposalId: proposal.id }, include: { messages: true } });
   
   // Determine vault route based on user role
   const user = await getCurrentUser();

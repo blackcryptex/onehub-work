@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { z } from "zod";
 
 // Validation schema for provider profile data
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
 
       // Check if user already has an org of this type
-      const existingOrg = await prisma.organization.findFirst({
+      const existingOrg = await db.organization.findFirst({
         where: {
           ownerId: userId,
           type: orgType,
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
       if (existingOrg) {
         // Update existing org with all provider profile data
-        const updatedOrg = await prisma.$transaction(async (tx: any) => {
+        const updatedOrg = await db.$transaction(async (tx: any) => {
           if (!draft) {
             await tx.user.update({
               where: { id: userId },
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
               mediaJson: profileData.mediaJson || null,
               notificationsJson: profileData.notificationsJson || null,
               profileStatus,
-            } as any, // Type assertion needed until TypeScript server picks up regenerated Prisma types
+            } as UnsafeAny, // Type assertion needed until TypeScript server picks up regenerated Prisma types
           });
         });
         return NextResponse.json({
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
           name: updatedOrg.name,
           providerType,
           businessName: updatedOrg.name,
-          status: (updatedOrg as any).profileStatus,
+          status: (updatedOrg as UnsafeAny).profileStatus,
           // Echo back the JSON fields that were sent (whether saved to DB or not)
           servicesJson: profileData.servicesJson ?? null,
           spacesJson: profileData.spacesJson ?? null,
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         });
       } else {
         // Create new org with all provider profile data
-        const org = await prisma.$transaction(async (tx: any) => {  // typed as any to avoid ambient Prisma type drift in current repo state
+        const org = await db.$transaction(async (tx: any) => {  // typed as UnsafeAny to avoid ambient Prisma type drift in current repo state
           if (!draft) {
             await tx.user.update({
               where: { id: userId },
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
               profileStatus,
               members: { create: { userId, role: "OWNER" } },
               settings: { create: {} },
-            } as any, // Type assertion needed until TypeScript server picks up regenerated Prisma types
+            } as UnsafeAny, // Type assertion needed until TypeScript server picks up regenerated Prisma types
           });
         });
         return NextResponse.json({
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
           name: org.name,
           providerType,
           businessName: org.name,
-          status: (org as any).profileStatus,
+          status: (org as UnsafeAny).profileStatus,
           // Echo back the JSON fields that were sent (whether saved to DB or not)
           servicesJson: profileData.servicesJson ?? null,
           spacesJson: profileData.spacesJson ?? null,

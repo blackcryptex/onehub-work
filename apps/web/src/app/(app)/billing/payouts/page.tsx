@@ -1,13 +1,13 @@
 import { Card, Money } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { auth } from "@/lib/auth";
 
 export default async function PayoutsPage() {
   const session = await auth();
   const userId = session?.user?.id as string | undefined;
   if (!userId) return <div>Unauthorized</div>;
-  const orgs = await prisma.organization.findMany({ where: { members: { some: { userId } } } });
-  const payouts = await prisma.payout.findMany({
+  const orgs = await db.organization.findMany({ where: { members: { some: { userId } } } });
+  const payouts = await db.payout.findMany({
     where: { orgId: { in: orgs.map((o) => o.id) } },
     orderBy: { createdAt: "desc" },
   });
@@ -15,7 +15,7 @@ export default async function PayoutsPage() {
   // Fetch proposals separately since Payout model doesn't have a relation defined
   const proposalIds = payouts.map((p) => p.proposalId).filter(Boolean) as string[];
   const proposals = proposalIds.length > 0 
-    ? await prisma.proposal.findMany({ where: { id: { in: proposalIds } } })
+    ? await db.proposal.findMany({ where: { id: { in: proposalIds } } })
     : [];
   const proposalMap = new Map(proposals.map((p) => [p.id, p]));
   

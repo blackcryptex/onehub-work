@@ -1,6 +1,7 @@
 import { Card, Button } from "@/components/ui";
+import type { Route } from "next";
 import type { ElementType } from "react";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import {
   canManageEvent,
@@ -81,7 +82,7 @@ export default async function ProVaultDetailPage({
 
   let event;
   try {
-    event = await prisma.event.findUnique({
+    event = await db.event.findUnique({
       where: { id: authorizedEvent.id },
       include: {
         createdBy: { select: { name: true, email: true } },
@@ -170,7 +171,7 @@ export default async function ProVaultDetailPage({
   } catch (error) {
     console.error("[Pro Vault] Error loading event:", error);
     if (error instanceof Error && error.message.includes("shortlistItems")) {
-      event = await prisma.event.findUnique({
+      event = await db.event.findUnique({
         where: { id: authorizedEvent.id },
         include: {
           createdBy: { select: { name: true, email: true } },
@@ -727,7 +728,7 @@ export default async function ProVaultDetailPage({
                   {eventWorkspaceTabs.map((tab) => (
                     <Link
                       key={tab.label}
-                      href={tab.href}
+                      href={tab.href as Route}
                       className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                     >
                       {tab.label}
@@ -819,7 +820,7 @@ export default async function ProVaultDetailPage({
                   </p>
                 </div>
                 <Button asChild size="sm">
-                  <Link href={sourceVendorsHref}>Source vendors</Link>
+                  <Link href={sourceVendorsHref as Route}>Source vendors</Link>
                 </Button>
               </div>
 

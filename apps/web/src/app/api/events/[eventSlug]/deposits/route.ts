@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canCreateDeposit, canViewEvent } from "@/lib/rbac";
 import { getStripeOrThrow } from "@/server/lib/stripe";
 import { z } from "zod";
@@ -34,7 +34,7 @@ export async function POST(
     }
 
     // Fetch event with stakeholders and shares
-    const event = await prisma.event.findFirst({
+    const event = await db.event.findFirst({
       where: { slug: params.eventSlug },
       include: {
         org: true,
@@ -77,7 +77,7 @@ export async function POST(
     });
 
     // Create Deposit record
-    const deposit = await prisma.deposit.create({
+    const deposit = await db.deposit.create({
       data: {
         eventId: event.id,
         clientUserId: user.id,
@@ -148,7 +148,7 @@ export async function GET(
     }
 
     // Fetch event
-    const event = await prisma.event.findFirst({
+    const event = await db.event.findFirst({
       where: { slug: params.eventSlug },
       include: {
         org: true,
@@ -184,7 +184,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const deposits = await prisma.deposit.findMany({
+    const deposits = await db.deposit.findMany({
       where,
       orderBy: { createdAt: "desc" },
       include: {

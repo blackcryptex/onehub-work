@@ -46,7 +46,7 @@ export const shortlistRouter = router({
           },
         },
         orderBy: { createdAt: "desc" },
-      }) as any; // TODO: Remove 'as any' after Prisma client regeneration
+      }) as UnsafeAny; // TODO: Remove 'as UnsafeAny' after Prisma client regeneration
     }),
 
   // Add a listing to the shortlist
@@ -97,7 +97,7 @@ export const shortlistRouter = router({
         if (input.notes !== undefined) {
           return db.shortlistItem.update({
             where: { id: existing.id },
-            data: { notes: input.notes } as any, // TODO: Remove 'as any' after Prisma client regeneration
+            data: { notes: input.notes } as UnsafeAny, // TODO: Remove 'as UnsafeAny' after Prisma client regeneration
           });
         }
         return existing;
@@ -108,7 +108,7 @@ export const shortlistRouter = router({
           eventId: input.eventId,
           listingId: input.listingId,
           notes: input.notes,
-        } as any, // TODO: Remove 'as any' after Prisma client regeneration
+        } as UnsafeAny, // TODO: Remove 'as UnsafeAny' after Prisma client regeneration
         include: {
           listing: {
             include: {
@@ -121,7 +121,7 @@ export const shortlistRouter = router({
             },
           },
         },
-      }) as any; // TODO: Remove 'as any' after Prisma client regeneration
+      }) as UnsafeAny; // TODO: Remove 'as UnsafeAny' after Prisma client regeneration
 
       await recordActivity({
         orgId: event.orgId,

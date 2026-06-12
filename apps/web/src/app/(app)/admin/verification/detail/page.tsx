@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
 
@@ -9,20 +9,20 @@ export default async function UnifiedVerificationDetail({ searchParams }: { sear
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const seedRefund = searchParams.refundRequestId ? await (prisma as any).refundRequest.findUnique({ where: { id: searchParams.refundRequestId } }) : null;
-  const seedDispute = searchParams.disputeId ? await (prisma as any).dispute.findUnique({ where: { id: searchParams.disputeId } }) : null;
-  const seedPayout = searchParams.payoutId ? await prisma.payout.findUnique({ where: { id: searchParams.payoutId } }) : null;
+  const seedRefund = searchParams.refundRequestId ? await (db as any).refundRequest.findUnique({ where: { id: searchParams.refundRequestId } }) : null;
+  const seedDispute = searchParams.disputeId ? await (db as any).dispute.findUnique({ where: { id: searchParams.disputeId } }) : null;
+  const seedPayout = searchParams.payoutId ? await db.payout.findUnique({ where: { id: searchParams.payoutId } }) : null;
 
   const proposalId = searchParams.proposalId || seedRefund?.proposalId || seedDispute?.proposalId || seedPayout?.proposalId || undefined;
-  const payout = seedPayout || (searchParams.payoutId ? null : proposalId ? await prisma.payout.findFirst({ where: { proposalId }, orderBy: { createdAt: 'desc' } }) : null);
-  const proposal = proposalId ? await prisma.proposal.findUnique({ where: { id: proposalId }, include: { event: true, contract: true } }) : null;
+  const payout = seedPayout || (searchParams.payoutId ? null : proposalId ? await db.payout.findFirst({ where: { proposalId }, orderBy: { createdAt: 'desc' } }) : null);
+  const proposal = proposalId ? await db.proposal.findUnique({ where: { id: proposalId }, include: { event: true, contract: true } }) : null;
   const paymentIntentId = searchParams.paymentIntentId || seedRefund?.paymentIntentId || seedDispute?.paymentIntentId || undefined;
-  const paymentIntent = paymentIntentId ? await (prisma as any).paymentIntent.findUnique({ where: { id: paymentIntentId } }) : proposal?.contract?.id ? await (prisma as any).paymentIntent.findFirst({ where: { contractId: proposal.contract.id }, orderBy: { createdAt: 'desc' } }) : null;
-  const refunds = proposalId ? await (prisma as any).refundRequest.findMany({ where: { proposalId }, orderBy: { createdAt: 'desc' }, take: 10 }) : [];
-  const disputes = proposalId ? await (prisma as any).dispute.findMany({ where: { proposalId }, orderBy: { createdAt: 'desc' }, take: 10 }) : [];
-  const holdback = paymentIntent?.id ? await (prisma as any).paymentHoldback.findUnique({ where: { paymentIntentId: paymentIntent.id } }) : null;
-  const overrides = await (prisma as any).adminOverride.findMany({ where: { OR: [proposalId ? { proposalId } : undefined, paymentIntent?.id ? { paymentIntentId: paymentIntent.id } : undefined, payout?.id ? { payoutId: payout.id } : undefined].filter(Boolean) }, orderBy: { createdAt: 'desc' }, take: 20 });
-  const acceptanceProof = await (prisma as any).acceptanceCapture.findFirst({ where: { OR: [paymentIntent?.id ? { paymentIntentId: paymentIntent.id } : undefined, proposal?.contract?.id ? { contractId: proposal.contract.id } : undefined, proposalId ? { proposalId } : undefined].filter(Boolean) }, orderBy: { acceptedAt: 'desc' } });
+  const paymentIntent = paymentIntentId ? await (db as any).paymentIntent.findUnique({ where: { id: paymentIntentId } }) : proposal?.contract?.id ? await (db as any).paymentIntent.findFirst({ where: { contractId: proposal.contract.id }, orderBy: { createdAt: 'desc' } }) : null;
+  const refunds = proposalId ? await (db as any).refundRequest.findMany({ where: { proposalId }, orderBy: { createdAt: 'desc' }, take: 10 }) : [];
+  const disputes = proposalId ? await (db as any).dispute.findMany({ where: { proposalId }, orderBy: { createdAt: 'desc' }, take: 10 }) : [];
+  const holdback = paymentIntent?.id ? await (db as any).paymentHoldback.findUnique({ where: { paymentIntentId: paymentIntent.id } }) : null;
+  const overrides = await (db as any).adminOverride.findMany({ where: { OR: [proposalId ? { proposalId } : undefined, paymentIntent?.id ? { paymentIntentId: paymentIntent.id } : undefined, payout?.id ? { payoutId: payout.id } : undefined].filter(Boolean) }, orderBy: { createdAt: 'desc' }, take: 20 });
+  const acceptanceProof = await (db as any).acceptanceCapture.findFirst({ where: { OR: [paymentIntent?.id ? { paymentIntentId: paymentIntent.id } : undefined, proposal?.contract?.id ? { contractId: proposal.contract.id } : undefined, proposalId ? { proposalId } : undefined].filter(Boolean) }, orderBy: { acceptedAt: 'desc' } });
 
   return (
     <div className="space-y-6">

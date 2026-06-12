@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import type {
   Contract,
   EventItem,
@@ -23,7 +23,7 @@ import type {
 } from "@prisma/client";
 
 type PrismaEventWithRelations = Awaited<
-  ReturnType<typeof prisma.event.findMany<{
+  ReturnType<typeof db.event.findMany<{
     include: {
       tasks: {
         select: {
@@ -310,7 +310,7 @@ export async function GET() {
     const userId = session.user.id as string;
     console.log("[DIY Events API] Loading events for user:", userId);
 
-    const memberships = await prisma.membership.findMany({
+    const memberships = await db.membership.findMany({
       where: { userId },
       select: { orgId: true },
     });
@@ -331,7 +331,7 @@ export async function GET() {
 
     console.log("[DIY Events API] Query where clause:", JSON.stringify(where, null, 2));
 
-    const events = await prisma.event.findMany({
+    const events = await db.event.findMany({
       where,
       orderBy: { startAt: "asc" },
       include: {

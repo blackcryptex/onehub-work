@@ -1,5 +1,5 @@
 import { KPIStat, TrendSparkline, Card } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
 import { redirect } from "next/navigation";
@@ -10,12 +10,12 @@ export default async function AdminOverviewPage() {
   if (!user || !canAccessDashboard(user, "ADMIN")) {
     redirect("/app");
   }
-  const metrics = await prisma.metricDaily.findMany({ orderBy: { date: "desc" }, take: 30 });
+  const metrics = await db.metricDaily.findMany({ orderBy: { date: "desc" }, take: 30 });
   const latest = metrics[0];
-  const orgs = await prisma.organization.count();
-  const users = await prisma.user.count();
-  const events = await prisma.event.count();
-  const disputes = await prisma.dispute.count({ where: { status: "OPEN" } });
+  const orgs = await db.organization.count();
+  const users = await db.user.count();
+  const events = await db.event.count();
+  const disputes = await db.dispute.count({ where: { status: "OPEN" } });
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

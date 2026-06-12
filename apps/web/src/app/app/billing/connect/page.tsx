@@ -1,6 +1,6 @@
 import { Card, Button } from "@onehub/ui";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { appRouter } from "@/server/router";
 import { redirect } from "next/navigation";
 
@@ -11,7 +11,7 @@ type BillingConnectPageProps = {
 };
 
 async function getEligibleSellerOrg(userId: string) {
-  return prisma.organization.findFirst({
+  return db.organization.findFirst({
     where: {
       type: { in: ["VENDOR", "VENUE"] },
       members: {

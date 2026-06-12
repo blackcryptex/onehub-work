@@ -1,5 +1,5 @@
 import { BudgetTable, Card } from "@/components/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
 type BudgetLineData = {
@@ -13,7 +13,7 @@ type BudgetLineData = {
 export default async function EventBudget({ params }: { params: { eventSlug: string } }) {
   const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "view");
 
-  const ev = await prisma.event.findUnique({
+  const ev = await db.event.findUnique({
     where: { id: authorizedEvent.id },
     include: { budgetLines: true },
   });

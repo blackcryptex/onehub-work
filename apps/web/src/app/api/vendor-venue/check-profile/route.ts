@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id as string;
 
     // Check for vendor org
-    const vendorOrg = await prisma.organization.findFirst({
+    const vendorOrg = await db.organization.findFirst({
       where: {
         ownerId: userId,
         type: "VENDOR",
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Check for venue org
-    const venueOrg = await prisma.organization.findFirst({
+    const venueOrg = await db.organization.findFirst({
       where: {
         ownerId: userId,
         type: "VENUE",

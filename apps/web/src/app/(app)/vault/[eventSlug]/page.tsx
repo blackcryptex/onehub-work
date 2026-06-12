@@ -1,5 +1,5 @@
 import { Card, Button } from "@/components/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { canManageEvent, canEditEvent, canDeleteEvent, isPlanner, canAccessDashboard } from "@/lib/rbac";
 import { redirect, notFound } from "next/navigation";
@@ -57,7 +57,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
 
   let event;
   try {
-    event = await prisma.event.findUnique({
+    event = await db.event.findUnique({
       where: { id: authorizedEvent.id },
       include: {
         createdBy: { select: { name: true, email: true } },
@@ -136,7 +136,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
     // If it's a Prisma relation error (e.g., shortlistItems not in schema), try without it
     if (error instanceof Error && error.message.includes("shortlistItems")) {
       console.warn("[Vault] Retrying without shortlistItems relation...");
-      event = await prisma.event.findUnique({
+      event = await db.event.findUnique({
         where: { id: authorizedEvent.id },
         include: {
           createdBy: { select: { name: true, email: true } },
@@ -265,7 +265,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
 
   // Get first proposal/contract for demo tour (if exists)
   const firstProposal = event.proposals[0];
-  const firstContract = firstProposal ? await prisma.contract.findUnique({
+  const firstContract = firstProposal ? await db.contract.findUnique({
     where: { proposalId: firstProposal.id },
     select: { id: true },
   }) : null;

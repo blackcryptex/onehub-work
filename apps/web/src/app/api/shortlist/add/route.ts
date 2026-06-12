@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { z } from "zod";
 
 // Request validation schema
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const { eventId, listingId, notes } = validationResult.data;
 
     // Verify event exists and caller can manage it
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId },
       include: {
         org: {
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify listing exists
-    const listing = await prisma.listing.findUnique({
+    const listing = await db.listing.findUnique({
       where: { id: listingId },
       select: { id: true },
     });
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     // Upsert shortlist item using unique constraint [eventId, listingId]
     // Prisma auto-generates constraint name from field names
-    const item = await prisma.shortlistItem.upsert({
+    const item = await db.shortlistItem.upsert({
       where: {
         eventId_listingId: {
           eventId,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 
 const shortlistQuerySchema = z.object({
   eventId: z.string().min(1, "eventId is required"),
@@ -26,7 +26,7 @@ async function getAuthorizedEvent(eventId: string) {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
-  const event = await prisma.event.findUnique({
+  const event = await db.event.findUnique({
     where: { id: eventId },
     include: {
       org: {
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     const auth = await getAuthorizedEvent(parsed.data.eventId);
     if ("error" in auth) return auth.error;
 
-    const items = await prisma.shortlistItem.findMany({
+    const items = await db.shortlistItem.findMany({
       where: { eventId: parsed.data.eventId },
       select: {
         id: true,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     const auth = await getAuthorizedEvent(eventId);
     if ("error" in auth) return auth.error;
 
-    const listing = await prisma.listing.findUnique({
+    const listing = await db.listing.findUnique({
       where: { id: listingId },
       select: {
         id: true,
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (checked) {
-      const item = await prisma.shortlistItem.upsert({
+      const item = await db.shortlistItem.upsert({
         where: {
           eventId_listingId: {
             eventId,
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, checked: true, item });
     }
 
-    await prisma.shortlistItem.deleteMany({
+    await db.shortlistItem.deleteMany({
       where: {
         eventId,
         listingId,

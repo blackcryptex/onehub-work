@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canManageEvent } from "@/lib/rbac";
 import { sendEventSharedEmail } from "@/lib/email.service";
 import { z } from "zod";
@@ -37,7 +37,7 @@ export async function POST(
     const { viewerUserId, scope } = shareEventSchema.parse(body);
 
     // Fetch event with org and stakeholders
-    const event = await prisma.event.findFirst({
+    const event = await db.event.findFirst({
       where: { slug: params.eventSlug },
       select: {
         id: true,
@@ -71,7 +71,7 @@ export async function POST(
     }
 
     // Check if share already exists
-    const existingShare = await prisma.eventShare.findFirst({
+    const existingShare = await db.eventShare.findFirst({
       where: {
         eventId: event.id,
         viewerUserId,
@@ -87,7 +87,7 @@ export async function POST(
     }
 
     // Create share
-    const share = await prisma.eventShare.create({
+    const share = await db.eventShare.create({
       data: {
         eventId: event.id,
         viewerUserId,
@@ -99,7 +99,7 @@ export async function POST(
     // Phase 7A: Email notification hook
     // Send email to client when content is shared
     try {
-      const viewerUser = await prisma.user.findUnique({
+      const viewerUser = await db.user.findUnique({
         where: { id: viewerUserId },
         select: { email: true, name: true },
       });
@@ -167,7 +167,7 @@ export async function DELETE(
     }
 
     // Fetch event
-    const event = await prisma.event.findFirst({
+    const event = await db.event.findFirst({
       where: { slug: params.eventSlug },
       include: {
         org: { include: { members: true } },
@@ -184,7 +184,7 @@ export async function DELETE(
     }
 
     // Find and delete share
-    const share = await prisma.eventShare.findFirst({
+    const share = await db.eventShare.findFirst({
       where: {
         eventId: event.id,
         viewerUserId,
@@ -196,7 +196,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Share not found" }, { status: 404 });
     }
 
-    await prisma.eventShare.delete({
+    await db.eventShare.delete({
       where: { id: share.id },
     });
 

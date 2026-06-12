@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { generateContractFromProposal } from "@/lib/ai/generateContract";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Load proposal with all relations
-    const proposal = await (prisma as any).proposal.findUnique({
+    const proposal = await (db as UnsafeAny).proposal.findUnique({
       where: { id: proposalId },
       include: {
         event: {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if contract already exists
-    const existingContract = await prisma.contract.findUnique({
+    const existingContract = await db.contract.findUnique({
       where: { proposalId: proposal.id },
     });
 
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
       vendorOrg: vendorOrg
         ? {
             name: vendorOrg.name,
-            legalEntity: (vendorOrg as any).legalEntity || null,
+            legalEntity: (vendorOrg as UnsafeAny).legalEntity || null,
           }
         : null,
     };
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
     const sellerId = listing?.orgId || null;
 
     // Create contract in database
-    const contract = await prisma.contract.create({
+    const contract = await db.contract.create({
       data: {
         proposalId: proposal.id,
         orgId: proposal.orgId,
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
 
     // Update proposal status to CONVERTED if not already
     if (proposal.status !== "CONVERTED") {
-      await prisma.proposal.update({
+      await db.proposal.update({
         where: { id: proposal.id },
         data: { status: "CONVERTED" },
       });

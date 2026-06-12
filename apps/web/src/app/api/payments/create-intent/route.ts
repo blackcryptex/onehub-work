@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { z } from "zod";
 import { getStripeOrThrow } from "@/server/lib/stripe";
 import { resolveBookingClassification } from "@/lib/booking-classification";
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Payment acceptance version mismatch" }, { status: 400 });
     }
 
-    const contract = await (prisma as any).contract.findUnique({
+    const contract = await (db as UnsafeAny).contract.findUnique({
       where: { id: contractId },
       include: {
         proposal: {
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       },
       event: {
         org: {
-          type: (contract.event as any)?.org?.type,
+          type: (contract.event as UnsafeAny)?.org?.type,
         },
       },
     });
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
 
     let escrowAccount = contract.proposal.escrowAccount;
     if (!escrowAccount) {
-      escrowAccount = await prisma.escrowAccount.create({
+      escrowAccount = await db.escrowAccount.create({
         data: {
           orgId: contract.event.orgId,
           eventId: contract.eventId,
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const existingPaymentIntent = await prisma.paymentIntent.findFirst({
+    const existingPaymentIntent = await db.paymentIntent.findFirst({
       where: {
         contractId: contract.id,
         milestoneId: targetMilestone?.id ?? null,
@@ -183,13 +183,13 @@ export async function POST(request: NextRequest) {
         await stripe.paymentIntents.cancel(existingStripeIntent.id).catch(() => null);
       }
 
-      await prisma.paymentIntent.update({
+      await db.paymentIntent.update({
         where: { id: existingPaymentIntent.id },
         data: { status: "CANCELLED" },
       });
     }
 
-    const paymentIntent = await prisma.paymentIntent.create({
+    const paymentIntent = await db.paymentIntent.create({
       data: {
         contractId: contract.id,
         milestoneId: targetMilestone?.id,
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
 
     await recordAcceptance({
       actorId: userId,
-      actorRole: (session.user as any).role || "CLIENT",
+      actorRole: (session.user as UnsafeAny).role || "CLIENT",
       orgId: contract.event.orgId,
       grossAmountCents: amount,
       legalSurface: getLegalSurface("payment", bookingClassification),
@@ -215,10 +215,10 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntent.id,
       bookingClassificationInput: {
         proposal: {
-          bookingClassification: (contract.proposal as any).bookingClassification,
+          bookingClassification: (contract.proposal as UnsafeAny).bookingClassification,
           listingId: contract.proposal.listingId,
         },
-        event: { org: { type: (contract.event as any)?.org?.type } },
+        event: { org: { type: (contract.event as UnsafeAny)?.org?.type } },
       },
       metadata: {
         requiredVersion: CURRENT_ACCEPTANCE_VERSIONS.payment,
@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
       { idempotencyKey }
     );
 
-    await prisma.paymentIntent.update({
+    await db.paymentIntent.update({
       where: { id: paymentIntent.id },
       data: {
         stripeIntentId: stripeIntent.id,
@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!escrowAccount.stripeIntent) {
-      await prisma.escrowAccount.update({
+      await db.escrowAccount.update({
         where: { id: escrowAccount.id },
         data: { stripeIntent: stripeIntent.id },
       });

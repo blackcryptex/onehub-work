@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { isAIAvailable } from "@/lib/ai/client";
 import { isDemoMode } from "@/lib/demo-mode";
 
@@ -18,7 +18,7 @@ export async function GET() {
     let verifiedListingsCount = 0;
 
     try {
-      const demoEvent = await prisma.event.findUnique({
+      const demoEvent = await db.event.findUnique({
         where: { slug: "demo-wedding" },
         select: { id: true },
       });
@@ -28,7 +28,7 @@ export async function GET() {
 
         // Optionally check for verified listings in the demo state
         // Listing.orgId is required in the schema, so no null filter is needed.
-        verifiedListingsCount = await prisma.listing.count({
+        verifiedListingsCount = await db.listing.count({
           where: {
             state: "IL", // Match demo event location
           },

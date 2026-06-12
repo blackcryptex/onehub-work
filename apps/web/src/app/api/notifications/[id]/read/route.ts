@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 
 export async function POST(
   request: NextRequest,
@@ -13,7 +13,7 @@ export async function POST(
     }
 
     const resolvedParams = await params;
-    const notification = await prisma.notification.update({
+    const notification = await db.notification.update({
       where: { id: resolvedParams.id, userId: user.id },
       data: { read: true },
     });

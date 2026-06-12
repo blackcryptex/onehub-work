@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { db } from "@/server/db";
 import { ensureOneHubCalendar, upsertGoogleEvent } from '@/lib/google.calendar';
 import { getMappingKey, eventToGoogleEvent, taskToGoogleEvent, milestoneToGoogleEvent } from '@/lib/calendar.mapping';
 import { EventItem as EventItemExtended, Task as DomainTask, Milestone as DomainMilestone } from '@/lib/types.event';
 
-type PrismaEventWithRelations = Awaited<ReturnType<typeof prisma.event.findMany<{
+type PrismaEventWithRelations = Awaited<ReturnType<typeof db.event.findMany<{
   include: {
     tasks: true;
     milestones: true;
@@ -82,7 +82,7 @@ export async function POST(_request: NextRequest) {
     const calendarId = await ensureOneHubCalendar(session.user.id);
 
     // Get all events for this user
-    const dbEvents = await prisma.event.findMany({
+    const dbEvents = await db.event.findMany({
       where: { createdById: session.user.id },
       include: { tasks: true, milestones: true },
     });

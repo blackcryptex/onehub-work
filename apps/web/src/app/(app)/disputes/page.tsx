@@ -1,19 +1,19 @@
 import { Card, DisputeBadge } from "@onehub/ui";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { auth } from "@/lib/auth";
 
 export default async function DisputesPage() {
   const session = await auth();
   const userId = session?.user?.id as string | undefined;
   if (!userId) return <div>Unauthorized</div>;
-  const orgs = await prisma.organization.findMany({ where: { members: { some: { userId } } } });
-  const disputes = await prisma.dispute.findMany({
+  const orgs = await db.organization.findMany({ where: { members: { some: { userId } } } });
+  const disputes = await db.dispute.findMany({
     where: { orgId: { in: orgs.map((o) => o.id) } },
     include: { proposal: true },
     orderBy: { createdAt: "desc" },
   });
-  const refundRequests = await (prisma as any).refundRequest.findMany({
+  const refundRequests = await (db as any).refundRequest.findMany({
     where: { orgId: { in: orgs.map((o) => o.id) } },
     include: { proposal: true },
     orderBy: { createdAt: "desc" },

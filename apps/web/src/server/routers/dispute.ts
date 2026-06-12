@@ -68,7 +68,7 @@ export const disputeRouter = router({
     const membership = await db.membership.findFirst({ where: { userId: ctx.user.id, orgId: org.id } });
     if (!membership && ctx.user.role !== "ADMIN") throw new Error("Forbidden");
 
-    const disputes = await (db as any).dispute.findMany({
+    const disputes = await (db as UnsafeAny).dispute.findMany({
       where: { orgId: org.id, ...(input.status ? { status: input.status } : {}) },
       include: { proposal: true },
       orderBy: { createdAt: "desc" },

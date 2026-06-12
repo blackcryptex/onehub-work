@@ -14,8 +14,8 @@ export default async function VenueDashboardPage() {
 
   // Check if user has a Venue organization
   // Admin sees all venue orgs, normal user sees only their own
-  const { prisma } = await import("@/lib/prisma");
-  const org = await prisma.organization.findFirst({
+  const { db } = await import("@/server/db");
+  const org = await db.organization.findFirst({
     where: admin
       ? { type: "VENUE" }
       : { ownerId: user.id, type: "VENUE" },

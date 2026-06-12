@@ -1,5 +1,5 @@
 import { Card, Button } from "@/components/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { isPlanner, canAccessDashboard } from "@/lib/rbac";
 import { redirect } from "next/navigation";
@@ -30,7 +30,7 @@ export default async function DIYVaultPage() {
   const admin = isAdmin(user);
   const planner = isPlanner(user);
 
-  const orgs = await prisma.organization.findMany({
+  const orgs = await db.organization.findMany({
     where: admin ? {} : { members: { some: { userId } } },
     include: {
       events: {

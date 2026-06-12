@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
 import { submitRefundReview } from "../../actions";
@@ -13,19 +13,19 @@ export default async function RefundVerificationDetail({ params }: { params: { i
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const refund = await (prisma as any).refundRequest.findUnique({ where: { id: params.id } });
+  const refund = await (db as any).refundRequest.findUnique({ where: { id: params.id } });
   if (!refund) notFound();
 
-  const dispute = refund.proposalId ? await (prisma as any).dispute.findFirst({ where: { proposalId: refund.proposalId }, orderBy: { createdAt: "desc" } }) : null;
-  const holdback = refund.paymentIntentId ? await (prisma as any).paymentHoldback.findUnique({ where: { paymentIntentId: refund.paymentIntentId } }) : null;
-  const payout = refund.milestoneId ? await prisma.payout.findFirst({ where: { milestoneId: refund.milestoneId } }) : await prisma.payout.findFirst({ where: { proposalId: refund.proposalId }, orderBy: { createdAt: "desc" } });
-  const overrides = await (prisma as any).adminOverride.findMany({ where: { refundRequestId: refund.id }, orderBy: { createdAt: "desc" } });
-  const acceptanceProof = refund.acceptanceCaptureId ? await (prisma as any).acceptanceCapture.findUnique({ where: { id: refund.acceptanceCaptureId } }) : null;
+  const dispute = refund.proposalId ? await (db as any).dispute.findFirst({ where: { proposalId: refund.proposalId }, orderBy: { createdAt: "desc" } }) : null;
+  const holdback = refund.paymentIntentId ? await (db as any).paymentHoldback.findUnique({ where: { paymentIntentId: refund.paymentIntentId } }) : null;
+  const payout = refund.milestoneId ? await db.payout.findFirst({ where: { milestoneId: refund.milestoneId } }) : await db.payout.findFirst({ where: { proposalId: refund.proposalId }, orderBy: { createdAt: "desc" } });
+  const overrides = await (db as any).adminOverride.findMany({ where: { refundRequestId: refund.id }, orderBy: { createdAt: "desc" } });
+  const acceptanceProof = refund.acceptanceCaptureId ? await (db as any).acceptanceCapture.findUnique({ where: { id: refund.acceptanceCaptureId } }) : null;
 
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/app/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link>
+        <Link href="/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link>
         <h1 className="mt-2 text-2xl font-bold">Refund request {refund.id}</h1>
       </div>
 

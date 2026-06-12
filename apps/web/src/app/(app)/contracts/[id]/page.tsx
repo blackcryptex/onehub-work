@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { notFound } from "next/navigation";
 import { ContractPageClient } from "@/components/contracts/ContractPageClient";
 import { getCurrentUser } from "@/lib/auth-helpers";
@@ -7,7 +7,7 @@ import { canManageEvent } from "@/lib/rbac";
 export default async function ContractPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const user = await getCurrentUser();
-  const contract = await prisma.contract.findUnique({
+  const contract = await db.contract.findUnique({
     where: { id: resolvedParams.id },
     include: {
       proposal: {

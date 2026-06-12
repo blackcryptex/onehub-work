@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { z } from "zod";
 import { stripe } from "@/server/lib/stripe";
 import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch payment intent with contract and milestone
     // Note: PaymentIntent model will be available after Prisma migration
-    const paymentIntent = await (prisma as any).paymentIntent.findUnique({
+    const paymentIntent = await (db as UnsafeAny).paymentIntent.findUnique({
       where: { id: paymentIntentId },
       include: {
         contract: {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     if (stripeIntent.status !== "succeeded") {
       // Update status to processing if not already processing
       if (paymentIntent.status !== "PROCESSING") {
-        await (prisma as any).paymentIntent.update({
+        await (db as UnsafeAny).paymentIntent.update({
           where: { id: paymentIntentId },
           data: { status: "PROCESSING" },
         });
@@ -113,9 +113,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Wrap all updates in a transaction for atomicity
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // Re-fetch payment intent within transaction to check status atomically
-      const currentPaymentIntent = await (tx as any).paymentIntent.findUnique({
+      const currentPaymentIntent = await (tx as UnsafeAny).paymentIntent.findUnique({
         where: { id: paymentIntentId },
         include: {
           contract: {
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Update payment intent status atomically
-      await (tx as any).paymentIntent.update({
+      await (tx as UnsafeAny).paymentIntent.update({
         where: { id: paymentIntentId },
         data: {
           status: "SUCCEEDED",
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
       if (currentPaymentIntent.milestoneId) {
         await tx.paymentMilestone.update({
           where: { id: currentPaymentIntent.milestoneId },
-          data: { status: "IN_ESCROW" as any },
+          data: { status: "IN_ESCROW" as UnsafeAny },
         });
       }
 
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
       const platformFeeCents = feeProfile.platformFeeAmountCents;
       const netAmountCents = feeProfile.netAmountCents;
 
-      await (tx as any).transaction.create({
+      await (tx as UnsafeAny).transaction.create({
         data: {
           paymentIntentId: currentPaymentIntent.id,
           payerId: currentPaymentIntent.payerId,
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
       if (currentPaymentIntent.contract.status === "FULLY_SIGNED") {
         await tx.contract.update({
           where: { id: currentPaymentIntent.contractId },
-          data: { status: "IN_PAYMENT" as any },
+          data: { status: "IN_PAYMENT" as UnsafeAny },
         });
       }
 

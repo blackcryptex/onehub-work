@@ -1,6 +1,7 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
 
@@ -26,7 +27,7 @@ export default async function AdminVerificationPage({
   const q = searchParams.q?.trim() || "";
   const containsQ = q ? { contains: q, mode: "insensitive" as const } : undefined;
 
-  const refunds = await (prisma as any).refundRequest.findMany({
+  const refunds = await (db as any).refundRequest.findMany({
     where: {
       ...(searchParams.refundStatus ? { status: searchParams.refundStatus } : {}),
       ...(q
@@ -44,7 +45,7 @@ export default async function AdminVerificationPage({
     take: 20,
   });
 
-  const disputes = await (prisma as any).dispute.findMany({
+  const disputes = await (db as any).dispute.findMany({
     where: {
       ...(searchParams.disputeStatus ? { status: searchParams.disputeStatus } : {}),
       ...(q
@@ -63,7 +64,7 @@ export default async function AdminVerificationPage({
     take: 20,
   });
 
-  const holdbacks = await (prisma as any).paymentHoldback.findMany({
+  const holdbacks = await (db as any).paymentHoldback.findMany({
     where: {
       ...(searchParams.holdbackState ? { state: searchParams.holdbackState } : {}),
       ...(q
@@ -82,7 +83,7 @@ export default async function AdminVerificationPage({
     take: 20,
   });
 
-  const payouts = await prisma.payout.findMany({
+  const payouts = await db.payout.findMany({
     where: {
       ...(searchParams.payoutStatus ? { status: searchParams.payoutStatus as any } : {}),
       ...(q
@@ -100,7 +101,7 @@ export default async function AdminVerificationPage({
     take: 20,
   });
 
-  const overrides = await (prisma as any).adminOverride.findMany({
+  const overrides = await (db as any).adminOverride.findMany({
     where: {
       ...(searchParams.targetType ? { targetType: searchParams.targetType } : {}),
       ...(q
@@ -128,7 +129,7 @@ export default async function AdminVerificationPage({
           <h1 className="text-2xl font-bold">Admin verification</h1>
           <p className="text-sm text-slate-600">Canonical review surfaces for refunds, disputes, holdbacks, payouts, and overrides.</p>
         </div>
-        <Link href="/app/admin/verification/detail" className="text-sm text-indigo-600 hover:underline">Unified detail →</Link>
+        <Link href="/admin/verification/detail" className="text-sm text-indigo-600 hover:underline">Unified detail →</Link>
       </div>
 
       <form className="grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-6">
@@ -140,11 +141,11 @@ export default async function AdminVerificationPage({
         <button className="rounded bg-slate-900 px-4 py-2 text-white">Filter</button>
       </form>
 
-      <Section title="Refund requests" hrefBase="/app/admin/verification/refunds" rows={refunds.map((item: any) => ({ id: item.id, bits: [item.status, item.proposalId, money(item.amountRequestedCents, item.currency)] }))} />
-      <Section title="Dispute cases" hrefBase="/app/admin/verification/disputes" rows={disputes.map((item: any) => ({ id: item.id, bits: [item.status, item.freezeState, item.proposalId] }))} />
-      <Section title="Holdbacks" hrefBase="/app/admin/verification/holdbacks" rows={holdbacks.map((item: any) => ({ id: item.paymentIntentId, bits: [item.state, item.proposalId, item.triggerSummary || "no triggers"] }))} />
-      <Section title="Payouts" hrefBase="/app/admin/verification/payouts" rows={payouts.map((item) => ({ id: item.id, bits: [item.status, item.proposalId, money(item.amountCents)] }))} />
-      <Section title="Override history" hrefBase="/app/admin/verification/overrides" rows={overrides.map((item: any) => ({ id: item.id, bits: [item.targetType, item.exceptionType, item.authorityPath] }))} />
+      <Section title="Refund requests" hrefBase="/admin/verification/refunds" rows={refunds.map((item: any) => ({ id: item.id, bits: [item.status, item.proposalId, money(item.amountRequestedCents, item.currency)] }))} />
+      <Section title="Dispute cases" hrefBase="/admin/verification/disputes" rows={disputes.map((item: any) => ({ id: item.id, bits: [item.status, item.freezeState, item.proposalId] }))} />
+      <Section title="Holdbacks" hrefBase="/admin/verification/holdbacks" rows={holdbacks.map((item: any) => ({ id: item.paymentIntentId, bits: [item.state, item.proposalId, item.triggerSummary || "no triggers"] }))} />
+      <Section title="Payouts" hrefBase="/admin/verification/payouts" rows={payouts.map((item) => ({ id: item.id, bits: [item.status, item.proposalId, money(item.amountCents)] }))} />
+      <Section title="Override history" hrefBase="/admin/verification/overrides" rows={overrides.map((item: any) => ({ id: item.id, bits: [item.targetType, item.exceptionType, item.authorityPath] }))} />
     </div>
   );
 }
@@ -158,7 +159,7 @@ function Section({ title, hrefBase, rows }: { title: string; hrefBase: string; r
           <div className="px-4 py-6 text-sm text-slate-500">No records found.</div>
         ) : (
           rows.map((row) => (
-            <Link key={row.id} href={`${hrefBase}/${row.id}`} className="flex items-center justify-between px-4 py-3 text-sm hover:bg-slate-50">
+            <Link key={row.id} href={`${hrefBase}/${row.id}` as Route} className="flex items-center justify-between px-4 py-3 text-sm hover:bg-slate-50">
               <span className="font-mono text-xs text-slate-700">{row.id}</span>
               <span className="text-right text-slate-600">{row.bits.join(" • ")}</span>
             </Link>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canViewEvent, canDeleteEvent } from "@/lib/rbac";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { recordActivity } from "@/server/lib/activity";
 
 export async function GET(
@@ -18,7 +18,7 @@ export async function GET(
     // (which now checks for stakeholder + share)
     // We don't block them here - let canViewEvent handle the permission check
 
-    const event = await prisma.event.findFirst({
+    const event = await db.event.findFirst({
       where: { slug: params.eventSlug },
       include: {
         createdBy: { select: { id: true, name: true, email: true } },
@@ -91,7 +91,7 @@ export async function DELETE(
     }
 
     // Try to find by slug first, then by ID (in case eventSlug is actually an ID)
-    let event = await prisma.event.findFirst({
+    let event = await db.event.findFirst({
       where: { slug: params.eventSlug },
       include: {
         org: { include: { members: true } },
@@ -101,7 +101,7 @@ export async function DELETE(
 
     // If not found by slug, try by ID
     if (!event) {
-      event = await prisma.event.findFirst({
+      event = await db.event.findFirst({
         where: { id: params.eventSlug },
         include: {
           org: { include: { members: true } },
@@ -129,7 +129,7 @@ export async function DELETE(
     });
 
     // Delete the event (cascade deletes will handle related records)
-    await prisma.event.delete({
+    await db.event.delete({
       where: { id: event.id },
     });
 

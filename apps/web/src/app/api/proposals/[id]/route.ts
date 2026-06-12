@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canManageEvent } from "@/lib/rbac";
 import { z } from "zod";
 
@@ -34,7 +34,7 @@ export async function PATCH(
     const validated = updateProposalSchema.parse(body);
 
     // Load proposal with event
-    const proposal = await prisma.proposal.findUnique({
+    const proposal = await db.proposal.findUnique({
       where: { id: proposalId },
       include: {
         event: true,
@@ -62,7 +62,7 @@ export async function PATCH(
     }
 
     // Update proposal
-    const updated = await prisma.proposal.update({
+    const updated = await db.proposal.update({
       where: { id: proposalId },
       data: {
         ...(validated.title && { title: validated.title }),
@@ -107,7 +107,7 @@ export async function DELETE(
     }
 
     // Load proposal with event
-    const proposal = await prisma.proposal.findUnique({
+    const proposal = await db.proposal.findUnique({
       where: { id: proposalId },
       include: {
         event: true,
@@ -129,7 +129,7 @@ export async function DELETE(
     // Soft delete: set status to REJECTED (or use metadata if available)
     // Check if Proposal model has deletedAt or archivedAt field
     // For now, we'll use status REJECTED as a soft delete marker
-    const updated = await prisma.proposal.update({
+    const updated = await db.proposal.update({
       where: { id: proposalId },
       data: {
         status: "REJECTED", // Using REJECTED as soft delete marker

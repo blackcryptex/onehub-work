@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { z } from "zod";
 import type { EventType, ListingCategory, ListingType } from "@prisma/client";
 
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     const { eventId, limitVerified = 8, limitUnverified = 4 } = validationResult.data;
 
     // Load the event from Prisma
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId },
       select: {
         id: true,
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Query verified listings with proper ordering (demo-safe: deterministic)
-    const verifiedListings = await prisma.listing.findMany({
+    const verifiedListings = await db.listing.findMany({
       where: whereClause,
       take: limitVerified,
       orderBy: [

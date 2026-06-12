@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canManageEvent } from "@/lib/rbac";
 import { z } from "zod";
 
@@ -30,7 +30,7 @@ export async function PATCH(
     const validated = updateContractSchema.parse(body);
 
     // Load contract with proposal and event
-    const contract = await prisma.contract.findUnique({
+    const contract = await db.contract.findUnique({
       where: { id: contractId },
       include: {
         proposal: {
@@ -62,7 +62,7 @@ export async function PATCH(
     }
 
     // Update contract
-    const updated = await prisma.contract.update({
+    const updated = await db.contract.update({
       where: { id: contractId },
       data: {
         ...(validated.title && { title: validated.title }),

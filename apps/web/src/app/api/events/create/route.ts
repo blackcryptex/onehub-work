@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { parseBudget } from "@/lib/parsers/budget";
 import { canonicalizeEventType } from "@/lib/parsers/eventType";
 import { buildPlannerPayload as _buildPlannerPayload } from "@/lib/ai/buildPlannerPayload";
@@ -232,14 +232,14 @@ export async function POST(request: NextRequest) {
     validated = validationResult.data;
 
     // Get or create a default org for DIY planner
-    org = await prisma.organization.findFirst({
+    org = await db.organization.findFirst({
       where: { ownerId: userId, type: { in: ["PLANNER", "CLIENT_AGENCY"] } },
     });
 
     if (!org) {
       // Create default org for DIY planner
       const slug = `user-${userId.slice(0, 8)}`;
-      org = await prisma.organization.create({
+      org = await db.organization.create({
         data: {
           name: "My Events",
           slug,
@@ -290,7 +290,7 @@ export async function POST(request: NextRequest) {
     
     while (attempts < maxAttempts) {
       try {
-        event = await prisma.event.create({
+        event = await db.event.create({
           data: {
             orgId: org.id,
             createdById: userId,
@@ -337,7 +337,7 @@ export async function POST(request: NextRequest) {
     if (validated.clientIds && validated.clientIds.length > 0) {
       try {
         // Verify all client IDs are valid CLIENT users
-        const clientUsers = await prisma.user.findMany({
+        const clientUsers = await db.user.findMany({
           where: {
             id: { in: validated.clientIds },
             role: "CLIENT",
@@ -350,7 +350,7 @@ export async function POST(request: NextRequest) {
         // Create EventStakeholder records
         await Promise.all(
           validClientIds.map((clientId) =>
-            prisma.eventStakeholder.create({
+            db.eventStakeholder.create({
               data: {
                 eventId: event.id,
                 userId: clientId,
@@ -370,7 +370,7 @@ export async function POST(request: NextRequest) {
         if (validated.autoShareSummary) {
           await Promise.all(
             validClientIds.map((clientId) =>
-              prisma.eventShare.create({
+              db.eventShare.create({
                 data: {
                   eventId: event.id,
                   viewerUserId: clientId,
@@ -416,7 +416,7 @@ export async function POST(request: NextRequest) {
     ];
 
     for (const line of budgetLines) {
-      await prisma.budgetLine.create({
+      await db.budgetLine.create({
         data: {
           eventId: event.id,
           label: line.label,
@@ -429,7 +429,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create initial milestone
-    await prisma.milestone.create({
+    await db.milestone.create({
       data: {
         eventId: event.id,
         title: "Event Day",
@@ -449,7 +449,7 @@ export async function POST(request: NextRequest) {
     ];
 
     // Create a single checklist
-    const checklist = await prisma.checklist.create({
+    const checklist = await db.checklist.create({
       data: {
         eventId: event.id,
         title: "Event Planning Checklist",
@@ -460,7 +460,7 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < checklistItems.length; i++) {
       const item = checklistItems[i];
       if (!item) continue;
-      await prisma.checklistItem.create({
+      await db.checklistItem.create({
         data: {
           checklistId: checklist.id,
           title: item,
@@ -477,7 +477,7 @@ export async function POST(request: NextRequest) {
     // Using findFirst instead of findUnique to avoid potential timing issues
     // and matching the exact pattern from /api/diy/events/route.ts
     // Note: Using type assertion for shortlistItems due to Prisma type generation issues
-    const createdEventWithRelations = await prisma.event.findFirst({
+    const createdEventWithRelations = await db.event.findFirst({
       where: { id: event.id },
       include: {
         tasks: {

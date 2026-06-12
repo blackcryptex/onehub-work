@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { isDemoMode } from "@/lib/demo-mode";
 
 export async function POST(request: NextRequest) {
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId },
       include: {
         org: {
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const listing = await prisma.listing.findUnique({
+    const listing = await db.listing.findUnique({
       where: { id: listingId },
       select: {
         id: true,
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const bookingRequest = await prisma.bookingRequest.create({
+    const bookingRequest = await db.bookingRequest.create({
       data: {
         orgId: event.orgId,
         eventId: event.id,

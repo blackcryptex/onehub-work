@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canReleaseMilestonePayment } from "@/lib/rbac";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { z } from "zod";
 import { stripe } from "@/server/lib/stripe";
 import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     logger.debug({ userId: user.id, milestoneId, route: "/api/payments/release-milestone" }, "Milestone release started");
 
     // Fetch milestone with proposal, contract, event, and organization
-    const milestone = await (prisma as any).paymentMilestone.findUnique({
+    const milestone = await (db as UnsafeAny).paymentMilestone.findUnique({
       where: { id: milestoneId },
       include: {
         proposal: {
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     // Idempotency guard: if milestone is already PAID, return success
     if (milestone.status === "PAID") {
       // Check if payout exists (using findFirst until migration completes)
-      const existingPayout = await prisma.payout.findFirst({
+      const existingPayout = await db.payout.findFirst({
         where: { milestoneId: milestone.id },
       });
       if (existingPayout) {
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
       },
       event: {
         org: {
-          type: (milestone.proposal.event as any)?.org?.type,
+          type: (milestone.proposal.event as UnsafeAny)?.org?.type,
         },
       },
     });
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
 
     const sellerOrg = milestone.proposal.listing?.org?.id === canonicalSellerOrgId
       ? milestone.proposal.listing.org
-      : await prisma.organization.findUnique({
+      : await db.organization.findUnique({
           where: { id: canonicalSellerOrgId },
           include: { owner: true },
         });
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Wrap in transaction for atomicity
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       // Re-check milestone status within transaction
       const currentMilestone = await tx.paymentMilestone.findUnique({
         where: { id: milestoneId },
@@ -281,7 +281,7 @@ export async function POST(request: NextRequest) {
       let payoutStatus: "PENDING" | "SENT" = "PENDING";
       if (canonicalRecipient.stripeAccountId && stripe) {
         try {
-          const sourceTransaction = await (tx as any).transaction.findFirst({
+          const sourceTransaction = await (tx as UnsafeAny).transaction.findFirst({
             where: {
               paymentIntent: {
                 milestoneId: milestone.id,
@@ -346,7 +346,7 @@ export async function POST(request: NextRequest) {
       if (allPaid && (contract.status as string) === "IN_PAYMENT") {
         await tx.contract.update({
           where: { id: contract.id },
-          data: { status: "COMPLETED" as any },
+          data: { status: "COMPLETED" as UnsafeAny },
         });
       }
 

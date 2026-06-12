@@ -1,5 +1,5 @@
 import { ThreadPanel } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { notFound } from "next/navigation";
 
 type ThreadMessage = {
@@ -10,7 +10,7 @@ type ThreadMessage = {
 };
 
 export default async function MessageThreadPage({ params }: { params: { threadId: string } }) {
-  const thread = await prisma.thread.findUnique({
+  const thread = await db.thread.findUnique({
     where: { id: params.threadId },
     include: { messages: { include: { thread: true } } },
   });

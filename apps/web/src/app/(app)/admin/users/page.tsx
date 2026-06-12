@@ -1,5 +1,5 @@
 import { Card, Button } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
 import { redirect } from "next/navigation";
@@ -30,7 +30,7 @@ export default async function AdminUsersPage({
     ];
   }
 
-  const users = await prisma.user.findMany({
+  const users = await db.user.findMany({
     where,
     take: limit + 1,
     cursor: searchParams.cursor ? { id: searchParams.cursor } : undefined,

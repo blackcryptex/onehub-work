@@ -134,7 +134,7 @@ export const adminRouter = router({
       status: z.enum(["OPEN", "APPROVED", "DENIED", "CANCELED"]).optional(),
     }).optional()).query(async ({ input }) => {
       await requireAdmin();
-      return (db as any).refundRequest.findMany({
+      return (db as UnsafeAny).refundRequest.findMany({
         where: input?.status ? { status: input.status } : undefined,
         orderBy: { createdAt: "desc" },
       });
@@ -160,7 +160,7 @@ export const adminRouter = router({
       refundRequestId: z.string(),
     })).query(async ({ input }) => {
       await requireAdmin();
-      return (db as any).refundRequest.findUnique({
+      return (db as UnsafeAny).refundRequest.findUnique({
         where: { id: input.refundRequestId },
       });
     }),

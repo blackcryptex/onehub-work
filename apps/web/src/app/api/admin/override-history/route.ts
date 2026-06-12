@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const payoutId = searchParams.get("payoutId") || undefined;
 
   const items = await listAdminOverrides({
-    targetType: targetType as any,
+    targetType: targetType as UnsafeAny,
     targetId,
     proposalId,
     paymentIntentId,

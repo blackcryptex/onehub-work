@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canManageEvent } from "@/lib/rbac";
 import { computePayoutAmountFromProposal } from "@/lib/payout-lock-helpers";
 import { setLocked } from "@/lib/payments/payoutLock";
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch event with accepted proposals
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId },
       include: {
         org: {
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     for (const proposal of event.proposals) {
       // Find existing payout for this proposal (using proposalId to match)
       // For SINGLE mode, we expect one payout per proposal
-      const existingPayout = await prisma.payout.findFirst({
+      const existingPayout = await db.payout.findFirst({
         where: {
           proposalId: proposal.id,
           status: { not: "CANCELED" },
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       let payoutId: string;
       if (existingPayout) {
         // Update existing payout: sync amount to proposal total (locked behavior)
-        const updatedPayout = await prisma.payout.update({
+        const updatedPayout = await db.payout.update({
           where: { id: existingPayout.id },
           data: {
             amountCents: computedAmount,
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         updated++;
       } else {
         // Create new payout line locked to proposal
-        const newPayout = await prisma.payout.create({
+        const newPayout = await db.payout.create({
           data: {
             proposalId: proposal.id,
             listingId: proposal.listingId || null,
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
       // Set lock state for this payout
       await setLocked(
-        prisma,
+        db,
         payoutId,
         proposal.id,
         null, // milestoneId - can be null for now

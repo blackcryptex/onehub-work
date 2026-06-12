@@ -1,5 +1,5 @@
 import { Card, Button } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { isDemoMode } from "@/lib/demo-mode";
@@ -28,10 +28,10 @@ export default async function RequestsPage() {
   if (!userId) return <div>Unauthorized</div>;
   const demoMode = isDemoMode();
   
-  const orgs = await prisma.organization.findMany({
+  const orgs = await db.organization.findMany({
     where: { members: { some: { userId } } },
   });
-  const requests = await prisma.bookingRequest.findMany({
+  const requests = await db.bookingRequest.findMany({
     where: {
       OR: [
         { orgId: { in: orgs.map((o) => o.id) } },

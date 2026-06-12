@@ -6,7 +6,7 @@ import { Card, Button } from "@/components/ui";
 import { auth } from "@/lib/auth";
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { dashboard, vaultDetail, vaultIndex } from "@/lib/routes";
@@ -41,7 +41,7 @@ export default async function AppPage() {
   // Preserve VENDOR/VENUE onboarding gating before generic dashboard redirects.
   if (canAccessDashboard(user, "VENDOR") || canAccessDashboard(user, "VENUE")) {
     const targetRole = role === "VENUE" ? "VENUE" : "VENDOR";
-    existingOrg = await prisma.organization.findFirst({
+    existingOrg = await db.organization.findFirst({
       where: { ownerId: userId, type: targetRole },
       orderBy: { createdAt: "desc" },
     });
@@ -63,7 +63,7 @@ export default async function AppPage() {
   }
 
   // Get user's organizations
-  const orgs = await prisma.organization.findMany({
+  const orgs = await db.organization.findMany({
     where: admin ? {} : { members: { some: { userId } } },
     take: 5,
     orderBy: { createdAt: "desc" },
@@ -71,14 +71,14 @@ export default async function AppPage() {
   });
 
   const orgIds = orgs.map((o) => o.id);
-  const recentEvents = await prisma.event.findMany({
+  const recentEvents = await db.event.findMany({
     where: admin ? {} : { orgId: { in: orgIds } },
     take: 5,
     orderBy: { createdAt: "desc" },
     include: { org: { select: { name: true, slug: true } } },
   });
 
-  const recentActivity = await prisma.activity.findMany({
+  const recentActivity = await db.activity.findMany({
     where: admin ? {} : { orgId: { in: orgIds } },
     take: 10,
     orderBy: { at: "desc" },
@@ -87,8 +87,8 @@ export default async function AppPage() {
 
   let stats = null;
   if (role === "PRO_PLANNER" || admin) {
-    const totalEvents = await prisma.event.count({ where: admin ? {} : { orgId: { in: orgIds } } });
-    const activeEvents = await prisma.event.count({ where: admin ? { status: "ACTIVE" } : { orgId: { in: orgIds }, status: "ACTIVE" } });
+    const totalEvents = await db.event.count({ where: admin ? {} : { orgId: { in: orgIds } } });
+    const activeEvents = await db.event.count({ where: admin ? { status: "ACTIVE" } : { orgId: { in: orgIds }, status: "ACTIVE" } });
     stats = { totalEvents, activeEvents };
   }
 

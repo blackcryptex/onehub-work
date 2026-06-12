@@ -2,11 +2,11 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripeOrThrow } from "@/server/lib/stripe";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 
 async function markWebhookProcessed(eventId: string, type: string, stripeIntentId?: string) {
   try {
-    await prisma.webhookEvent.create({
+    await db.webhookEvent.create({
       data: {
         eventId,
         type,
@@ -24,7 +24,7 @@ async function findInternalPaymentIntent(paymentIntent: Stripe.PaymentIntent) {
   const stripeIntentId = paymentIntent.id;
   const metadataPaymentIntentId = paymentIntent.metadata?.paymentIntentId;
 
-  const internalPaymentIntent = await prisma.paymentIntent.findUnique({
+  const internalPaymentIntent = await db.paymentIntent.findUnique({
     where: { stripeIntentId },
     include: {
       contract: true,
@@ -35,7 +35,7 @@ async function findInternalPaymentIntent(paymentIntent: Stripe.PaymentIntent) {
   if (internalPaymentIntent) return internalPaymentIntent;
   if (!metadataPaymentIntentId) return null;
 
-  return prisma.paymentIntent.update({
+  return db.paymentIntent.update({
     where: { id: metadataPaymentIntentId },
     data: { stripeIntentId },
     include: {
@@ -51,7 +51,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   if (!internalPaymentIntent) return;
   if (internalPaymentIntent.status === "SUCCEEDED") return;
 
-  await prisma.$transaction(async (tx: any) => {
+  await db.$transaction(async (tx: any) => {
     const fundingApplied = await tx.paymentIntent.updateMany({
       where: {
         id: internalPaymentIntent.id,
@@ -100,7 +100,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
   if (!internalPaymentIntent) return;
   if (internalPaymentIntent.status === "FAILED" || internalPaymentIntent.status === "SUCCEEDED") return;
 
-  await prisma.paymentIntent.update({
+  await db.paymentIntent.update({
     where: { id: internalPaymentIntent.id },
     data: { status: "FAILED" },
   });
@@ -156,11 +156,11 @@ export async function POST(request: Request) {
         break;
     }
 
-    await prisma.webhookEvent.update({
+    await db.webhookEvent.update({
       where: { eventId: event.id },
       data: {
         processedAt: new Date(),
-        meta: event as any,
+        meta: event as UnsafeAny,
       },
     });
 

@@ -1,5 +1,5 @@
 import { Card, Button } from "@onehub/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
 
@@ -7,8 +7,8 @@ export default async function ManageListingsPage() {
   const session = await auth();
   const userId = session?.user?.id as string | undefined;
   if (!userId) return <div>Unauthorized</div>;
-  const orgs = await prisma.organization.findMany({ where: { members: { some: { userId, role: { in: ["OWNER", "ADMIN"] } } } } });
-  const listings = await prisma.listing.findMany({ where: { orgId: { in: orgs.map((o) => o.id) } }, include: { tags: true } });
+  const orgs = await db.organization.findMany({ where: { members: { some: { userId, role: { in: ["OWNER", "ADMIN"] } } } } });
+  const listings = await db.listing.findMany({ where: { orgId: { in: orgs.map((o) => o.id) } }, include: { tags: true } });
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

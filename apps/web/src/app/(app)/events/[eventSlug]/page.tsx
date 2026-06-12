@@ -1,5 +1,5 @@
 import { Card, ActivityList, Timeline, Countdown } from "@/components/ui";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
 type ActivityItem = {
@@ -12,14 +12,14 @@ type ActivityItem = {
 export default async function EventOverview({ params }: { params: { eventSlug: string } }) {
   const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "view");
 
-  const ev = await prisma.event.findUnique({
+  const ev = await db.event.findUnique({
     where: { id: authorizedEvent.id },
     include: { budgetLines: true, milestones: true },
   });
 
   if (!ev) return null;
 
-  const activities = await prisma.activity.findMany({
+  const activities = await db.activity.findMany({
     where: { eventId: ev.id },
     orderBy: { at: "desc" },
     take: 10,

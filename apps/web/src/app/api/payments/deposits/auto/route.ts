@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/server/db";
 import { canManageEvent } from "@/lib/rbac";
 import { encodeDepositMetadata, isDepositLine } from "@/lib/payment-plan-helpers";
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch event with proposals
-    const event = await prisma.event.findUnique({
+    const event = await db.event.findUnique({
       where: { id: eventId },
       include: {
         org: {
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Load event payouts (exclude canceled/failed statuses)
     const proposalIds = event.proposals.map((p) => p.id);
-    const payouts = await prisma.payout.findMany({
+    const payouts = await db.payout.findMany({
       where: {
         proposalId: { in: proposalIds },
         status: { not: "CANCELED" },
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     for (const { label, amountCents } of depositAmounts) {
       // Find existing deposit with this title for this proposal
       // We need to check all milestones and filter for deposit lines
-      const allMilestones = await prisma.paymentMilestone.findMany({
+      const allMilestones = await db.paymentMilestone.findMany({
         where: {
           proposalId: firstProposal.id,
           title: label,
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
 
       if (existingDeposit) {
         // Update existing deposit
-        const updated = await prisma.paymentMilestone.update({
+        const updated = await db.paymentMilestone.update({
           where: { id: existingDeposit.id },
           data: {
             amountCents,
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
         updatedDeposits.push(updated);
       } else {
         // Create new deposit
-        const created = await prisma.paymentMilestone.create({
+        const created = await db.paymentMilestone.create({
           data: {
             proposalId: firstProposal.id,
             title: label,
