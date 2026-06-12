@@ -928,6 +928,18 @@ export default function ProviderOnboardingPage() {
                   <p className="text-slate-600">
                     Configure your deposit rules, payment schedule, and policies.
                   </p>
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                    <p className="font-semibold">NOT LEGAL-APPROVED / INTERNAL DRAFT</p>
+                    <p className="mt-1">
+                      Provider-entered payment, cancellation, and reschedule language is a draft input only and remains
+                      subject to final OneHub legal/payment policy review. Review draft anchors: {" "}
+                      <Link href="/terms" className="underline">Terms</Link>, {" "}
+                      <Link href="/legal/payments" className="underline">Payments</Link>, {" "}
+                      <Link href="/legal/refunds" className="underline">Refunds</Link>, {" "}
+                      <Link href="/legal/disputes" className="underline">Disputes</Link>, and {" "}
+                      <Link href="/support" className="underline">Support</Link>.
+                    </p>
+                  </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <Label>Deposit Type</Label>
@@ -1240,6 +1252,21 @@ export default function ProviderOnboardingPage() {
                     <li>You can update details anytime from your dashboard</li>
                     <li>Start receiving booking requests and leads</li>
                   </ul>
+                </div>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                  <p className="font-semibold">NOT LEGAL-APPROVED / INTERNAL DRAFT</p>
+                  <p className="mt-1">
+                    Draft publish reminder only: final listing accuracy, provider obligations, refund/dispute handling,
+                    and support-response acknowledgements are not enabled as legal acceptance in this flow.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                    <Link href="/terms" className="underline">Draft Terms</Link>
+                    <Link href="/legal/payments" className="underline">Payments</Link>
+                    <Link href="/legal/refunds" className="underline">Refunds</Link>
+                    <Link href="/legal/disputes" className="underline">Disputes</Link>
+                    <Link href="/legal/fees" className="underline">Fees</Link>
+                    <Link href="/support" className="underline">Support</Link>
+                  </div>
                 </div>
                 {!session?.user && (
                   <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">

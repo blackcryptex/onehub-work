@@ -1,4 +1,5 @@
 import { LandingHeader } from "@/components/layout/LandingHeader";
+import { DraftLegalPageNotice } from "@/components/legal/DraftLegalPageNotice";
 import { Card } from "@/components/ui";
 
 export default function PrivacyPage() {
@@ -7,18 +8,21 @@ export default function PrivacyPage() {
       <LandingHeader />
       <main className="mx-auto max-w-4xl px-4 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">Privacy &amp; Terms</h1>
-          <p className="text-lg text-slate-600">Your privacy is important to us. Learn how we protect your data.</p>
+          <h1 className="text-4xl font-bold text-slate-900 mb-4">Privacy Policy</h1>
+          <p className="text-lg text-slate-600">Draft privacy policy anchor pending legal approval.</p>
+        </div>
+        <div className="mb-8">
+          <DraftLegalPageNotice versionLabel="privacy-internal-draft-v0" />
         </div>
 
         <Card className="p-8 mb-8">
           <h2 className="text-2xl font-semibold mb-4">Privacy Policy</h2>
           <div className="space-y-4 text-slate-600">
             <p>
-              <strong className="text-slate-900">Last Updated:</strong> {new Date().toLocaleDateString()}
+              <strong className="text-slate-900">Draft effective date:</strong> placeholder pending legal approval
             </p>
             <p>
-              At OneHub, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our event planning platform.
+              This draft Privacy Policy placeholder explains the intended categories for legal review. It is not legal-approved public launch copy.
             </p>
             <h3 className="text-xl font-semibold text-slate-900 mt-6 mb-2">Information We Collect</h3>
             <p>
@@ -30,7 +34,7 @@ export default function PrivacyPage() {
             </p>
             <h3 className="text-xl font-semibold text-slate-900 mt-6 mb-2">Data Security</h3>
             <p>
-              We implement industry-standard security measures to protect your data, including encryption, secure servers, and regular security audits. Your payment information is processed securely through our payment partners.
+              Security language is pending verification and legal approval. Final copy should state only validated controls and avoid launch-readiness overclaims.
             </p>
             <h3 className="text-xl font-semibold text-slate-900 mt-6 mb-2">Your Rights</h3>
             <p>
@@ -43,10 +47,10 @@ export default function PrivacyPage() {
           <h2 className="text-2xl font-semibold mb-4">Terms of Service</h2>
           <div className="space-y-4 text-slate-600">
             <p>
-              <strong className="text-slate-900">Last Updated:</strong> {new Date().toLocaleDateString()}
+              <strong className="text-slate-900">Draft effective date:</strong> placeholder pending legal approval
             </p>
             <p>
-              By using OneHub, you agree to these Terms of Service. Please read them carefully.
+              This draft terms summary is a navigation placeholder only. Final Terms must be legal-approved before launch or account acceptance enforcement.
             </p>
             <h3 className="text-xl font-semibold text-slate-900 mt-6 mb-2">Account Responsibilities</h3>
             <p>

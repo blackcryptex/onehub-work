@@ -19,22 +19,22 @@ export default function SupportPage() {
           <Card className="p-6">
             <MessageCircle className="w-10 h-10 text-indigo-600 mb-4" />
             <h2 className="text-xl font-semibold mb-2">AI-Assisted Chat</h2>
-            <p className="text-slate-600 mb-4">Get instant answers with AI assistance. Available 24/7 to help with your event planning questions.</p>
-            <Link href="/support" className="text-indigo-600 font-medium hover:underline">Start Chat →</Link>
+            <p className="text-slate-600 mb-4">Draft channel: AI chat is not operationally verified for launch.</p>
+            <span className="text-slate-500 font-medium">Coming soon — use email support for now</span>
           </Card>
 
           <Card className="p-6">
             <Mail className="w-10 h-10 text-indigo-600 mb-4" />
             <h2 className="text-xl font-semibold mb-2">Email Support</h2>
-            <p className="text-slate-600 mb-4">Send us an email and we’ll respond within 24 hours.</p>
+            <p className="text-slate-600 mb-4">Send us an email. Response timing is an internal draft until support staffing is approved.</p>
             <a href="mailto:support@onehub.events" className="text-indigo-600 font-medium hover:underline">support@onehub.events</a>
           </Card>
 
           <Card className="p-6">
             <Phone className="w-10 h-10 text-indigo-600 mb-4" />
             <h2 className="text-xl font-semibold mb-2">Phone Support</h2>
-            <p className="text-slate-600 mb-4">Speak directly with our team. Available for Enterprise customers.</p>
-            <a href="tel:+1-800-ONEHUB" className="text-indigo-600 font-medium hover:underline">1-800-ONEHUB</a>
+            <p className="text-slate-600 mb-4">Phone support is not operationally verified for launch.</p>
+            <span className="text-slate-500 font-medium">Coming soon</span>
           </Card>
 
           <Card className="p-6">
@@ -54,7 +54,13 @@ export default function SupportPage() {
             </div>
             <div>
               <h3 className="font-semibold mb-1">How do held funds pending release work?</h3>
-              <p className="text-sm text-slate-600">When you pay a vendor, funds are held pending release until you confirm the services are completed to your satisfaction.</p>
+              <p className="text-sm text-slate-600">
+                When you pay a vendor, funds are held pending release until release conditions or admin review are complete.
+                See draft policy anchors for {" "}
+                <Link href="/legal/payments" className="text-indigo-600 hover:underline">payments</Link>, {" "}
+                <Link href="/legal/refunds" className="text-indigo-600 hover:underline">refunds</Link>, and {" "}
+                <Link href="/legal/disputes" className="text-indigo-600 hover:underline">disputes</Link>.
+              </p>
             </div>
             <div>
               <h3 className="font-semibold mb-1">Can I use OneHub for free?</h3>

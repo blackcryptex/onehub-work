@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { DraftLegalPageNotice } from '@/components/legal/DraftLegalPageNotice';
 
 export const metadata: Metadata = {
   title: 'Terms of Service | OneHub',
@@ -9,26 +10,25 @@ export default function TermsPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-12" data-testid="terms-page">
       <h1 className="text-3xl font-bold mb-6">Terms of Service</h1>
-      <div className="prose prose-slate max-w-none">
+      <DraftLegalPageNotice versionLabel="terms-internal-draft-v0" />
+      <div className="prose prose-slate mt-8 max-w-none">
         <p className="text-slate-600 mb-4">
-          <strong>Last Updated:</strong> {new Date().toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
+          <strong>Draft effective date:</strong> placeholder pending legal approval
         </p>
         
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
           <p className="text-slate-700 mb-4">
-            By accessing and using OneHub Events (“the Service”), you accept and agree to be bound by the terms and provision of this agreement.
+            This draft route is an internal placeholder showing where final approved Terms will live. It does not create legal acceptance and must not be used as launch-ready copy.
           </p>
         </section>
 
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">2. Use License</h2>
           <p className="text-slate-700 mb-4">
-            Permission is granted to temporarily use OneHub Events for personal, non-commercial event planning purposes. This is the grant of a license, not a transfer of title, and under this license you may not:
+            This section is a placeholder for the final OneHub platform-specific use terms covering clients, planners,
+            vendors, venues, marketplace actions, contracts, payments, refunds, disputes, and support boundaries.
+            Final copy must be approved before any public launch or legal acceptance enforcement.
           </p>
           <ul className="list-disc pl-6 mb-4 text-slate-700">
             <li>Modify or copy the materials</li>

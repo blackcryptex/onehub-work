@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth-helpers";
 import { canViewEvent, canDeleteEvent } from "@/lib/rbac";
 import { db } from "@/server/db";
 import { recordActivity } from "@/server/lib/activity";
+import { buildEventDeleteActivityRecord, deleteEventWithDependents, EventDeleteBlockedError, buildEventDeleteApiResponse } from "@/server/events/delete-event";
 
 export async function GET(
   request: NextRequest,
@@ -119,22 +120,26 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Record activity before deletion
+    // Delete the event only when no commerce records need preservation.
+    const deletionResult = await deleteEventWithDependents(db, event.id);
+    const activityRecord = buildEventDeleteActivityRecord(event.id, deletionResult);
+
+    // Record the actual lifecycle outcome after deleteEventWithDependents resolves.
     await recordActivity({
       orgId: event.orgId,
-      eventId: event.id,
+      eventId: activityRecord.eventId,
       actorId: user.id,
-      action: "EVENT_DELETED",
-      target: event.id,
+      action: activityRecord.action,
+      target: activityRecord.target,
+      meta: activityRecord.meta,
     });
 
-    // Delete the event (cascade deletes will handle related records)
-    await db.event.delete({
-      where: { id: event.id },
-    });
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json(buildEventDeleteApiResponse(deletionResult));
   } catch (error) {
+    if (error instanceof EventDeleteBlockedError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+
     console.error("Error deleting event:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

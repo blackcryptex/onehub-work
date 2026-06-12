@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { Route } from "next";
 import { Button, Input, Label, Card } from "@/components/ui";
 import { getInitialSignupRole, SIGNUP_ROLE_OPTIONS, type PublicSignupRole } from "@/lib/signup-roles";
 import Link from "next/link";
@@ -102,7 +101,7 @@ export default function SignUpPage() {
           } catch {
             relativeUrl = targetUrl;
           }
-          router.push(relativeUrl as Route);
+          router.push(relativeUrl as any);
         }
         router.refresh();
       } else {
@@ -168,6 +167,19 @@ export default function SignUpPage() {
               ))}
             </div>
           </fieldset>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+            <p className="font-semibold">NOT LEGAL-APPROVED / INTERNAL DRAFT</p>
+            <label className="mt-2 flex gap-2">
+              <input type="checkbox" disabled className="mt-0.5" aria-label="Draft terms acknowledgement placeholder" />
+              <span>
+                Draft non-acceptance placeholder: final account creation terms and privacy acknowledgement will be
+                enabled only after legal approval. Current links are for review only: {" "}
+                <Link href="/terms" className="underline">Terms</Link>, {" "}
+                <Link href="/privacy" className="underline">Privacy</Link>, and {" "}
+                <Link href="/support" className="underline">Support</Link>.
+              </span>
+            </label>
+          </div>
           {error && <p className="text-sm text-rose-600">{error}</p>}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Creating account..." : "Create Account"}

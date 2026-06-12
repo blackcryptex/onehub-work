@@ -69,24 +69,21 @@ export default function HelpPage() {
             <BookOpen className="w-10 h-10 text-indigo-600 mb-4" />
             <h2 className="text-xl font-semibold mb-2">Documentation</h2>
             <p className="text-slate-600 mb-4">Comprehensive guides covering all features and workflows.</p>
-            {/* TODO: Create /help/docs page for documentation */}
-            <Link href="/help" className="text-indigo-600 font-medium hover:underline">Browse Docs →</Link>
+            <span className="text-slate-500 font-medium">Docs coming soon</span>
           </Card>
 
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <Video className="w-10 h-10 text-indigo-600 mb-4" />
             <h2 className="text-xl font-semibold mb-2">Video Tutorials</h2>
             <p className="text-slate-600 mb-4">Step-by-step video guides for visual learners.</p>
-            {/* TODO: Create /help/videos page for video tutorials */}
-            <Link href="/help" className="text-indigo-600 font-medium hover:underline">Watch Videos →</Link>
+            <span className="text-slate-500 font-medium">Videos coming soon</span>
           </Card>
 
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <FileText className="w-10 h-10 text-indigo-600 mb-4" />
             <h2 className="text-xl font-semibold mb-2">API Documentation</h2>
             <p className="text-slate-600 mb-4">Technical documentation for developers and integrators.</p>
-            {/* TODO: Create /help/api page for API documentation */}
-            <Link href="/help" className="text-indigo-600 font-medium hover:underline">View API Docs →</Link>
+            <span className="text-slate-500 font-medium">API docs coming soon</span>
           </Card>
 
           <Card className="p-6 hover:shadow-lg transition-shadow">
@@ -101,13 +98,19 @@ export default function HelpPage() {
           {categories.map((category, idx) => (
             <Card key={idx} className="p-6">
               <h2 className="text-xl font-semibold mb-4">{category.title}</h2>
+              {category.title === "Contracts & Payments" && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  Draft policy anchors: {" "}
+                  <Link href="/legal/payments" className="underline">Payments</Link>, {" "}
+                  <Link href="/legal/refunds" className="underline">Refunds</Link>, {" "}
+                  <Link href="/legal/disputes" className="underline">Disputes</Link>, and {" "}
+                  <Link href="/legal/fees" className="underline">Fees</Link>.
+                </div>
+              )}
               <ul className="space-y-2">
                 {category.articles.map((article, articleIdx) => (
                   <li key={articleIdx}>
-                    {/* TODO: Create individual help article pages at /help/[article-slug] */}
-                    <Link href="/help" className="text-slate-600 hover:text-indigo-600 hover:underline">
-                      {article}
-                    </Link>
+                    <span className="text-slate-500">{article} — draft article coming soon</span>
                   </li>
                 ))}
               </ul>

@@ -30,6 +30,13 @@ export function Footer() {
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
     ],
+    "Draft Legal": [
+      { label: "Payments", href: "/legal/payments" },
+      { label: "Refunds", href: "/legal/refunds" },
+      { label: "Disputes", href: "/legal/disputes" },
+      { label: "Fees", href: "/legal/fees" },
+      { label: "Booking Classification", href: "/legal/booking-classification" },
+    ],
   };
 
   return (
@@ -37,8 +44,10 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12">
         {/* Site Map */}
         <div className="mb-8">
-          <h3 className="text-xl font-semibold text-center mb-8 text-slate-900">Site Map</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="h-8 flex items-center">
+            <h3 className="text-xl font-semibold text-center text-slate-900">Site Map</h3>
+          </div>
+          <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-8">
             {Object.entries(siteMapLinks).map(([category, links]) => (
               <div key={category}>
                 <h4 className="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wide">
@@ -78,21 +87,20 @@ export function Footer() {
                 <Mail className="w-4 h-4" />
                 support@onehub.events
               </a>
-              <a
-                href="tel:+1-800-ONEHUB"
-                className="flex items-center gap-2 hover:text-indigo-600 transition-colors"
+              <span
+                className="flex items-center gap-2 text-slate-500"
+                title="Phone support is not operationally verified for launch."
               >
                 <Phone className="w-4 h-4" />
-                1-800-ONEHUB
-              </a>
-              <Link
-                href="/support"
-                prefetch={false}
-                className="flex items-center gap-2 hover:text-indigo-600 transition-colors"
+                Phone support coming soon
+              </span>
+              <span
+                className="flex items-center gap-2 text-slate-500"
+                title="AI-assisted chat is a draft channel until operationally verified."
               >
                 <MessageCircle className="w-4 h-4" />
-                AI-Assisted Chat
-              </Link>
+                AI chat draft / coming soon
+              </span>
             </div>
 
             {/* Copyright */}

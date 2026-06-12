@@ -131,7 +131,55 @@ export function LandingHeader() {
                     onClick={() => setShowMore(false)}
                     role="menuitem"
                   >
-                    Privacy &amp; Terms
+                    Privacy
+                  </Link>
+                  <Link
+                    href="/terms"
+                    className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => setShowMore(false)}
+                    role="menuitem"
+                  >
+                    Terms
+                  </Link>
+                  <Link
+                    href="/legal/payments"
+                    className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => setShowMore(false)}
+                    role="menuitem"
+                  >
+                    Draft Payment Policies
+                  </Link>
+                  <Link
+                    href="/legal/refunds"
+                    className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => setShowMore(false)}
+                    role="menuitem"
+                  >
+                    Draft Refund Policy
+                  </Link>
+                  <Link
+                    href="/legal/disputes"
+                    className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => setShowMore(false)}
+                    role="menuitem"
+                  >
+                    Draft Dispute Policy
+                  </Link>
+                  <Link
+                    href="/legal/fees"
+                    className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => setShowMore(false)}
+                    role="menuitem"
+                  >
+                    Draft Fee Explanation
+                  </Link>
+                  <Link
+                    href="/legal/booking-classification"
+                    className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => setShowMore(false)}
+                    role="menuitem"
+                  >
+                    Draft Booking Classification
                   </Link>
                 </div>
               </div>
