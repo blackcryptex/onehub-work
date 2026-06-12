@@ -1,12 +1,15 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
+import { requireEventAccess } from "@/server/lib/access";
 import { recordActivity } from "@/server/lib/activity";
 import { randomBytes } from "crypto";
 
 export const guestRouter = router({
-  list: publicProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
+  list: protectedProcedure.input(z.object({ eventId: z.string() })).query(async ({ input, ctx }) => {
+    // Guest PII (names, emails, phones, seating, invitations) is org-private.
+    await requireEventAccess(ctx.user, input.eventId);
     const event = await db.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { guestLists: { include: { guests: { include: { group: true, seat: true, invitations: true } } } } } });
     const guestList = event.guestLists;
     if (!guestList) return [];

@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner } from "@/lib/rbac";
+import { requireOrgMembership } from "@/server/lib/access";
 import { recordActivity } from "@/server/lib/activity";
 import { notify } from "@/server/routers/notification";
 
@@ -47,9 +48,11 @@ export const bookingRequestRouter = router({
     if (!isOrgAdminOrOwner(user, listing.org, mem)) throw new Error("Forbidden");
     return db.bookingRequest.findMany({ where: { listingId: input.listingId }, include: { event: true, org: true }, orderBy: { createdAt: "desc" } });
   }),
-  listForOrg: publicProcedure.input(z.object({ orgSlug: z.string() })).query(async ({ input }) => {
+  listForOrg: protectedProcedure.input(z.object({ orgSlug: z.string() })).query(async ({ input, ctx }) => {
     const org = await db.organization.findUnique({ where: { slug: input.orgSlug } });
     if (!org) return [];
+    // Only org owner/members (or global admin) may read booking requests and contact data.
+    await requireOrgMembership(ctx.user, org.id);
     return db.bookingRequest.findMany({ where: { orgId: org.id }, include: { listing: true, event: true }, orderBy: { createdAt: "desc" } });
   }),
   setStatus: publicProcedure.input(z.object({ id: z.string(), status: z.enum(["PENDING","HOLD","QUOTED","DECLINED","EXPIRED","WITHDRAWN"]) })).mutation(async ({ input }) => {
