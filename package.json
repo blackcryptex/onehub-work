@@ -14,7 +14,7 @@
     "e2e": "playwright test",
     "db:migrate": "prisma migrate dev --schema apps/web/prisma/schema.prisma",
     "db:generate": "prisma generate --schema apps/web/prisma/schema.prisma",
-    "db:seed": "ts-node --project tsconfig.json scripts/seed.ts",
+    "db:seed": "tsx scripts/seed.ts",
     "list:user-emails": "ts-node --project tsconfig.json scripts/list-user-emails.ts",
     "prepare": "husky install",
     "stabilize": "bash scripts/stabilization/checks.sh"
