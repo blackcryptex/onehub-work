@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth-helpers";
+import { canViewEvent } from "@/lib/rbac";
 import { z } from "zod";
 import type { EventType, ListingCategory, ListingType } from "@prisma/client";
 
@@ -84,6 +86,11 @@ type Result = VerifiedResult | UnverifiedResult;
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
 
     // Validate request body with zod
@@ -109,12 +116,41 @@ export async function POST(request: NextRequest) {
         venueCity: true,
         venueState: true,
         description: true,
+        createdById: true,
+        orgId: true,
+        org: {
+          select: {
+            ownerId: true,
+            members: {
+              select: {
+                userId: true,
+                role: true,
+              },
+            },
+          },
+        },
+        stakeholders: {
+          select: {
+            userId: true,
+            role: true,
+          },
+        },
+        shares: {
+          select: {
+            viewerUserId: true,
+            scope: true,
+          },
+        },
       },
     });
 
     if (!event) {
       console.error("[api/ai/source-vendors-venues] Event not found:", eventId);
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    if (!canViewEvent(user, event)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Determine categories based on event type

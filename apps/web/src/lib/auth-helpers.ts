@@ -85,14 +85,8 @@ export async function getCurrentUser(): Promise<AppUser | null> {
       });
 
       if (!impersonatedUser) {
-        // Impersonated user not found - fall back to session data
         console.warn("[Auth] Impersonated user not found:", actingUserId);
-        return {
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.name,
-          role: session.user.role as Role,
-        };
+        return null;
       }
 
       return {
@@ -103,18 +97,11 @@ export async function getCurrentUser(): Promise<AppUser | null> {
       };
     } catch (error) {
       console.error("[Auth] Error loading impersonated user:", error);
-      // Fall back to session data on error
-      return {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
-        role: session.user.role as Role,
-      };
+      return null;
     }
   }
 
-  // Not impersonating. Prefer canonical DB data, but fall back to the
-  // authenticated session payload if the DB lookup is temporarily unavailable.
+  // Not impersonating. Use canonical DB data only; fail closed if unavailable.
   const userId = session.user.id;
 
   if (!userId) {
@@ -137,15 +124,6 @@ export async function getCurrentUser(): Promise<AppUser | null> {
     }
   } catch (error) {
     console.error("[Auth] Error loading current user:", error);
-  }
-
-  if (session.user.email && session.user.role) {
-    return {
-      id: userId,
-      email: session.user.email,
-      name: session.user.name,
-      role: session.user.role as Role,
-    };
   }
 
   return null;
