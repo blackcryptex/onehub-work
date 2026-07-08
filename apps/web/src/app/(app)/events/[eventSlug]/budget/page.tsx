@@ -10,8 +10,9 @@ type BudgetLineData = {
   actualCents: number;
 };
 
-export default async function EventBudget({ params }: { params: { eventSlug: string } }) {
-  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "view");
+export default async function EventBudget({ params }: { params: Promise<{ eventSlug: string }> }) {
+  const resolvedParams = await params;
+  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(resolvedParams.eventSlug, "view");
 
   const ev = await prisma.event.findUnique({
     where: { id: authorizedEvent.id },

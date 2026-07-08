@@ -18,6 +18,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
               name: true,
               slug: true,
               orgId: true,
+              createdById: true,
               org: {
                 select: {
                   ownerId: true,
@@ -61,7 +62,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
     }
   }
 
-  const canEdit = user && contract.proposal?.event && canManageEvent(user, contract.proposal.event) && contract.status === "DRAFT";
+  const canEdit = Boolean(user && contract.proposal?.event && canManageEvent(user, contract.proposal.event) && contract.status === "DRAFT");
   const isBuyerSideUser = Boolean(
     user &&
       contract.buyerId &&

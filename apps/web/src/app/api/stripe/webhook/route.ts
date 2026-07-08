@@ -140,7 +140,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Stripe is not configured" }, { status: 503 });
   }
 
-  const signature = headers().get("stripe-signature");
+  const signature = (await headers()).get("stripe-signature");
   if (!signature) {
     return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 });
   }

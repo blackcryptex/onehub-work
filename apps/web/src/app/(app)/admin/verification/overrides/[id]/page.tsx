@@ -6,11 +6,12 @@ import { canAccessDashboard } from "@/lib/rbac";
 
 function pretty(value: unknown) { return JSON.stringify(value, null, 2); }
 
-export default async function OverrideVerificationDetail({ params }: { params: { id: string } }) {
+export default async function OverrideVerificationDetail({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const override = await (prisma as any).adminOverride.findUnique({ where: { id: params.id } });
+  const override = await (prisma as any).adminOverride.findUnique({ where: { id: resolvedParams.id } });
   if (!override) notFound();
 
   const refund = override.refundRequestId ? await (prisma as any).refundRequest.findUnique({ where: { id: override.refundRequestId } }) : null;
@@ -22,7 +23,7 @@ export default async function OverrideVerificationDetail({ params }: { params: {
 
   return (
     <div className="space-y-6">
-      <div><Link href="/app/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link><h1 className="mt-2 text-2xl font-bold">Override {override.id}</h1></div>
+      <div><Link href="/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link><h1 className="mt-2 text-2xl font-bold">Override {override.id}</h1></div>
       <div className="grid gap-3 md:grid-cols-2">{[["Target type", override.targetType],["Exception type", override.exceptionType],["Decision", override.decision],["Authority path", override.authorityPath],["Proposal", override.proposalId || 'none'],["Payment intent", override.paymentIntentId || 'none']].map(([k,v]) => <div key={String(k)} className="rounded-xl border bg-white p-4"><div className="text-xs uppercase text-slate-500">{k}</div><div className="mt-1 break-all font-medium">{String(v)}</div></div>)}</div>
       <JsonCard title="Override record" data={override} />
       <JsonCard title="Booking classification" data={{ proposalClassification: proposal?.bookingClassification || null, overrideClassification: override.bookingClassification }} />

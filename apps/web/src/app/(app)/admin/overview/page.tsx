@@ -21,7 +21,7 @@ export default async function AdminOverviewPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
         <div className="flex gap-4 text-sm">
-          <a href="/app/admin/verification" className="text-indigo-600 hover:text-indigo-800">
+          <a href="/admin/verification" className="text-indigo-600 hover:text-indigo-800">
             Verification →
           </a>
           <a href="/admin/users" className="text-indigo-600 hover:text-indigo-800">

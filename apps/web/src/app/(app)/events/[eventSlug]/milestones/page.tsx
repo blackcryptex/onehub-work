@@ -17,15 +17,16 @@ const PROCESSING_FEE_FIXED = 30; // $0.30
 export default async function EventMilestonesPage({
   params,
 }: {
-  params: { eventSlug: string };
+  params: Promise<{ eventSlug: string }>;
 }) {
+  const resolvedParams = await params;
   const user = await getCurrentUser();
   if (!user) {
     notFound();
   }
 
   const event = await prisma.event.findFirst({
-    where: { slug: params.eventSlug },
+    where: { slug: resolvedParams.eventSlug },
     include: {
       org: true,
       proposals: {

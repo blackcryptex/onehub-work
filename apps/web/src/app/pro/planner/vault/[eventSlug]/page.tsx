@@ -10,6 +10,7 @@ import {
 import { Topbar } from "@/components/layout/Topbar";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { redirect, notFound } from "next/navigation";
+import type { Route } from "next";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -733,7 +734,7 @@ export default async function ProVaultDetailPage({
                   {eventWorkspaceTabs.map((tab) => (
                     <Link
                       key={tab.label}
-                      href={tab.href}
+                      href={tab.href as Route}
                       className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                     >
                       {tab.label}
@@ -825,7 +826,7 @@ export default async function ProVaultDetailPage({
                   </p>
                 </div>
                 <Button asChild size="sm">
-                  <Link href={sourceVendorsHref}>Source vendors</Link>
+                  <Link href={sourceVendorsHref as Route}>Source vendors</Link>
                 </Button>
               </div>
 
@@ -890,11 +891,7 @@ export default async function ProVaultDetailPage({
               <AiSourceVendorsVenuesPanel
                 eventId={event.id}
                 eventName={event.name}
-                eventType={event.type}
                 eventLocation={eventLocation}
-                eventDate={event.startAt.toISOString()}
-                guestCount={event.guestTarget}
-                existingBookingRequests={existingVendorRequests}
               />
             </section>
 
@@ -928,14 +925,10 @@ export default async function ProVaultDetailPage({
                             <GenerateProposalButton
                               eventId={event.id}
                               listingId={item.listingId}
-                              label="Prepare draft request"
-                              loadingLabel="Preparing draft..."
                             />
                             <AddToShortlistButtonClient
                               eventId={event.id}
                               listingId={item.listingId}
-                              allowRemove
-                              initialAdded
                             />
                           </div>
                         </div>

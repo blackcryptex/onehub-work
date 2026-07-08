@@ -2,8 +2,9 @@ import { Card } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
-export default async function EventGuests({ params }: { params: { eventSlug: string } }) {
-  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "manage");
+export default async function EventGuests({ params }: { params: Promise<{ eventSlug: string }> }) {
+  const resolvedParams = await params;
+  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(resolvedParams.eventSlug, "manage");
 
   const guestLists = await prisma.guestList.findMany({
     where: { eventId: authorizedEvent.id },

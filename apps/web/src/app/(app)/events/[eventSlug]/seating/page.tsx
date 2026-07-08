@@ -2,8 +2,9 @@ import { SeatingCanvas, Card } from "@onehub/ui";
 import { prisma } from "@/lib/prisma";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
-export default async function SeatingPage({ params }: { params: { eventSlug: string } }) {
-  const { event } = await requireAuthorizedEventBySlug(params.eventSlug, "manage");
+export default async function SeatingPage({ params }: { params: Promise<{ eventSlug: string }> }) {
+  const resolvedParams = await params;
+  const { event } = await requireAuthorizedEventBySlug(resolvedParams.eventSlug, "manage");
 
   const plan = await prisma.seatingPlan.findUnique({
     where: { eventId: event.id },

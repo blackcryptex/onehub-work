@@ -9,11 +9,12 @@ function pretty(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
-export default async function RefundVerificationDetail({ params }: { params: { id: string } }) {
+export default async function RefundVerificationDetail({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const refund = await (prisma as any).refundRequest.findUnique({ where: { id: params.id } });
+  const refund = await (prisma as any).refundRequest.findUnique({ where: { id: resolvedParams.id } });
   if (!refund) notFound();
 
   const dispute = refund.proposalId ? await (prisma as any).dispute.findFirst({ where: { proposalId: refund.proposalId }, orderBy: { createdAt: "desc" } }) : null;
@@ -25,7 +26,7 @@ export default async function RefundVerificationDetail({ params }: { params: { i
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/app/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link>
+        <Link href="/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link>
         <h1 className="mt-2 text-2xl font-bold">Refund request {refund.id}</h1>
       </div>
 

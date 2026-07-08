@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const validationResult = searchFiltersSchema.safeParse(filters);
     if (!validationResult.success) {
       return NextResponse.json(
-        { error: "Invalid search filters", details: validationResult.error.errors },
+        { error: "Invalid search filters", details: validationResult.error.issues },
         { status: 400 }
       );
     }

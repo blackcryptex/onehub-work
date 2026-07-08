@@ -37,10 +37,25 @@ export async function submitRefundReview(formData: FormData) {
   revalidatePath(`/app/admin/verification/refunds/${refundRequestId}`);
 }
 
+const DISPUTE_REVIEW_ACTIONS = ["REQUEST_INFO", "ESCALATE", "SELLER_FAVOR", "REFUND", "REOPEN"] as const;
+type DisputeReviewAction = (typeof DISPUTE_REVIEW_ACTIONS)[number];
+
+function parseDisputeReviewAction(value: FormDataEntryValue | null): DisputeReviewAction {
+  if (typeof value !== "string") {
+    throw new Error("Invalid dispute review action");
+  }
+
+  if (!DISPUTE_REVIEW_ACTIONS.includes(value as DisputeReviewAction)) {
+    throw new Error("Invalid dispute review action");
+  }
+
+  return value as DisputeReviewAction;
+}
+
 export async function submitDisputeReview(formData: FormData) {
   const user = await requireAdmin();
   const disputeId = String(formData.get("disputeId") || "");
-  const action = String(formData.get("action") || "") as any;
+  const action = parseDisputeReviewAction(formData.get("action"));
   const decisionReason = String(formData.get("decisionReason") || "");
 
   await reviewDisputeCase({

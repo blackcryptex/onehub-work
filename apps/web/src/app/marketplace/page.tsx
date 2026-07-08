@@ -2,28 +2,30 @@ import { ListingCard } from "@onehub/ui";
 import { prisma } from "@/lib/prisma";
 import { Card, Button } from "@/components/ui";
 import Link from "next/link";
+import { safeInternalReturnTo } from "@/lib/routes";
 import { LandingHeader } from "@/components/layout/LandingHeader";
 
 interface MarketplacePageProps {
-  searchParams?: {
+  searchParams?: Promise<{
     eventId?: string;
     eventSlug?: string;
     eventName?: string;
     returnTo?: string;
-  };
+  }>;
 }
 
 export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
+  const resolvedSearchParams = await searchParams;
   const listings = await prisma.listing.findMany({ 
     take: 20, 
     include: { tags: true, gallery: { take: 1 } },
     orderBy: { createdAt: "desc" }
   });
 
-  const eventId = searchParams?.eventId;
-  const eventSlug = searchParams?.eventSlug;
-  const eventName = searchParams?.eventName;
-  const returnTo = searchParams?.returnTo;
+  const eventId = resolvedSearchParams?.eventId;
+  const eventSlug = resolvedSearchParams?.eventSlug;
+  const eventName = resolvedSearchParams?.eventName;
+  const returnTo = safeInternalReturnTo(resolvedSearchParams?.returnTo);
   const listingQuery = new URLSearchParams();
   if (eventId) listingQuery.set("eventId", eventId);
   if (eventSlug) listingQuery.set("eventSlug", eventSlug);

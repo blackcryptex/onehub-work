@@ -14,7 +14,7 @@ const holdbackDecisionSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!canManageHoldbacks(user)) {
+    if (!user || !canManageHoldbacks(user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: user ? 403 : 401 });
     }
 
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!canManageHoldbacks(user)) {
+    if (!user || !canManageHoldbacks(user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: user ? 403 : 401 });
     }
 

@@ -7,11 +7,12 @@ import { submitDisputeReview } from "../../actions";
 
 function pretty(value: unknown) { return JSON.stringify(value, null, 2); }
 
-export default async function DisputeVerificationDetail({ params }: { params: { id: string } }) {
+export default async function DisputeVerificationDetail({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const dispute = await (prisma as any).dispute.findUnique({ where: { id: params.id } });
+  const dispute = await (prisma as any).dispute.findUnique({ where: { id: resolvedParams.id } });
   if (!dispute) notFound();
 
   const refund = dispute.linkedRefundRequestId ? await (prisma as any).refundRequest.findUnique({ where: { id: dispute.linkedRefundRequestId } }) : await (prisma as any).refundRequest.findFirst({ where: { proposalId: dispute.proposalId }, orderBy: { createdAt: "desc" } });
@@ -22,13 +23,13 @@ export default async function DisputeVerificationDetail({ params }: { params: { 
 
   return (
     <div className="space-y-6">
-      <div><Link href="/app/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link><h1 className="mt-2 text-2xl font-bold">Dispute case {dispute.id}</h1></div>
+      <div><Link href="/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link><h1 className="mt-2 text-2xl font-bold">Dispute case {dispute.id}</h1></div>
       <div className="grid gap-3 md:grid-cols-2">{[["Status", dispute.status],["Freeze state", dispute.freezeState],["Proposal", dispute.proposalId],["Payment intent", dispute.paymentIntentId || "none"],["Milestone", dispute.milestoneId || "none"],["Booking classification", String(dispute.bookingClassification)]].map(([k,v]) => <div key={String(k)} className="rounded-xl border bg-white p-4"><div className="text-xs uppercase text-slate-500">{k}</div><div className="mt-1 break-all font-medium">{v}</div></div>)}</div>
       <form action={submitDisputeReview} className="grid gap-3 rounded-xl border bg-white p-4">
         <input type="hidden" name="disputeId" value={dispute.id} />
         <div className="grid gap-3 md:grid-cols-2">
           <select name="action" className="rounded border px-3 py-2" defaultValue="ESCALATE">
-            <option value="REQUEST_INFO">REQUEST_INFO</option><option value="ESCALATE">ESCALATE</option><option value="SELLER_FAVOR">SELLER_FAVOR</option><option value="REFUND">REFUND</option><option value="REJECT">REJECT</option><option value="REOPEN">REOPEN</option>
+            <option value="REQUEST_INFO">REQUEST_INFO</option><option value="ESCALATE">ESCALATE</option><option value="SELLER_FAVOR">SELLER_FAVOR</option><option value="REFUND">REFUND</option><option value="REOPEN">REOPEN</option>
           </select>
           <input name="decisionReason" required minLength={3} placeholder="Decision reason" className="rounded border px-3 py-2" />
         </div>

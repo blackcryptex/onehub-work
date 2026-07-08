@@ -2,9 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   typedRoutes: true,
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     domains: ["lh3.googleusercontent.com", "avatars.githubusercontent.com"],
   },

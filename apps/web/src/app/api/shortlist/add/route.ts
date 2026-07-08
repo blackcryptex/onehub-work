@@ -25,9 +25,9 @@ export async function POST(request: NextRequest) {
     // Validate request body with zod
     const validationResult = addToShortlistSchema.safeParse(body);
     if (!validationResult.success) {
-      console.error("[api/shortlist/add] Validation failed:", validationResult.error.errors);
+      console.error("[api/shortlist/add] Validation failed:", validationResult.error.issues);
       return NextResponse.json(
-        { error: "Validation failed", details: validationResult.error.errors },
+        { error: "Validation failed", details: validationResult.error.issues },
         { status: 400 }
       );
     }

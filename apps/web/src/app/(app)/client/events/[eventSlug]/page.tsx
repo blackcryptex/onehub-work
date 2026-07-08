@@ -8,20 +8,21 @@ import { DepositPanel } from "@/components/client/DepositPanel";
 
 /**
  * Phase 2: Client-safe event summary view
- * 
+ *
  * Route: /client/events/[eventSlug]
- * 
+ *
  * Only CLIENT users can access this route.
  * Shows a minimal, client-safe summary of the event.
  * Content is only visible if explicitly shared by the Pro Planner.
  */
-export default async function ClientEventSummaryPage({ 
-  params 
-}: { 
-  params: { eventSlug: string } 
+export default async function ClientEventSummaryPage({
+  params
+}: {
+  params: Promise<{ eventSlug: string }>
 }) {
+  const resolvedParams = await params;
   const user = await getCurrentUser();
-  
+
   if (!user) {
     redirect("/signin");
   }
@@ -33,7 +34,7 @@ export default async function ClientEventSummaryPage({
 
   // Fetch event with stakeholders, shares, and deposits
   const event = await prisma.event.findFirst({
-    where: { slug: params.eventSlug },
+    where: { slug: resolvedParams.eventSlug },
     include: {
       createdBy: { select: { name: true, email: true } },
       org: {
@@ -76,7 +77,7 @@ export default async function ClientEventSummaryPage({
     // Check if they're a stakeholder but content isn't shared
     const isStakeholder = event.stakeholders && event.stakeholders.length > 0;
     const isShared = isEventSharedWithUser(user, event, "SUMMARY");
-    
+
     if (isStakeholder && !isShared) {
       // Show "Nothing shared yet" message
       return (
@@ -95,7 +96,7 @@ export default async function ClientEventSummaryPage({
         </div>
       );
     }
-    
+
     // Not a stakeholder or not authorized
     redirect("/app");
   }
@@ -199,7 +200,7 @@ export default async function ClientEventSummaryPage({
 
       {/* Deposit Panel */}
       <DepositPanel
-        eventSlug={params.eventSlug}
+        eventSlug={resolvedParams.eventSlug}
         deposits={event.deposits.map((d) => ({
           id: d.id,
           amountCents: d.amountCents,

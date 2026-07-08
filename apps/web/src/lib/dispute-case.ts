@@ -8,6 +8,8 @@ import { getGuardedMvpAuthorityForUserId } from "@/lib/rbac";
 
 const OPEN_DISPUTE_STATUSES = ["OPEN", "NEEDS_INFO", "UNDER_ADMIN_REVIEW", "ESCALATED"] as const;
 
+type DisputeReviewAction = "REQUEST_INFO" | "ESCALATE" | "SELLER_FAVOR" | "REFUND" | "REOPEN";
+
 export async function buildDisputeCaseContext(proposalId: string, milestoneId?: string | null) {
   const proposal = await prisma.proposal.findUnique({
     where: { id: proposalId },
@@ -38,7 +40,7 @@ export async function buildDisputeCaseContext(proposalId: string, milestoneId?: 
       bookingClassification: proposal.bookingClassification,
       listingId: proposal.listingId,
     },
-    event: proposal.event,
+    event: { org: { type: (proposal.event as any)?.org?.type } },
   });
 
   const grossAmountCents = milestone?.amountCents ?? paymentIntent?.amountCents ?? proposal.totalCents;
@@ -127,7 +129,7 @@ export async function getBlockingDisputeCase(proposalId: string, milestoneId?: s
 export async function reviewDisputeCase(input: {
   disputeId: string;
   adminId: string;
-  action: "REQUEST_INFO" | "ESCALATE" | "SELLER_FAVOR" | "REFUND" | "REJECT" | "REOPEN";
+  action: DisputeReviewAction;
   decisionReason: string;
 }) {
   const platformAdmin = await getGuardedMvpAuthorityForUserId(input.adminId);
@@ -140,34 +142,28 @@ export async function reviewDisputeCase(input: {
     throw new Error("Dispute evidence and rationale are required");
   }
 
-  if (input.action === "REJECT") {
-    throw new Error("Admin closes dispute without evidence are disallowed in guarded MVP");
-  }
+  const action = input.action;
 
   let status = existing.status;
   let freezeState = existing.freezeState;
   let resolutionType = existing.resolutionType ?? undefined;
   let linkedRefundRequestId = existing.linkedRefundRequestId ?? undefined;
 
-  if (input.action === "REQUEST_INFO") {
+  if (action === "REQUEST_INFO") {
     status = "NEEDS_INFO";
     freezeState = "ADMIN_REVIEW";
-  } else if (input.action === "ESCALATE") {
+  } else if (action === "ESCALATE") {
     status = "UNDER_ADMIN_REVIEW";
     freezeState = "ADMIN_REVIEW";
-  } else if (input.action === "SELLER_FAVOR") {
+  } else if (action === "SELLER_FAVOR") {
     status = "RESOLVED_SELLER_FAVOR";
     freezeState = "RELEASE_ELIGIBLE";
     resolutionType = "SELLER_FAVOR";
-  } else if (input.action === "REJECT") {
-    status = "REJECTED";
-    freezeState = "RELEASE_ELIGIBLE";
-    resolutionType = "REJECTED";
-  } else if (input.action === "REOPEN") {
+  } else if (action === "REOPEN") {
     status = "OPEN";
     freezeState = "FROZEN";
     resolutionType = undefined;
-  } else if (input.action === "REFUND") {
+  } else if (action === "REFUND") {
     status = "RESOLVED_REFUND";
     freezeState = "REFUND_PENDING";
     resolutionType = "REFUND";
@@ -203,7 +199,7 @@ export async function reviewDisputeCase(input: {
         lastAdminDecision: {
           by: input.adminId,
           at: new Date().toISOString(),
-          action: input.action,
+          action: action,
           reason: input.decisionReason,
           status,
           freezeState,
@@ -217,7 +213,7 @@ export async function reviewDisputeCase(input: {
   await recordAudit({
     actorId: input.adminId,
     orgId: existing.orgId,
-    action: `dispute.${input.action.toLowerCase()}`,
+    action: `dispute.${action.toLowerCase()}`,
     target: existing.id,
     metadata: {
       disputeId: existing.id,
@@ -243,11 +239,9 @@ export async function reviewDisputeCase(input: {
     acceptanceCaptureId: existing.acceptanceCaptureId,
     exceptionType: "DISPUTE_FREEZE_STATE",
     decision:
-      input.action === "REFUND" || input.action === "SELLER_FAVOR"
+      action === "REFUND" || action === "SELLER_FAVOR"
         ? "APPROVED"
-        : input.action === "REJECT"
-          ? "DENIED"
-          : "APPLIED",
+        : "APPLIED",
     reason: input.decisionReason,
     proposalId: existing.proposalId,
     contractId: existing.contractId,
@@ -256,7 +250,7 @@ export async function reviewDisputeCase(input: {
     disputeId: existing.id,
     refundRequestId: linkedRefundRequestId,
     metadata: {
-      action: input.action,
+      action: action,
       freezeState,
       resolutionType,
       linkedRefundRequestId,

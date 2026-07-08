@@ -2,6 +2,7 @@
 
 import { Card, Button } from "@/components/ui";
 import { MapPin, FileText, FileCheck, Sparkles } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 import { contractDetail } from "@/lib/routes";
 
@@ -73,7 +74,7 @@ export function DemoTour({ eventSlug, eventId, proposalId, contractId, show = fa
             size="sm"
             className="justify-start text-xs"
           >
-            <Link href={contractDetail(contractId)}>
+            <Link href={contractDetail(contractId) as Route}>
               <FileCheck className="w-3 h-3 mr-1" />
               View Contract
             </Link>

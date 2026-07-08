@@ -5,27 +5,30 @@ import { LandingHeader } from "@/components/layout/LandingHeader";
 import { BookingRequestButtonClient } from "@/components/bookings/BookingRequestButtonClient";
 import { AddToShortlistButtonClient } from "@/components/shortlist/AddToShortlistButtonClient";
 import Link from "next/link";
+import { safeInternalReturnTo } from "@/lib/routes";
 
 interface ListingProfileProps {
-  params: { slug: string };
-  searchParams?: {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{
     eventId?: string;
     eventSlug?: string;
     eventName?: string;
     returnTo?: string;
-  };
+  }>;
 }
 
 export default async function ListingProfile({ params, searchParams }: ListingProfileProps) {
+  const resolvedSearchParams = await searchParams;
+  const resolvedParams = await params;
   const listing = await prisma.listing.findUnique({
-    where: { slug: params.slug },
+    where: { slug: resolvedParams.slug },
     include: { tags: true, gallery: true, offers: true, availSlots: { orderBy: { startAt: "asc" } }, reviews: { where: { flagged: false }, take: 5, include: { author: true } } },
   });
   if (!listing) return notFound();
 
-  const eventId = searchParams?.eventId;
-  const eventName = searchParams?.eventName;
-  const returnTo = searchParams?.returnTo;
+  const eventId = resolvedSearchParams?.eventId;
+  const eventName = resolvedSearchParams?.eventName;
+  const returnTo = safeInternalReturnTo(resolvedSearchParams?.returnTo);
   const availability = listing.availSlots.map((slot: { id: string; startAt: Date; endAt: Date; status: string }) => ({
     id: slot.id,
     startAt: slot.startAt,
@@ -48,7 +51,7 @@ export default async function ListingProfile({ params, searchParams }: ListingPr
             </div>
             {returnTo ? (
               <Button asChild variant="secondary">
-                <Link href={returnTo as any}>Back to event</Link>
+                <Link href={returnTo}>Back to event</Link>
               </Button>
             ) : null}
           </div>

@@ -96,9 +96,9 @@ export async function POST(request: NextRequest) {
     // Validate request body with zod
     const validationResult = sourceVendorsVenuesSchema.safeParse(body);
     if (!validationResult.success) {
-      console.error("[api/ai/source-vendors-venues] Validation failed:", validationResult.error.errors);
+      console.error("[api/ai/source-vendors-venues] Validation failed:", validationResult.error.issues);
       return NextResponse.json(
-        { error: "Validation failed", details: validationResult.error.errors },
+        { error: "Validation failed", details: validationResult.error.issues },
         { status: 400 }
       );
     }

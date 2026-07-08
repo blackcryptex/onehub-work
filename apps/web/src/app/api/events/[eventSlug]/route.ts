@@ -6,8 +6,9 @@ import { recordActivity } from "@/server/lib/activity";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { eventSlug: string } }
+  { params }: { params: Promise<{ eventSlug: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -19,7 +20,7 @@ export async function GET(
     // We don't block them here - let canViewEvent handle the permission check
 
     const event = await prisma.event.findFirst({
-      where: { slug: params.eventSlug },
+      where: { slug: resolvedParams.eventSlug },
       include: {
         createdBy: { select: { id: true, name: true, email: true } },
         org: {
@@ -77,8 +78,9 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { eventSlug: string } }
+  { params }: { params: Promise<{ eventSlug: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -92,7 +94,7 @@ export async function DELETE(
 
     // Try to find by slug first, then by ID (in case eventSlug is actually an ID)
     let event = await prisma.event.findFirst({
-      where: { slug: params.eventSlug },
+      where: { slug: resolvedParams.eventSlug },
       include: {
         org: { include: { members: true } },
         createdBy: { select: { id: true } },
@@ -102,7 +104,7 @@ export async function DELETE(
     // If not found by slug, try by ID
     if (!event) {
       event = await prisma.event.findFirst({
-        where: { id: params.eventSlug },
+        where: { id: resolvedParams.eventSlug },
         include: {
           org: { include: { members: true } },
           createdBy: { select: { id: true } },

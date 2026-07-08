@@ -117,7 +117,7 @@ export const adminRouter = router({
           bookingClassification: proposal.bookingClassification,
           listingId: proposal.listingId,
         },
-        event: proposal.event,
+        event: { org: { type: (proposal.event as any)?.org?.type } },
       });
       return {
         proposalId: proposal.id,

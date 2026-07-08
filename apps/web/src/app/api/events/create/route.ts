@@ -210,8 +210,8 @@ export async function POST(request: NextRequest) {
   const logger = getRequestLogger(requestId);
   
   let session: { user?: { id?: string } } | null = null;
-  let org: { id: string } | null = null;
-  let validated: z.infer<typeof createEventSchema> | null = null;
+  let orgIdForLogging: string | undefined;
+  let validatedEventInput: z.infer<typeof createEventSchema> | undefined;
   
   try {
     session = await auth();
@@ -244,15 +244,16 @@ export async function POST(request: NextRequest) {
         {
           error: "Validation failed",
           fieldErrors: validationResult.error.flatten().fieldErrors,
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );
     }
 
-    validated = validationResult.data;
+    const eventInput = validationResult.data;
+    validatedEventInput = eventInput;
 
-    const requestedClientIds = Array.from(new Set(validated.clientIds ?? []));
+    const requestedClientIds = Array.from(new Set(eventInput.clientIds ?? []));
     const validClientIds = requestedClientIds.length > 0
       ? (await prisma.user.findMany({
           where: {
@@ -268,7 +269,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse date
-    const startDate = new Date(validated.date);
+    const startDate = new Date(eventInput.date);
     if (isNaN(startDate.getTime())) {
       return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
     }
@@ -276,11 +277,11 @@ export async function POST(request: NextRequest) {
     endDate.setHours(startDate.getHours() + 4); // Default 4-hour event
 
     // Parse budget from free text
-    const parsedBudget = parseBudget(validated.budget_raw);
+    const parsedBudget = parseBudget(eventInput.budget_raw);
     const estimatedBudget = parsedBudget.max || parsedBudget.min || 0;
 
     // Canonicalize event type
-    const eventTypeCanonical = canonicalizeEventType(validated.event_type_raw);
+    const eventTypeCanonical = canonicalizeEventType(eventInput.event_type_raw);
 
     const event = await prisma.$transaction(async (tx) => {
       let txOrg = await tx.organization.findFirst({
@@ -301,20 +302,20 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      org = txOrg;
+      orgIdForLogging = txOrg.id;
 
       logger.info({
         userId,
         orgId: txOrg.id,
         route: "/api/events/create",
-        event_type_raw_length: validated.event_type_raw.length,
-        budget_raw_length: validated.budget_raw.length,
+        event_type_raw_length: eventInput.event_type_raw.length,
+        budget_raw_length: eventInput.budget_raw.length,
         budget_parse_success: !!(parsedBudget.min || parsedBudget.max),
         budget_currency_detected: parsedBudget.currency,
         event_type_canonicalized: !!eventTypeCanonical,
       }, "event.creation_started");
 
-      const slugBase = validated.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 50);
+      const slugBase = eventInput.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 50);
       let attempts = 0;
       let currentSlug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
       const maxAttempts = 5;
@@ -326,23 +327,23 @@ export async function POST(request: NextRequest) {
             data: {
               orgId: txOrg.id,
               createdById: userId,
-              name: validated.name,
+              name: eventInput.name,
               slug: currentSlug,
               type: eventTypeFromCanonical(eventTypeCanonical),
-              eventTypeRaw: validated.event_type_raw,
+              eventTypeRaw: eventInput.event_type_raw,
               eventTypeCanonical: eventTypeCanonical || null,
-              budgetRaw: validated.budget_raw,
+              budgetRaw: eventInput.budget_raw,
               budgetMin: parsedBudget.min || null,
               budgetMax: parsedBudget.max || null,
               budgetCurrency: parsedBudget.currency || null,
-              objective: validated.objective || null,
-              description: validated.style || null,
+              objective: eventInput.objective || null,
+              description: eventInput.style || null,
               startAt: startDate,
               endAt: endDate,
-              venueCity: validated.city || null,
-              venueState: validated.state || null,
+              venueCity: eventInput.city || null,
+              venueState: eventInput.state || null,
               venueCountry: "US",
-              guestTarget: validated.headcount ? parseInt(validated.headcount, 10) : undefined,
+              guestTarget: eventInput.headcount ? parseInt(eventInput.headcount, 10) : undefined,
               status: "PLANNING",
               budgetCents: estimatedBudget,
             },
@@ -374,7 +375,7 @@ export async function POST(request: NextRequest) {
           skipDuplicates: true,
         });
 
-        if (validated.autoShareSummary) {
+        if (eventInput.autoShareSummary) {
           await tx.eventShare.createMany({
             data: validClientIds.map((clientId) => ({
               eventId: createdEvent.id,
@@ -390,11 +391,11 @@ export async function POST(request: NextRequest) {
           userId,
           eventId: createdEvent.id,
           clientCount: validClientIds.length,
-          autoShare: validated.autoShareSummary,
+          autoShare: eventInput.autoShareSummary,
         }, "event.clients_linked");
       }
 
-      const parsedHeadcount = validated.headcount ? Number.parseInt(validated.headcount, 10) : Number.NaN;
+      const parsedHeadcount = eventInput.headcount ? Number.parseInt(eventInput.headcount, 10) : Number.NaN;
       const baselineHeadcount = Number.isNaN(parsedHeadcount) ? 100 : parsedHeadcount;
       const budgetLines: Array<{ category: BudgetCategory; label: string; plannedCents: number }> = [
         { category: "VENUE", label: "Venue", plannedCents: Math.round(baselineHeadcount * 50 * 100) },
@@ -526,7 +527,7 @@ export async function POST(request: NextRequest) {
     // Log successful event creation
     logger.info({
       userId,
-      orgId: org.id,
+      orgId: event.orgId,
       eventId: event.id,
       eventSlug: event.slug,
       eventName: event.name,
@@ -543,14 +544,14 @@ export async function POST(request: NextRequest) {
     // Structured error logging
     logger.error({
       userId: session?.user?.id,
-      orgId: org?.id,
+      orgId: orgIdForLogging,
       route: "/api/events/create",
       error: errorMessage,
       stack: errorStack,
-      validated: validated ? {
-        name: validated.name,
-        event_type_raw: validated.event_type_raw,
-        budget_raw: validated.budget_raw,
+      validatedEventInput: validatedEventInput ? {
+        name: validatedEventInput.name,
+        event_type_raw: validatedEventInput.event_type_raw,
+        budget_raw: validatedEventInput.budget_raw,
       } : undefined,
     }, "event.create_failed");
 
@@ -558,15 +559,15 @@ export async function POST(request: NextRequest) {
     trackError(error, {
       route: "/api/events/create",
       userId: session?.user?.id,
-      orgId: org?.id,
+      orgId: orgIdForLogging,
     });
 
     // Log to audit log for admin visibility
-    if (session?.user?.id && org?.id) {
+    if (session?.user?.id && orgIdForLogging) {
       try {
         await recordAudit({
           actorId: session.user.id,
-          orgId: org.id,
+          orgId: orgIdForLogging,
           action: "event.create.failed",
           metadata: {
             error: errorMessage,

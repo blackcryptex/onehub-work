@@ -8,10 +8,9 @@ import { prisma } from "@/lib/prisma";
 export default async function DemoStartPage({
   searchParams,
 }: {
-  searchParams: Promise<{ role?: string }> | { role?: string };
+  searchParams: Promise<{ role?: string }>;
 }) {
-  // Handle both Next.js 13-14 (object) and 15+ (Promise) patterns
-  const params = searchParams instanceof Promise ? await searchParams : searchParams;
+  const params = await searchParams;
   // Default to pro if role missing or invalid
   const role = params.role === "diy" ? "diy" : "pro";
 

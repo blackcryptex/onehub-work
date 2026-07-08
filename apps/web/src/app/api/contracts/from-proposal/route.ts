@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
         bookingClassification: proposal.bookingClassification,
         listingId: proposal.listingId,
       },
-      event: proposal.event,
+      event: { org: { type: (proposal.event as any)?.org?.type } },
     });
     const feeProfile = resolveFeeProfile({
       bookingClassification,

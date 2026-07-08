@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
+import { resolveBookingClassification } from "@/lib/booking-classification";
 import { getLegalSurface } from "@/lib/legal-surface";
 
 /**
@@ -12,8 +13,9 @@ import { getLegalSurface } from "@/lib/legal-surface";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const session = await auth();
     const user = await getCurrentUser();
@@ -22,7 +24,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const proposalId = params.id;
+    const proposalId = resolvedParams.id;
     const body = await request.json().catch(() => ({}));
     const acceptance = acceptanceInputSchema.parse(body.acceptance);
     if (acceptance.legalVersion !== CURRENT_ACCEPTANCE_VERSIONS.proposal) {
@@ -81,7 +83,14 @@ export async function POST(
     });
 
     const requestContextId = request.headers.get("x-request-id") || undefined;
-    const bookingClassification = String((proposal as any).bookingClassification || "DIRECT").toLowerCase();
+    const bookingClassificationInput = {
+      proposal: {
+        bookingClassification: (proposal as any).bookingClassification,
+        listingId: proposal.listingId,
+      },
+      event: { org: { type: (proposal.event as any)?.org?.type } },
+    };
+    const bookingClassification = resolveBookingClassification(bookingClassificationInput);
     await recordAcceptance({
       actorId: user.id,
       actorRole: user.role,
@@ -92,13 +101,7 @@ export async function POST(
       sourceSurface: "proposal.approve",
       requestContextId,
       proposalId: proposal.id,
-      bookingClassificationInput: {
-        proposal: {
-          bookingClassification: (proposal as any).bookingClassification,
-          listingId: proposal.listingId,
-        },
-        event: { org: { type: (proposal.event as any)?.org?.type } },
-      },
+      bookingClassificationInput,
       metadata: {
         requiredVersion: CURRENT_ACCEPTANCE_VERSIONS.proposal,
         proposalStatusAfter: "ACCEPTED",

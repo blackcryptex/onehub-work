@@ -39,7 +39,7 @@ export async function buildRefundRequestContext(proposalId: string, milestoneId?
       bookingClassification: proposal.bookingClassification,
       listingId: proposal.listingId,
     },
-    event: proposal.event,
+    event: { org: { type: (proposal.event as any)?.org?.type } },
   });
 
   const grossAmountCents = milestone?.amountCents ?? paymentIntent?.amountCents ?? proposal.totalCents;

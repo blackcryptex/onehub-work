@@ -206,10 +206,11 @@ export default async function DIYVaultDetailPage({
   const checklistDone = event.checklists.reduce((sum, c) => sum + c.items.filter((i) => i.done).length, 0);
   const progress = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
 
-  const guestList = event.guestLists[0];
-  const totalGuests = guestList?.guests.length || 0;
-  const rsvped = guestList?.guests.filter((g) => g.status === "ACCEPTED").length || 0;
-  const rsvpPending = guestList?.guests.filter((g) => g.status === "PENDING").length || 0;
+  const guestList = event.guestLists;
+  const guests: Array<{ id: string; firstName: string | null; lastName: string | null; status: string }> = guestList?.guests ?? [];
+  const totalGuests = guests.length;
+  const rsvped = guests.filter((g) => g.status === "ACCEPTED").length;
+  const rsvpPending = guests.filter((g) => g.status === "PENDING").length;
 
   const upcomingMilestones = event.milestones.filter((m) => !m.done && m.dueAt && new Date(m.dueAt) > new Date()).slice(0, 5);
   const upcomingChecklist = event.checklists.flatMap((c) => c.items.filter((i) => !i.done)).slice(0, 5);
@@ -418,7 +419,7 @@ export default async function DIYVaultDetailPage({
                   <Users className="w-4 h-4" /> Guest RSVPs
                 </h3>
                 <div className="space-y-2">
-                  {guestList?.guests.filter((g) => g.status === "ACCEPTED").slice(0, 3).map((guest) => (
+                  {guests.filter((g) => g.status === "ACCEPTED").slice(0, 3).map((guest) => (
                     <div key={guest.id} className="rounded border border-green-300 bg-green-50 p-3">
                       <div className="text-sm font-medium text-green-700">✓ {guest.firstName} {guest.lastName} accepted</div>
                     </div>
@@ -675,7 +676,7 @@ export default async function DIYVaultDetailPage({
                           </Link>
                         </Button>
                         <Button asChild size="sm" variant="ghost">
-                          <Link href="/app/requests">View booking requests</Link>
+                          <Link href="/requests">View booking requests</Link>
                         </Button>
                       </div>
                     </div>

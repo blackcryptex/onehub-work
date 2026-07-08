@@ -9,8 +9,9 @@ type ActivityItem = {
   target?: string | null;
 };
 
-export default async function EventOverview({ params }: { params: { eventSlug: string } }) {
-  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "view");
+export default async function EventOverview({ params }: { params: Promise<{ eventSlug: string }> }) {
+  const resolvedParams = await params;
+  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(resolvedParams.eventSlug, "view");
 
   const ev = await prisma.event.findUnique({
     where: { id: authorizedEvent.id },

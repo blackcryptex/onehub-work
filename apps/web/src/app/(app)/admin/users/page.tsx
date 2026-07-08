@@ -10,15 +10,16 @@ import { ImpersonateButton } from "@/components/admin/ImpersonateButton";
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: { q?: string; cursor?: string };
+  searchParams: Promise<{ q?: string; cursor?: string }>;
 }) {
+  const resolvedSearchParams = await searchParams;
   const user = await getCurrentUser();
   // Centralized permission check: see apps/web/src/lib/rbac.ts
   if (!user || !canAccessDashboard(user, "ADMIN")) {
     redirect("/app");
   }
 
-  const searchQuery = searchParams.q || "";
+  const searchQuery = resolvedSearchParams.q || "";
   const limit = 20;
 
   // Build where clause for search
@@ -33,7 +34,7 @@ export default async function AdminUsersPage({
   const users = await prisma.user.findMany({
     where,
     take: limit + 1,
-    cursor: searchParams.cursor ? { id: searchParams.cursor } : undefined,
+    cursor: resolvedSearchParams.cursor ? { id: resolvedSearchParams.cursor } : undefined,
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

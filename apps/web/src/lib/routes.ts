@@ -1,4 +1,23 @@
+import type { Route } from "next";
 import type { Role } from "@onehub/types/src/roles";
+
+export function safeInternalReturnTo(value: string | undefined): Route | undefined {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("://")) {
+    return undefined;
+  }
+
+  const [path = ""] = value.split(/[?#]/, 1);
+  const allowedPrefixes = [
+    "/app/vault/",
+    "/diy-planner/vault/",
+    "/pro/planner/vault/",
+    "/client/events/",
+    "/events/",
+    "/vault/",
+  ];
+
+  return allowedPrefixes.some((prefix) => path.startsWith(prefix)) ? (value as Route) : undefined;
+}
 
 /**
  * Centralized route helper for role-aware navigation

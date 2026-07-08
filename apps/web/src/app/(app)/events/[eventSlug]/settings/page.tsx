@@ -1,8 +1,9 @@
 import { Card } from "@/components/ui";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
-export default async function EventSettings({ params }: { params: { eventSlug: string } }) {
-  await requireAuthorizedEventBySlug(params.eventSlug, "edit");
+export default async function EventSettings({ params }: { params: Promise<{ eventSlug: string }> }) {
+  const resolvedParams = await params;
+  await requireAuthorizedEventBySlug(resolvedParams.eventSlug, "edit");
 
   return (
     <Card className="p-4">

@@ -3,9 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { RSVPForm } from "./rsvp-form";
 
-export default async function RSVPPage({ params }: { params: { token: string } }) {
+export default async function RSVPPage({ params }: { params: Promise<{ token: string }> }) {
+  const resolvedParams = await params;
   const invitation = await prisma.invitation.findUnique({
-    where: { token: params.token },
+    where: { token: resolvedParams.token },
     include: { guest: true, event: true },
   });
   if (!invitation) return notFound();
@@ -20,7 +21,7 @@ export default async function RSVPPage({ params }: { params: { token: string } }
           <div className="font-medium">Hi {invitation.guest.firstName} {invitation.guest.lastName},</div>
           <div className="text-sm text-slate-600 mt-2">Please let us know if you can attend.</div>
         </div>
-        <RSVPForm token={params.token} currentStatus={invitation.guest.status} />
+        <RSVPForm token={resolvedParams.token} currentStatus={invitation.guest.status} />
       </Card>
     </div>
   );

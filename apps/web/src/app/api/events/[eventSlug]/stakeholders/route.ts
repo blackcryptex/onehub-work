@@ -17,8 +17,9 @@ const addStakeholderSchema = z.object({
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { eventSlug: string } }
+  { params }: { params: Promise<{ eventSlug: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -32,7 +33,7 @@ export async function POST(
 
     // Get event
     const event = await prisma.event.findUnique({
-      where: { slug: params.eventSlug },
+      where: { slug: resolvedParams.eventSlug },
       include: {
         org: {
           include: {
@@ -109,7 +110,7 @@ export async function POST(
   } catch (error) {
     console.error("Error adding stakeholder:", error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid request", details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: "Invalid request", details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to add stakeholder" }, { status: 500 });
   }
@@ -123,8 +124,9 @@ export async function POST(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { eventSlug: string } }
+  { params }: { params: Promise<{ eventSlug: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -138,7 +140,7 @@ export async function DELETE(
 
     // Get event
     const event = await prisma.event.findUnique({
-      where: { slug: params.eventSlug },
+      where: { slug: resolvedParams.eventSlug },
       include: {
         org: {
           include: {

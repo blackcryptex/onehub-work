@@ -4,6 +4,7 @@ import { canManageEvent, isOrgMember } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { isDemoMode } from "@/lib/demo-mode";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
+import { resolveBookingClassification } from "@/lib/booking-classification";
 import { getLegalSurface } from "@/lib/legal-surface";
 
 export async function POST(
@@ -173,7 +174,14 @@ export async function POST(
       data: { status: newStatus },
     });
 
-    const bookingClassification = String((contract.proposal as any).bookingClassification || "DIRECT").toLowerCase();
+    const bookingClassificationInput = {
+      proposal: {
+        bookingClassification: (contract.proposal as any).bookingClassification,
+        listingId: contract.proposal.listingId,
+      },
+      event: { org: { type: (contract.proposal.event as any)?.org?.type } },
+    };
+    const bookingClassification = resolveBookingClassification(bookingClassificationInput);
     await recordAcceptance({
       actorId: user.id,
       actorRole: user.role,
@@ -185,13 +193,7 @@ export async function POST(
       requestContextId: request.headers.get("x-request-id") || undefined,
       proposalId: contract.proposal.id,
       contractId: contract.id,
-      bookingClassificationInput: {
-        proposal: {
-          bookingClassification: (contract.proposal as any).bookingClassification,
-          listingId: contract.proposal.listingId,
-        },
-        event: { org: { type: (contract.proposal.event as any)?.org?.type } },
-      },
+      bookingClassificationInput,
       metadata: {
         requiredVersion: CURRENT_ACCEPTANCE_VERSIONS.contract,
         signatureId: signature.id,

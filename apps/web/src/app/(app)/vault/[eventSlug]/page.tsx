@@ -24,12 +24,13 @@ import { DemoTour } from "@/components/vault/DemoTour";
 import { getVaultBasePath, eventBudget, eventGuests, eventChecklists, proposalDetail, vaultDetail } from "@/lib/routes";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
-export default async function EventVaultDetailPage({ params }: { params: { eventSlug: string } }) {
+export default async function EventVaultDetailPage({ params }: { params: Promise<{ eventSlug: string }> }) {
+  const resolvedParams = await params;
   const user = await getCurrentUser();
   
   // Debug logging
   console.log("[Event Vault Detail] Page load started", {
-    eventSlug: params.eventSlug,
+    eventSlug: resolvedParams.eventSlug,
     hasUser: !!user,
     userId: user?.id,
     userRole: user?.role,
@@ -45,12 +46,12 @@ export default async function EventVaultDetailPage({ params }: { params: { event
   // Legacy route protection: Redirect planners to their role-specific vault detail
   // This ensures planners never use the legacy /app/vault/[slug] route
   if (canAccessDashboard(user, "DIY_PLANNER") || canAccessDashboard(user, "PRO_PLANNER")) {
-    const roleSpecificVaultDetail = vaultDetail(user.role, params.eventSlug);
+    const roleSpecificVaultDetail = vaultDetail(user.role, resolvedParams.eventSlug);
     console.log("[Event Vault Detail] Redirecting planner from legacy route to:", roleSpecificVaultDetail);
-    redirect(roleSpecificVaultDetail);
+    redirect(roleSpecificVaultDetail as never);
   }
 
-  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "view");
+  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(resolvedParams.eventSlug, "view");
 
   // Determine vault base path based on user role using centralized helper
   const vaultBasePath = getVaultBasePath(user.role);
@@ -199,7 +200,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
   }
 
   if (!event) {
-    console.warn("[Event Vault Detail] Event not found:", params.eventSlug);
+    console.warn("[Event Vault Detail] Event not found:", resolvedParams.eventSlug);
     return notFound();
   }
 
@@ -232,10 +233,11 @@ export default async function EventVaultDetailPage({ params }: { params: { event
   const progress = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
 
   // Get guest/RSVP stats
-  const guestList = event.guestLists[0];
-  const totalGuests = guestList?.guests.length || 0;
-  const rsvped = guestList?.guests.filter((g) => g.status === "ACCEPTED").length || 0;
-  const rsvpPending = guestList?.guests.filter((g) => g.status === "PENDING").length || 0;
+  const guestList = event.guestLists;
+  const guests: Array<{ id: string; firstName: string | null; lastName: string | null; status: string }> = guestList?.guests ?? [];
+  const totalGuests = guests.length;
+  const rsvped = guests.filter((g: { status: string }) => g.status === "ACCEPTED").length;
+  const rsvpPending = guests.filter((g: { status: string }) => g.status === "PENDING").length;
 
   // Get upcoming tasks (milestones + checklist items)
   const upcomingMilestones = event.milestones.filter((m) => !m.done && m.dueAt && new Date(m.dueAt) > new Date()).slice(0, 5);
@@ -277,7 +279,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
       {/* Demo Tour (only in demo mode) */}
       {isDemoModeEnabled && (
         <DemoTour
-          eventSlug={params.eventSlug}
+          eventSlug={resolvedParams.eventSlug}
           eventId={event.id}
           proposalId={firstProposal?.id}
           contractId={firstContract?.id}
@@ -303,14 +305,14 @@ export default async function EventVaultDetailPage({ params }: { params: { event
           {/* Phase 2: Share/unshare UI for Pro Planners */}
           {canManage && (user.role === "PRO_PLANNER" || user.role === "DIY_PLANNER" || isAdmin(user)) && (
             <ShareEventButton
-              eventSlug={params.eventSlug}
+              eventSlug={resolvedParams.eventSlug}
               stakeholders={(event as any).stakeholders || []}
               shares={(event as any).shares || []}
             />
           )}
           <EventActions
             role={user.role}
-            eventSlug={params.eventSlug}
+            eventSlug={resolvedParams.eventSlug}
             eventId={event.id}
             eventName={event.name}
             canEdit={canEdit}
@@ -466,7 +468,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
                   <Users className="w-4 h-4" /> Guest RSVPs
                 </h3>
                 <div className="space-y-2">
-                  {guestList?.guests.filter((g) => g.status === "ACCEPTED").slice(0, 3).map((guest) => (
+                  {guests.filter((g: { status: string }) => g.status === "ACCEPTED").slice(0, 3).map((guest) => (
                     <div key={guest.id} className="rounded border border-green-300 bg-green-50 p-3">
                       <div className="text-sm font-medium text-green-700">✓ {guest.firstName} {guest.lastName} accepted</div>
                     </div>
@@ -538,7 +540,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Manage Clients</h3>
               <StakeholdersSectionClient
-                eventSlug={params.eventSlug}
+                eventSlug={resolvedParams.eventSlug}
                 stakeholders={((event as any).stakeholders || []).map((s: any) => ({
                   id: s.id,
                   userId: s.userId,
@@ -613,13 +615,13 @@ export default async function EventVaultDetailPage({ params }: { params: { event
             <h3 className="text-base font-semibold mb-4">Quick Actions</h3>
             <div className="space-y-2">
               <Button asChild variant="secondary" className="w-full justify-start">
-                <Link href={eventGuests(user.role, params.eventSlug) as any}>Manage Guest List</Link>
+                <Link href={eventGuests(user.role, resolvedParams.eventSlug) as any}>Manage Guest List</Link>
               </Button>
               <Button asChild variant="secondary" className="w-full justify-start">
-                <Link href={eventBudget(user.role, params.eventSlug) as any}>View Budget</Link>
+                <Link href={eventBudget(user.role, resolvedParams.eventSlug) as any}>View Budget</Link>
               </Button>
               <Button asChild variant="secondary" className="w-full justify-start">
-                <Link href={eventChecklists(user.role, params.eventSlug) as any}>Checklists</Link>
+                <Link href={eventChecklists(user.role, resolvedParams.eventSlug) as any}>Checklists</Link>
               </Button>
             </div>
           </Card>
@@ -734,7 +736,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
                           </Link>
                         </Button>
                         <Button asChild size="sm" variant="ghost">
-                          <Link href="/app/requests">View booking requests</Link>
+                          <Link href="/requests">View booking requests</Link>
                         </Button>
                       </div>
                     </div>

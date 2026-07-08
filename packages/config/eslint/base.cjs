@@ -12,6 +12,7 @@ module.exports = {
     "prettier"
   ],
   settings: { react: { version: "detect" } },
+  ignorePatterns: ["apps/web/next-env.d.ts"],
   rules: {
     "@typescript-eslint/explicit-function-return-type": ["off"],
     "@typescript-eslint/no-explicit-any": ["warn", { ignoreRestArgs: true }],

@@ -31,7 +31,7 @@ export default async function EventVaultPage() {
   if (canAccessDashboard(user, "DIY_PLANNER") || canAccessDashboard(user, "PRO_PLANNER")) {
     const roleSpecificVault = vaultIndex(user.role);
     console.log("[Event Vault] Redirecting planner from legacy route to:", roleSpecificVault);
-    redirect(roleSpecificVault);
+    redirect(roleSpecificVault as never);
   }
 
   // Phase 0: Security hardening - Block CLIENT users from accessing planner vault

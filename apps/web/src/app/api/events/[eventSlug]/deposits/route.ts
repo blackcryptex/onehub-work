@@ -20,8 +20,9 @@ const createDepositSchema = z.object({
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { eventSlug: string } }
+  { params }: { params: Promise<{ eventSlug: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -35,7 +36,7 @@ export async function POST(
 
     // Fetch event with stakeholders and shares
     const event = await prisma.event.findFirst({
-      where: { slug: params.eventSlug },
+      where: { slug: resolvedParams.eventSlug },
       include: {
         org: true,
         stakeholders: {
@@ -123,7 +124,7 @@ export async function POST(
   } catch (error) {
     console.error("Error creating deposit:", error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid request", details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: "Invalid request", details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to create deposit" }, { status: 500 });
   }
@@ -139,8 +140,9 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { eventSlug: string } }
+  { params }: { params: Promise<{ eventSlug: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -149,7 +151,7 @@ export async function GET(
 
     // Fetch event
     const event = await prisma.event.findFirst({
-      where: { slug: params.eventSlug },
+      where: { slug: resolvedParams.eventSlug },
       include: {
         org: true,
         stakeholders: {

@@ -10,16 +10,17 @@ function isInternalRoute(value: string | null): value is Route {
   return Boolean(value?.startsWith("/"));
 }
 
-export default async function NotificationsPage({ searchParams }: { searchParams: { status?: string; type?: string } }) {
+export default async function NotificationsPage({ searchParams }: { searchParams: Promise<{ status?: string; type?: string }> }) {
+  const resolvedSearchParams = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/signin");
 
   const notifications = await db.notification.findMany({
     where: {
       userId: user.id,
-      ...(searchParams.status === "unread" ? { read: false } : {}),
-      ...(searchParams.status === "read" ? { read: true } : {}),
-      ...(searchParams.type ? { type: { contains: searchParams.type, mode: "insensitive" as const } } : {}),
+      ...(resolvedSearchParams.status === "unread" ? { read: false } : {}),
+      ...(resolvedSearchParams.status === "read" ? { read: true } : {}),
+      ...(resolvedSearchParams.type ? { type: { contains: resolvedSearchParams.type, mode: "insensitive" as const } } : {}),
     },
     orderBy: { createdAt: "desc" },
     take: 50,
@@ -38,12 +39,12 @@ export default async function NotificationsPage({ searchParams }: { searchParams
       </div>
 
       <form className="grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-4">
-        <select name="status" defaultValue={searchParams.status || "all"} className="rounded border px-3 py-2">
+        <select name="status" defaultValue={resolvedSearchParams.status || "all"} className="rounded border px-3 py-2">
           <option value="all">All statuses</option>
           <option value="unread">Unread</option>
           <option value="read">Read</option>
         </select>
-        <input name="type" defaultValue={searchParams.type} placeholder="Notification type" className="rounded border px-3 py-2 md:col-span-2" />
+        <input name="type" defaultValue={resolvedSearchParams.type} placeholder="Notification type" className="rounded border px-3 py-2 md:col-span-2" />
         <button className="rounded bg-slate-900 px-4 py-2 text-white">Filter</button>
       </form>
 

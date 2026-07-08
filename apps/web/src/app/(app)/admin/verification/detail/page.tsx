@@ -5,18 +5,19 @@ import { canAccessDashboard } from "@/lib/rbac";
 
 function pretty(value: unknown) { return JSON.stringify(value, null, 2); }
 
-export default async function UnifiedVerificationDetail({ searchParams }: { searchParams: { proposalId?: string; paymentIntentId?: string; payoutId?: string; refundRequestId?: string; disputeId?: string } }) {
+export default async function UnifiedVerificationDetail({ searchParams }: { searchParams: Promise<{ proposalId?: string; paymentIntentId?: string; payoutId?: string; refundRequestId?: string; disputeId?: string }> }) {
+  const resolvedSearchParams = await searchParams;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const seedRefund = searchParams.refundRequestId ? await (prisma as any).refundRequest.findUnique({ where: { id: searchParams.refundRequestId } }) : null;
-  const seedDispute = searchParams.disputeId ? await (prisma as any).dispute.findUnique({ where: { id: searchParams.disputeId } }) : null;
-  const seedPayout = searchParams.payoutId ? await prisma.payout.findUnique({ where: { id: searchParams.payoutId } }) : null;
+  const seedRefund = resolvedSearchParams.refundRequestId ? await (prisma as any).refundRequest.findUnique({ where: { id: resolvedSearchParams.refundRequestId } }) : null;
+  const seedDispute = resolvedSearchParams.disputeId ? await (prisma as any).dispute.findUnique({ where: { id: resolvedSearchParams.disputeId } }) : null;
+  const seedPayout = resolvedSearchParams.payoutId ? await prisma.payout.findUnique({ where: { id: resolvedSearchParams.payoutId } }) : null;
 
-  const proposalId = searchParams.proposalId || seedRefund?.proposalId || seedDispute?.proposalId || seedPayout?.proposalId || undefined;
-  const payout = seedPayout || (searchParams.payoutId ? null : proposalId ? await prisma.payout.findFirst({ where: { proposalId }, orderBy: { createdAt: 'desc' } }) : null);
+  const proposalId = resolvedSearchParams.proposalId || seedRefund?.proposalId || seedDispute?.proposalId || seedPayout?.proposalId || undefined;
+  const payout = seedPayout || (resolvedSearchParams.payoutId ? null : proposalId ? await prisma.payout.findFirst({ where: { proposalId }, orderBy: { createdAt: 'desc' } }) : null);
   const proposal = proposalId ? await prisma.proposal.findUnique({ where: { id: proposalId }, include: { event: true, contract: true } }) : null;
-  const paymentIntentId = searchParams.paymentIntentId || seedRefund?.paymentIntentId || seedDispute?.paymentIntentId || undefined;
+  const paymentIntentId = resolvedSearchParams.paymentIntentId || seedRefund?.paymentIntentId || seedDispute?.paymentIntentId || undefined;
   const paymentIntent = paymentIntentId ? await (prisma as any).paymentIntent.findUnique({ where: { id: paymentIntentId } }) : proposal?.contract?.id ? await (prisma as any).paymentIntent.findFirst({ where: { contractId: proposal.contract.id }, orderBy: { createdAt: 'desc' } }) : null;
   const refunds = proposalId ? await (prisma as any).refundRequest.findMany({ where: { proposalId }, orderBy: { createdAt: 'desc' }, take: 10 }) : [];
   const disputes = proposalId ? await (prisma as any).dispute.findMany({ where: { proposalId }, orderBy: { createdAt: 'desc' }, take: 10 }) : [];
@@ -31,11 +32,11 @@ export default async function UnifiedVerificationDetail({ searchParams }: { sear
         <p className="text-sm text-slate-600">Search by proposalId, paymentIntentId, payoutId, refundRequestId, or disputeId.</p>
       </div>
       <form className="grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-5">
-        <input name="proposalId" defaultValue={searchParams.proposalId} placeholder="proposalId" className="rounded border px-3 py-2" />
-        <input name="paymentIntentId" defaultValue={searchParams.paymentIntentId} placeholder="paymentIntentId" className="rounded border px-3 py-2" />
-        <input name="payoutId" defaultValue={searchParams.payoutId} placeholder="payoutId" className="rounded border px-3 py-2" />
-        <input name="refundRequestId" defaultValue={searchParams.refundRequestId} placeholder="refundRequestId" className="rounded border px-3 py-2" />
-        <input name="disputeId" defaultValue={searchParams.disputeId} placeholder="disputeId" className="rounded border px-3 py-2" />
+        <input name="proposalId" defaultValue={resolvedSearchParams.proposalId} placeholder="proposalId" className="rounded border px-3 py-2" />
+        <input name="paymentIntentId" defaultValue={resolvedSearchParams.paymentIntentId} placeholder="paymentIntentId" className="rounded border px-3 py-2" />
+        <input name="payoutId" defaultValue={resolvedSearchParams.payoutId} placeholder="payoutId" className="rounded border px-3 py-2" />
+        <input name="refundRequestId" defaultValue={resolvedSearchParams.refundRequestId} placeholder="refundRequestId" className="rounded border px-3 py-2" />
+        <input name="disputeId" defaultValue={resolvedSearchParams.disputeId} placeholder="disputeId" className="rounded border px-3 py-2" />
         <button className="w-fit rounded bg-slate-900 px-4 py-2 text-white">Load context</button>
       </form>
       <JsonCard title="Booking classification" data={{ proposalClassification: proposal?.bookingClassification || null, overrideClassification: overrides[0]?.bookingClassification || null }} />

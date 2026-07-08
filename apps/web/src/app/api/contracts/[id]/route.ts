@@ -75,7 +75,7 @@ export async function PATCH(
     console.error("[API] Error updating contract:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
+        { error: "Invalid request data", details: error.issues },
         { status: 400 }
       );
     }

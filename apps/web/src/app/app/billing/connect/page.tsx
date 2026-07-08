@@ -5,9 +5,9 @@ import { appRouter } from "@/server/router";
 import { redirect } from "next/navigation";
 
 type BillingConnectPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     success?: string;
-  };
+  }>;
 };
 
 async function getEligibleSellerOrg(userId: string) {
@@ -32,6 +32,7 @@ async function getEligibleSellerOrg(userId: string) {
 }
 
 export default async function BillingConnectPage({ searchParams }: BillingConnectPageProps) {
+  const resolvedSearchParams = await searchParams;
   const user = await getCurrentUser();
 
   if (!user) {
@@ -55,7 +56,7 @@ export default async function BillingConnectPage({ searchParams }: BillingConnec
 
     const caller = appRouter.createCaller({});
     const result = await caller.billing.connectOnboard({ orgId: eligibleOrg.id });
-    redirect(result.url);
+    redirect(result.url as never);
   }
 
   if (!org) {
@@ -72,7 +73,7 @@ export default async function BillingConnectPage({ searchParams }: BillingConnec
   }
 
   const isConnected = Boolean(org.stripeConnectAccountId);
-  const success = searchParams?.success === "true";
+  const success = resolvedSearchParams?.success === "true";
 
   const caller = appRouter.createCaller({});
   const connectStatus = org.stripeConnectAccountId

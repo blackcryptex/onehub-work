@@ -9,9 +9,10 @@ type ThreadMessage = {
   senderId?: string | null;
 };
 
-export default async function MessageThreadPage({ params }: { params: { threadId: string } }) {
+export default async function MessageThreadPage({ params }: { params: Promise<{ threadId: string }> }) {
+  const resolvedParams = await params;
   const thread = await prisma.thread.findUnique({
-    where: { id: params.threadId },
+    where: { id: resolvedParams.threadId },
     include: { messages: { include: { thread: true } } },
   });
   if (!thread) return notFound();

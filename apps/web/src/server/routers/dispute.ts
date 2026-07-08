@@ -81,7 +81,7 @@ export const disputeRouter = router({
   }),
   adminReview: protectedProcedure.input(z.object({
     id: z.string(),
-    action: z.enum(["REQUEST_INFO", "ESCALATE", "SELLER_FAVOR", "REFUND", "REJECT", "REOPEN"]),
+    action: z.enum(["REQUEST_INFO", "ESCALATE", "SELLER_FAVOR", "REFUND", "REOPEN"]),
     decisionReason: z.string().min(3),
   })).mutation(async ({ ctx, input }) => {
     if (ctx.user.role !== "ADMIN") throw new Error("Forbidden");

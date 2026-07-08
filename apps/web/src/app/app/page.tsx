@@ -51,7 +51,7 @@ export default async function AppPage() {
     const onboardingUrl = targetRole === "VENUE"
       ? "/providers/onboarding?providerType=venue"
       : "/providers/onboarding?providerType=vendor";
-    redirect(onboardingUrl);
+    redirect(onboardingUrl as never);
   }
 
   if (

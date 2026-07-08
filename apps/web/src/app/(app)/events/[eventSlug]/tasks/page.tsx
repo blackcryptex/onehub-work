@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 import type { Task } from "@prisma/client";
 
-export default async function EventTasks({ params }: { params: { eventSlug: string } }) {
-  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "manage");
+export default async function EventTasks({ params }: { params: Promise<{ eventSlug: string }> }) {
+  const resolvedParams = await params;
+  const { event: authorizedEvent } = await requireAuthorizedEventBySlug(resolvedParams.eventSlug, "manage");
 
   const [todo, inprog, blocked, done] = await Promise.all([
     prisma.task.findMany({ where: { eventId: authorizedEvent.id, status: "TODO" } }),

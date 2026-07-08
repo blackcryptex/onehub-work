@@ -6,11 +6,12 @@ import { canAccessDashboard } from "@/lib/rbac";
 
 function pretty(value: unknown) { return JSON.stringify(value, null, 2); }
 
-export default async function PayoutVerificationDetail({ params }: { params: { id: string } }) {
+export default async function PayoutVerificationDetail({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 
-  const payout = await prisma.payout.findUnique({ where: { id: params.id } });
+  const payout = await prisma.payout.findUnique({ where: { id: resolvedParams.id } });
   if (!payout) notFound();
 
   const proposal = await prisma.proposal.findUnique({ where: { id: payout.proposalId }, include: { event: true, contract: true } });
@@ -23,7 +24,7 @@ export default async function PayoutVerificationDetail({ params }: { params: { i
 
   return (
     <div className="space-y-6">
-      <div><Link href="/app/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link><h1 className="mt-2 text-2xl font-bold">Payout {payout.id}</h1></div>
+      <div><Link href="/admin/verification" className="text-sm text-indigo-600 hover:underline">← Back to verification</Link><h1 className="mt-2 text-2xl font-bold">Payout {payout.id}</h1></div>
       <div className="grid gap-3 md:grid-cols-2">{[["Status", payout.status],["Proposal", payout.proposalId],["Milestone", payout.milestoneId || 'none'],["Stripe transfer", payout.stripeTransfer || 'pending'],["Booking classification", proposal?.bookingClassification || 'unknown'],["Release blockers", [refunds[0]?.status === 'OPEN' ? 'refund' : null, disputes[0] && ['OPEN','NEEDS_INFO','UNDER_ADMIN_REVIEW','ESCALATED'].includes(disputes[0].status) ? 'dispute' : null, holdback?.state === 'ACTIVE' ? 'holdback' : null].filter(Boolean).join(', ') || 'none']].map(([k,v]) => <div key={String(k)} className="rounded-xl border bg-white p-4"><div className="text-xs uppercase text-slate-500">{k}</div><div className="mt-1 break-all font-medium">{String(v)}</div></div>)}</div>
       <JsonCard title="Proposal / booking classification" data={proposal} />
       <JsonCard title="Fee profile snapshot" data={refunds[0]?.feeProfileSnapshot || disputes[0]?.feeProfileSnapshot || holdback?.feeProfileSnapshot || null} />

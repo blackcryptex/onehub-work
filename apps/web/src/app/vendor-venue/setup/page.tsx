@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type ProviderType = "vendor" | "venue";
@@ -42,7 +43,7 @@ export default function VendorVenueSetupRedirectPage() {
       ? `/providers/onboarding?providerType=${providerType}`
       : `/providers/start?providerType=${providerType}`;
 
-    router.replace(targetUrl);
+    router.replace(targetUrl as Route);
   }, [router, searchParams]);
 
   return (

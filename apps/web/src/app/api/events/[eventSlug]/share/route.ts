@@ -20,8 +20,9 @@ const shareEventSchema = z.object({
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { eventSlug: string } }
+  { params }: { params: Promise<{ eventSlug: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -38,7 +39,7 @@ export async function POST(
 
     // Fetch event with org and stakeholders
     const event = await prisma.event.findFirst({
-      where: { slug: params.eventSlug },
+      where: { slug: resolvedParams.eventSlug },
       select: {
         id: true,
         name: true,
@@ -130,7 +131,7 @@ export async function POST(
   } catch (error) {
     console.error("Error sharing event:", error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid request", details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: "Invalid request", details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to share event" }, { status: 500 });
   }
@@ -145,8 +146,9 @@ export async function POST(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { eventSlug: string } }
+  { params }: { params: Promise<{ eventSlug: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -168,7 +170,7 @@ export async function DELETE(
 
     // Fetch event
     const event = await prisma.event.findFirst({
-      where: { slug: params.eventSlug },
+      where: { slug: resolvedParams.eventSlug },
       include: {
         org: { include: { members: true } },
       },
