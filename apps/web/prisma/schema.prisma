@@ -764,7 +764,7 @@ model WebhookEvent {
   eventId        String   @unique
   type           String
   stripeIntentId String?
-  processedAt    DateTime @default(now())
+  processedAt    DateTime?
   meta           Json?
 }
 

@@ -4,20 +4,46 @@ import Stripe from "stripe";
 import { getStripeOrThrow } from "@/server/lib/stripe";
 import { prisma } from "@/lib/prisma";
 
-async function markWebhookProcessed(eventId: string, type: string, stripeIntentId?: string) {
+type WebhookReservation =
+  | { status: "reserved"; id: string }
+  | { status: "processed" }
+  | { status: "in_progress" };
+
+async function reserveWebhookEvent(event: Stripe.Event, stripeIntentId?: string): Promise<WebhookReservation> {
   try {
-    await prisma.webhookEvent.create({
+    const reservation = await prisma.webhookEvent.create({
       data: {
-        eventId,
-        type,
+        eventId: event.id,
+        type: event.type,
         stripeIntentId,
-        meta: {},
+        processedAt: null,
+        meta: event as any,
       },
+      select: { id: true },
     });
-    return true;
+    return { status: "reserved", id: reservation.id };
   } catch {
-    return false;
+    const existing = await prisma.webhookEvent.findUnique({
+      where: { eventId: event.id },
+      select: { processedAt: true },
+    });
+
+    if (existing?.processedAt) return { status: "processed" };
+    return { status: "in_progress" };
   }
+}
+
+async function markWebhookProcessed(reservationId: string) {
+  await prisma.webhookEvent.update({
+    where: { id: reservationId },
+    data: { processedAt: new Date() },
+  });
+}
+
+async function releaseWebhookReservation(reservationId: string) {
+  await prisma.webhookEvent.delete({
+    where: { id: reservationId },
+  });
 }
 
 async function findInternalPaymentIntent(paymentIntent: Stripe.PaymentIntent) {
@@ -139,9 +165,12 @@ export async function POST(request: Request) {
     return object?.object === "payment_intent" ? object.id : undefined;
   })();
 
-  const processed = await markWebhookProcessed(event.id, event.type, stripeIntentId);
-  if (!processed) {
+  const reservation = await reserveWebhookEvent(event, stripeIntentId);
+  if (reservation.status === "processed") {
     return NextResponse.json({ received: true, duplicate: true });
+  }
+  if (reservation.status === "in_progress") {
+    return NextResponse.json({ error: "Webhook handling is already in progress" }, { status: 409 });
   }
 
   try {
@@ -156,16 +185,13 @@ export async function POST(request: Request) {
         break;
     }
 
-    await prisma.webhookEvent.update({
-      where: { eventId: event.id },
-      data: {
-        processedAt: new Date(),
-        meta: event as any,
-      },
-    });
+    await markWebhookProcessed(reservation.id);
 
     return NextResponse.json({ received: true });
   } catch (error) {
+    await releaseWebhookReservation(reservation.id).catch((releaseError) => {
+      console.error("Stripe webhook reservation release failed:", releaseError);
+    });
     console.error("Stripe webhook handling failed:", error);
     return NextResponse.json({ error: "Webhook handling failed" }, { status: 500 });
   }
