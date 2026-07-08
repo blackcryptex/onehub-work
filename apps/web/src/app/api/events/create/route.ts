@@ -6,7 +6,7 @@ import { parseBudget } from "@/lib/parsers/budget";
 import { canonicalizeEventType } from "@/lib/parsers/eventType";
 import { buildPlannerPayload as _buildPlannerPayload } from "@/lib/ai/buildPlannerPayload";
 import { z } from "zod";
-import type { BudgetCategory, ProposalStatus, ContractStatus, RSVPStatus } from "@prisma/client";
+import type { BudgetCategory, EventType, ProposalStatus, ContractStatus, RSVPStatus, Role } from "@prisma/client";
 import type { EventItem, Task, Milestone, Proposal, Contract, Guest, VendorLink, Status } from "@/lib/types";
 import { getRequestLogger } from "@/lib/logger";
 import { trackError } from "@/lib/errorTracker";
@@ -130,6 +130,27 @@ function mapContract(contract: { id: string; title?: string | null; status: Cont
   };
 }
 
+const EVENT_CREATOR_ROLES: Role[] = ["DIY_PLANNER", "PRO_PLANNER", "ADMIN"];
+
+const EVENT_TYPE_BY_CANONICAL: Record<NonNullable<ReturnType<typeof canonicalizeEventType>>, EventType> = {
+  wedding: "WEDDING",
+  conference: "CONFERENCE",
+  corporate: "CORPORATE_GALA",
+  birthday: "BIRTHDAY",
+  fundraiser: "FUNDRAISER",
+  festival: "FESTIVAL",
+  sports: "SPORTS",
+  other: "OTHER",
+};
+
+function canCreatePlannerEvent(role: Role): boolean {
+  return EVENT_CREATOR_ROLES.includes(role);
+}
+
+function eventTypeFromCanonical(canonical: ReturnType<typeof canonicalizeEventType>): EventType {
+  return canonical ? EVENT_TYPE_BY_CANONICAL[canonical] : "OTHER";
+}
+
 function computeProgress(tasks: Task[], milestones: Milestone[]): number {
   const total = tasks.length + milestones.length;
   if (!total) return 0;
@@ -206,9 +227,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    if (user.role === "CLIENT") {
-      logger.warn({ userId: user.id, route: "/api/events/create" }, "CLIENT user attempted to create event");
-      return NextResponse.json({ error: "Forbidden: CLIENT users cannot create events" }, { status: 403 });
+    if (!canCreatePlannerEvent(user.role)) {
+      logger.warn({ userId: user.id, role: user.role, route: "/api/events/create" }, "Forbidden event creation role");
+      return NextResponse.json({ error: "Forbidden: this role cannot create events" }, { status: 403 });
     }
     
     logger.debug({ userId: user.id, route: "/api/events/create" }, "Event creation request started");
@@ -231,29 +252,20 @@ export async function POST(request: NextRequest) {
 
     validated = validationResult.data;
 
-    // Get or create a default org for DIY planner
-    org = await prisma.organization.findFirst({
-      where: { ownerId: userId, type: { in: ["PLANNER", "CLIENT_AGENCY"] } },
-    });
+    const requestedClientIds = Array.from(new Set(validated.clientIds ?? []));
+    const validClientIds = requestedClientIds.length > 0
+      ? (await prisma.user.findMany({
+          where: {
+            id: { in: requestedClientIds },
+            role: "CLIENT",
+          },
+          select: { id: true },
+        })).map((client) => client.id)
+      : [];
 
-    if (!org) {
-      // Create default org for DIY planner
-      const slug = `user-${userId.slice(0, 8)}`;
-      org = await prisma.organization.create({
-        data: {
-          name: "My Events",
-          slug,
-          type: "PLANNER",
-          ownerId: userId,
-          members: { create: { userId, role: "OWNER" } },
-          settings: { create: {} },
-        },
-      });
+    if (validClientIds.length !== requestedClientIds.length) {
+      return NextResponse.json({ error: "Invalid client selection" }, { status: 400 });
     }
-
-    // Generate slug
-    const slugBase = validated.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 50);
-    const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
 
     // Parse date
     const startDate = new Date(validated.date);
@@ -270,208 +282,174 @@ export async function POST(request: NextRequest) {
     // Canonicalize event type
     const eventTypeCanonical = canonicalizeEventType(validated.event_type_raw);
 
-    // Log telemetry data (structured)
-    logger.info({
-      userId,
-      orgId: org.id,
-      route: "/api/events/create",
-      event_type_raw_length: validated.event_type_raw.length,
-      budget_raw_length: validated.budget_raw.length,
-      budget_parse_success: !!(parsedBudget.min || parsedBudget.max),
-      budget_currency_detected: parsedBudget.currency,
-      event_type_canonicalized: !!eventTypeCanonical,
-    }, "event.creation_started");
+    const event = await prisma.$transaction(async (tx) => {
+      let txOrg = await tx.organization.findFirst({
+        where: { ownerId: userId, type: { in: ["PLANNER", "CLIENT_AGENCY"] } },
+      });
 
-    // Create event with retry logic for slug conflicts
-    let event;
-    let attempts = 0;
-    let currentSlug = slug;
-    const maxAttempts = 5;
-    
-    while (attempts < maxAttempts) {
-      try {
-        event = await prisma.event.create({
+      if (!txOrg) {
+        const slug = `user-${userId.slice(0, 8)}`;
+        txOrg = await tx.organization.create({
           data: {
-            orgId: org.id,
-            createdById: userId,
-            name: validated.name,
-            slug: currentSlug,
-            type: "OTHER", // Default legacy enum value for backward compatibility
-            eventTypeRaw: validated.event_type_raw,
-            eventTypeCanonical: eventTypeCanonical || null,
-            budgetRaw: validated.budget_raw,
-            budgetMin: parsedBudget.min || null,
-            budgetMax: parsedBudget.max || null,
-            budgetCurrency: parsedBudget.currency || null,
-            objective: validated.objective || null,
-            description: validated.style || null,
-            startAt: startDate,
-            endAt: endDate,
-            venueCity: validated.city || null,
-            venueState: validated.state || null,
-            venueCountry: "US",
-            guestTarget: validated.headcount ? parseInt(validated.headcount, 10) : undefined,
-            status: "PLANNING",
-            budgetCents: estimatedBudget,
+            name: "My Events",
+            slug,
+            type: "PLANNER",
+            ownerId: userId,
+            members: { create: { userId, role: "OWNER" } },
+            settings: { create: {} },
           },
         });
-        break; // Success, exit loop
-      } catch (createError: any) {
-        // If slug conflict, try again with a new slug
-        if (createError?.code === "P2002" && createError?.meta?.target?.includes("slug")) {
-          attempts++;
-          currentSlug = `${slugBase}-${Math.random().toString(36).slice(2, 8)}`;
-          logger.debug({ userId, orgId: org.id, attempt: attempts, slug: currentSlug }, "event.slug_conflict_retry");
-          continue;
-        }
-        // Re-throw other errors
-        throw createError;
       }
-    }
-    
-    if (!event) {
-      throw new Error("Failed to create event after multiple attempts");
-    }
 
-    // Phase 3: Create EventStakeholder records for selected clients
-    if (validated.clientIds && validated.clientIds.length > 0) {
-      try {
-        // Verify all client IDs are valid CLIENT users
-        const clientUsers = await prisma.user.findMany({
-          where: {
-            id: { in: validated.clientIds },
+      org = txOrg;
+
+      logger.info({
+        userId,
+        orgId: txOrg.id,
+        route: "/api/events/create",
+        event_type_raw_length: validated.event_type_raw.length,
+        budget_raw_length: validated.budget_raw.length,
+        budget_parse_success: !!(parsedBudget.min || parsedBudget.max),
+        budget_currency_detected: parsedBudget.currency,
+        event_type_canonicalized: !!eventTypeCanonical,
+      }, "event.creation_started");
+
+      const slugBase = validated.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 50);
+      let attempts = 0;
+      let currentSlug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
+      const maxAttempts = 5;
+      let createdEvent;
+
+      while (attempts < maxAttempts) {
+        try {
+          createdEvent = await tx.event.create({
+            data: {
+              orgId: txOrg.id,
+              createdById: userId,
+              name: validated.name,
+              slug: currentSlug,
+              type: eventTypeFromCanonical(eventTypeCanonical),
+              eventTypeRaw: validated.event_type_raw,
+              eventTypeCanonical: eventTypeCanonical || null,
+              budgetRaw: validated.budget_raw,
+              budgetMin: parsedBudget.min || null,
+              budgetMax: parsedBudget.max || null,
+              budgetCurrency: parsedBudget.currency || null,
+              objective: validated.objective || null,
+              description: validated.style || null,
+              startAt: startDate,
+              endAt: endDate,
+              venueCity: validated.city || null,
+              venueState: validated.state || null,
+              venueCountry: "US",
+              guestTarget: validated.headcount ? parseInt(validated.headcount, 10) : undefined,
+              status: "PLANNING",
+              budgetCents: estimatedBudget,
+            },
+          });
+          break;
+        } catch (createError: any) {
+          if (createError?.code === "P2002" && createError?.meta?.target?.includes("slug")) {
+            attempts++;
+            currentSlug = `${slugBase}-${Math.random().toString(36).slice(2, 8)}`;
+            logger.debug({ userId, orgId: txOrg.id, attempt: attempts, slug: currentSlug }, "event.slug_conflict_retry");
+            continue;
+          }
+          throw createError;
+        }
+      }
+
+      if (!createdEvent) {
+        throw new Error("Failed to create event after multiple attempts");
+      }
+
+      if (validClientIds.length > 0) {
+        await tx.eventStakeholder.createMany({
+          data: validClientIds.map((clientId) => ({
+            eventId: createdEvent.id,
+            userId: clientId,
             role: "CLIENT",
-          },
-          select: { id: true },
+            addedByUserId: userId,
+          })),
+          skipDuplicates: true,
         });
 
-        const validClientIds = clientUsers.map((u) => u.id);
-
-        // Create EventStakeholder records
-        await Promise.all(
-          validClientIds.map((clientId) =>
-            prisma.eventStakeholder.create({
-              data: {
-                eventId: event.id,
-                userId: clientId,
-                role: "CLIENT",
-                addedByUserId: userId,
-              },
-            }).catch((error: any) => {
-              // Ignore unique constraint violations (client already stakeholder)
-              if (error?.code !== "P2002") {
-                logger.warn({ userId, eventId: event.id, clientId, error: error.message }, "Failed to create EventStakeholder");
-              }
-            })
-          )
-        );
-
-        // Optionally create EventShare SUMMARY records for smooth initial client experience
         if (validated.autoShareSummary) {
-          await Promise.all(
-            validClientIds.map((clientId) =>
-              prisma.eventShare.create({
-                data: {
-                  eventId: event.id,
-                  viewerUserId: clientId,
-                  scope: "SUMMARY",
-                  createdByUserId: userId,
-                },
-              }).catch((error: any) => {
-                // Ignore unique constraint violations (share already exists)
-                if (error?.code !== "P2002") {
-                  logger.warn({ userId, eventId: event.id, clientId, error: error.message }, "Failed to create EventShare");
-                }
-              })
-            )
-          );
+          await tx.eventShare.createMany({
+            data: validClientIds.map((clientId) => ({
+              eventId: createdEvent.id,
+              viewerUserId: clientId,
+              scope: "SUMMARY",
+              createdByUserId: userId,
+            })),
+            skipDuplicates: true,
+          });
         }
 
         logger.info({
           userId,
-          eventId: event.id,
+          eventId: createdEvent.id,
           clientCount: validClientIds.length,
           autoShare: validated.autoShareSummary,
         }, "event.clients_linked");
-      } catch (error) {
-        // Log error but don't fail event creation
-        logger.error({ userId, eventId: event.id, error: error instanceof Error ? error.message : String(error) }, "Failed to link clients to event");
       }
-    }
 
-    // AI-generated content (stubs - these would call AI service)
-    // 1. AI drafts brief
-    // 2. AI searches for vendors/venues (async - would trigger background job)
-    // 3. AI establishes budget
-    // 4. AI creates checklist and milestones
+      const parsedHeadcount = validated.headcount ? Number.parseInt(validated.headcount, 10) : Number.NaN;
+      const baselineHeadcount = Number.isNaN(parsedHeadcount) ? 100 : parsedHeadcount;
+      const budgetLines: Array<{ category: BudgetCategory; label: string; plannedCents: number }> = [
+        { category: "VENUE", label: "Venue", plannedCents: Math.round(baselineHeadcount * 50 * 100) },
+        { category: "CATERING", label: "Catering", plannedCents: Math.round(baselineHeadcount * 35 * 100) },
+        { category: "ENTERTAINMENT", label: "Entertainment", plannedCents: Math.round(baselineHeadcount * 25 * 100) },
+        { category: "DECOR", label: "Decor", plannedCents: Math.round(baselineHeadcount * 20 * 100) },
+      ];
 
-    // Create initial budget with AI allocation (placeholder)
-    const parsedHeadcount = validated.headcount ? Number.parseInt(validated.headcount, 10) : Number.NaN;
-    const baselineHeadcount = Number.isNaN(parsedHeadcount) ? 100 : parsedHeadcount;
-    const budgetLines: Array<{ category: BudgetCategory; label: string; plannedCents: number }> = [
-      { category: "VENUE", label: "Venue", plannedCents: Math.round(baselineHeadcount * 50 * 100) },
-      { category: "CATERING", label: "Catering", plannedCents: Math.round(baselineHeadcount * 35 * 100) },
-      { category: "ENTERTAINMENT", label: "Entertainment", plannedCents: Math.round(baselineHeadcount * 25 * 100) },
-      { category: "DECOR", label: "Decor", plannedCents: Math.round(baselineHeadcount * 20 * 100) },
-    ];
-
-    for (const line of budgetLines) {
-      await prisma.budgetLine.create({
-        data: {
-          eventId: event.id,
+      await tx.budgetLine.createMany({
+        data: budgetLines.map((line) => ({
+          eventId: createdEvent.id,
           label: line.label,
           category: line.category,
           plannedCents: line.plannedCents,
           actualCents: 0,
           notes: "AI auto-allocated with 20% buffer",
+        })),
+      });
+
+      await tx.milestone.create({
+        data: {
+          eventId: createdEvent.id,
+          title: "Event Day",
+          dueAt: startDate,
+          done: false,
         },
       });
-    }
 
-    // Create initial milestone
-    await prisma.milestone.create({
-      data: {
-        eventId: event.id,
-        title: "Event Day",
-        dueAt: startDate,
-        done: false,
-      },
-    });
+      const checklistItems = [
+        "Book venue",
+        "Confirm vendor quotes",
+        "Send invitations",
+        "Finalize guest list",
+        "Confirm catering",
+        "Set up decor",
+      ];
 
-    // Create initial checklist with items
-    const checklistItems = [
-      "Book venue",
-      "Confirm vendor quotes",
-      "Send invitations",
-      "Finalize guest list",
-      "Confirm catering",
-      "Set up decor",
-    ];
-
-    // Create a single checklist
-    const checklist = await prisma.checklist.create({
-      data: {
-        eventId: event.id,
-        title: "Event Planning Checklist",
-      },
-    });
-
-    // Create checklist items
-    for (let i = 0; i < checklistItems.length; i++) {
-      const item = checklistItems[i];
-      if (!item) continue;
-      await prisma.checklistItem.create({
+      const checklist = await tx.checklist.create({
         data: {
+          eventId: createdEvent.id,
+          title: "Event Planning Checklist",
+        },
+      });
+
+      await tx.checklistItem.createMany({
+        data: checklistItems.map((item, i) => ({
           checklistId: checklist.id,
           title: item,
           done: false,
           order: i,
-        },
+        })),
       });
-    }
 
-    // Trigger AI vendor search (would be async job in production)
-    // This is a placeholder - in production, this would queue a background job
+      return createdEvent;
+    });
 
     // Fetch the created event with all relations to return full EventItem
     // Using findFirst instead of findUnique to avoid potential timing issues
