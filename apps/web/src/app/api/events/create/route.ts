@@ -151,6 +151,13 @@ function eventTypeFromCanonical(canonical: ReturnType<typeof canonicalizeEventTy
   return canonical ? EVENT_TYPE_BY_CANONICAL[canonical] : "OTHER";
 }
 
+class ClientAttachmentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ClientAttachmentError";
+  }
+}
+
 function computeProgress(tasks: Task[], milestones: Milestone[]): number {
   const total = tasks.length + milestones.length;
   if (!total) return 0;
@@ -254,19 +261,6 @@ export async function POST(request: NextRequest) {
     validatedEventInput = eventInput;
 
     const requestedClientIds = Array.from(new Set(eventInput.clientIds ?? []));
-    const validClientIds = requestedClientIds.length > 0
-      ? (await prisma.user.findMany({
-          where: {
-            id: { in: requestedClientIds },
-            role: "CLIENT",
-          },
-          select: { id: true },
-        })).map((client) => client.id)
-      : [];
-
-    if (validClientIds.length !== requestedClientIds.length) {
-      return NextResponse.json({ error: "Invalid client selection" }, { status: 400 });
-    }
 
     // Parse date
     const startDate = new Date(eventInput.date);
@@ -303,6 +297,21 @@ export async function POST(request: NextRequest) {
       }
 
       orgIdForLogging = txOrg.id;
+
+      const validClientIds = requestedClientIds.length > 0
+        ? (await tx.user.findMany({
+            where: {
+              id: { in: requestedClientIds },
+              role: "CLIENT",
+              memberships: { some: { orgId: txOrg.id } },
+            },
+            select: { id: true },
+          })).map((client) => client.id)
+        : [];
+
+      if (validClientIds.length !== requestedClientIds.length) {
+        throw new ClientAttachmentError("Invalid client selection");
+      }
 
       logger.info({
         userId,
@@ -554,6 +563,10 @@ export async function POST(request: NextRequest) {
         budget_raw: validatedEventInput.budget_raw,
       } : undefined,
     }, "event.create_failed");
+
+    if (error instanceof ClientAttachmentError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
 
     // Track error for monitoring/alerting
     trackError(error, {

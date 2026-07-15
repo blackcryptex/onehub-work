@@ -6,6 +6,9 @@ const { auth, getCurrentUser, prisma } = vi.hoisted(() => {
       findFirst: vi.fn(),
       create: vi.fn(),
     },
+    user: {
+      findMany: vi.fn(),
+    },
     event: {
       create: vi.fn(),
     },
@@ -96,6 +99,7 @@ describe("events create route security and atomicity", () => {
     getCurrentUser.mockResolvedValue({ id: "planner-1", role: "DIY_PLANNER" });
     prisma.user.findMany.mockResolvedValue([]);
     prisma.__tx.organization.findFirst.mockResolvedValue({ id: "org-1" });
+    prisma.__tx.user.findMany.mockResolvedValue([]);
     prisma.__tx.event.create.mockResolvedValue({ id: "event-1", slug: "launch-gala-abcd", name: "Launch Gala" });
     prisma.__tx.checklist.create.mockResolvedValue({ id: "checklist-1" });
     prisma.event.findFirst.mockResolvedValue({
@@ -116,7 +120,7 @@ describe("events create route security and atomicity", () => {
     });
   });
 
-  it.each(["CLIENT", "VENDOR", "VENUE"])("blocks %s from creating events", async (role) => {
+  it.each(["CLIENT", "VENDOR", "VENUE", "EVENT_DREAMER"])("blocks %s from creating events", async (role) => {
     getCurrentUser.mockResolvedValueOnce({ id: "user-1", role });
 
     const response = await POST(request(validBody));
@@ -139,17 +143,18 @@ describe("events create route security and atomicity", () => {
     );
   });
 
-  it("rejects invalid requested client ids before event transaction", async () => {
-    prisma.user.findMany.mockResolvedValueOnce([{ id: "client-1" }]);
+  it("rejects client ids that are not members of the creator org before creating the event", async () => {
+    prisma.__tx.user.findMany.mockResolvedValueOnce([{ id: "client-1" }]);
 
     const response = await POST(request({ ...validBody, clientIds: ["client-1", "missing-client"] }));
 
     expect(response.status).toBe(400);
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.__tx.event.create).not.toHaveBeenCalled();
   });
 
   it("creates event and related initial records inside one transaction", async () => {
-    prisma.user.findMany.mockResolvedValueOnce([{ id: "client-1" }]);
+    prisma.__tx.user.findMany.mockResolvedValueOnce([{ id: "client-1" }]);
 
     const response = await POST(request({ ...validBody, clientIds: ["client-1"], autoShareSummary: true }));
 
@@ -162,5 +167,17 @@ describe("events create route security and atomicity", () => {
     expect(prisma.__tx.milestone.create).toHaveBeenCalled();
     expect(prisma.__tx.checklist.create).toHaveBeenCalled();
     expect(prisma.__tx.checklistItem.createMany).toHaveBeenCalled();
+  });
+
+  it("fails event creation when requested summary sharing fails", async () => {
+    prisma.__tx.user.findMany.mockResolvedValueOnce([{ id: "client-1" }]);
+    prisma.__tx.eventShare.createMany.mockRejectedValueOnce(new Error("share failed"));
+
+    const response = await POST(request({ ...validBody, clientIds: ["client-1"], autoShareSummary: true }));
+
+    expect(response.status).toBe(500);
+    expect(prisma.__tx.event.create).toHaveBeenCalled();
+    expect(prisma.__tx.eventStakeholder.createMany).toHaveBeenCalled();
+    expect(prisma.event.findFirst).not.toHaveBeenCalled();
   });
 });
