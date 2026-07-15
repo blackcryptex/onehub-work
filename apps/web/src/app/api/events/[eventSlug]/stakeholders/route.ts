@@ -57,10 +57,17 @@ export async function POST(
     const body = await request.json();
     const { userId, role } = addStakeholderSchema.parse(body);
 
-    // Verify the user exists and is a CLIENT (if role is CLIENT)
+    // Verify the user exists and is a safe client attachment for this event org.
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true },
+      select: {
+        id: true,
+        role: true,
+        memberships: {
+          where: { orgId: event.orgId },
+          select: { userId: true },
+        },
+      },
     });
 
     if (!targetUser) {
@@ -69,6 +76,10 @@ export async function POST(
 
     if (role === "CLIENT" && targetUser.role !== "CLIENT") {
       return NextResponse.json({ error: "User must be a CLIENT to be assigned as a client stakeholder" }, { status: 400 });
+    }
+
+    if (role === "CLIENT" && targetUser.memberships.length === 0) {
+      return NextResponse.json({ error: "Client must belong to the event organization before being added as a stakeholder" }, { status: 400 });
     }
 
     // Create EventStakeholder record
