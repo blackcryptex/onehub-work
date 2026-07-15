@@ -71,8 +71,18 @@ export default async function AppPage() {
   });
 
   const orgIds = orgs.map((o) => o.id);
+  const recentEventWhere =
+    role === "CLIENT"
+      ? {
+          stakeholders: { some: { userId, role: "CLIENT" as const } },
+          shares: { some: { viewerUserId: userId, scope: "SUMMARY" as const } },
+        }
+      : admin
+        ? {}
+        : { orgId: { in: orgIds } };
+
   const recentEvents = await prisma.event.findMany({
-    where: admin ? {} : { orgId: { in: orgIds } },
+    where: recentEventWhere,
     take: 5,
     orderBy: { createdAt: "desc" },
     include: { org: { select: { name: true, slug: true } } },
@@ -145,9 +155,11 @@ export default async function AppPage() {
         <Card className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Recent Events</h2>
-            <Button asChild variant="ghost">
-              <Link href={vaultIndex(role) as any}>View all</Link>
-            </Button>
+            {role !== "CLIENT" && (
+              <Button asChild variant="ghost">
+                <Link href={vaultIndex(role) as any}>View all</Link>
+              </Button>
+            )}
           </div>
           {recentEvents.length === 0 ? (
             <p className="text-sm text-slate-600">No events yet. Create your first event to get started!</p>
