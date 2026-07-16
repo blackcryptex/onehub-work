@@ -4,21 +4,25 @@ import { Card, Button } from "@/components/ui";
 import { MapPin, FileText, FileCheck, Sparkles } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
-import { contractDetail } from "@/lib/routes";
+import type { Role } from "@onehub/types/src/roles";
+import { contractDetail, vaultDetail } from "@/lib/routes";
 
 interface DemoTourProps {
   eventSlug: string;
   eventId: string;
+  role?: Role;
   proposalId?: string;
   contractId?: string;
   show?: boolean;
 }
 
-export function DemoTour({ eventSlug, eventId, proposalId, contractId, show = false }: DemoTourProps) {
+export function DemoTour({ eventSlug, eventId, role, proposalId, contractId, show = false }: DemoTourProps) {
   // Only show if explicitly enabled (server passes this)
   if (!show) {
     return null;
   }
+
+  const eventHref = vaultDetail(role, eventSlug);
 
   return (
     <Card className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
@@ -36,7 +40,7 @@ export function DemoTour({ eventSlug, eventId, proposalId, contractId, show = fa
           size="sm"
           className="justify-start text-xs"
         >
-          <Link href={`/app/vault/${eventSlug}`}>
+          <Link href={eventHref as Route}>
             <MapPin className="w-3 h-3 mr-1" />
             Event Vault
           </Link>
@@ -99,7 +103,7 @@ export function DemoTour({ eventSlug, eventId, proposalId, contractId, show = fa
           size="sm"
           className="justify-start text-xs"
         >
-          <Link href={`/app/vault/${eventSlug}`}>
+          <Link href={eventHref as Route}>
             <Sparkles className="w-3 h-3 mr-1" />
             AI Source
           </Link>

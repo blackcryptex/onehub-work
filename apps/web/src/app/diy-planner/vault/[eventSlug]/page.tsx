@@ -246,6 +246,7 @@ export default async function DIYVaultDetailPage({
         <DemoTour
           eventSlug={eventSlug}
           eventId={event.id}
+          role={user.role}
           proposalId={firstProposal?.id}
           contractId={firstContract?.id}
           show={true}

@@ -281,6 +281,7 @@ export default async function EventVaultDetailPage({ params }: { params: Promise
         <DemoTour
           eventSlug={resolvedParams.eventSlug}
           eventId={event.id}
+          role={user.role}
           proposalId={firstProposal?.id}
           contractId={firstContract?.id}
           show={true}
