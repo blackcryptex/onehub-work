@@ -12,7 +12,7 @@ const sourceVendorsVenuesSchema = z.object({
   limitUnverified: z.number().int().positive().optional(),
 });
 
-// Map EventType to relevant ListingCategory values (per demo requirements)
+// Map EventType to relevant ListingCategory values
 function getCategoriesForEventType(eventType: EventType): ListingCategory[] {
   switch (eventType) {
     case "WEDDING":
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
       whereClause.state = event.venueState;
     }
 
-    // Query verified listings with proper ordering (demo-safe: deterministic)
+    // Query verified listings with deterministic ordering
     const verifiedListings = await prisma.listing.findMany({
       where: whereClause,
       take: limitVerified,
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
       badgeText: "Verified",
     }));
 
-    // Generate unverified stub results (demo-safe + deterministic)
+    // Generate unverified fallback results (deterministic)
     const unverifiedResults: UnverifiedResult[] = [];
     const unverifiedCategories = categories.slice(0, limitUnverified);
     const eventCity = event.venueCity || "Local";

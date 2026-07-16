@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { isDemoMode } from "@/lib/demo-mode";
 
 export async function POST(request: NextRequest) {
   try {
@@ -127,18 +126,6 @@ export async function POST(request: NextRequest) {
         status: "PENDING",
       },
     });
-
-    // Demo mode: Log instead of sending email
-    if (isDemoMode()) {
-      console.log("[DEMO_MODE] Booking request created:", {
-        id: bookingRequest.id,
-        listingId,
-        contactEmail,
-      });
-    } else {
-      // TODO: Send email notification to vendor
-      // await sendEmail(...)
-    }
 
     return NextResponse.json({ success: true, id: bookingRequest.id });
   } catch (error) {

@@ -3,7 +3,7 @@
  */
 
 import { openai, isAIAvailable } from "./client";
-import { isDemoMode, logDemoMode, logAI } from "@/lib/demo-mode";
+import { logAI } from "./logging";
 
 /**
  * Context needed to generate a contract from a proposal
@@ -76,10 +76,10 @@ export interface GeneratedContract {
 }
 
 /**
- * Generate a deterministic demo contract (fallback when AI unavailable)
+ * Generate a deterministic contract fallback when AI is unavailable.
  */
-function generateDemoContract(ctx: ContractContext): GeneratedContract {
-  logDemoMode("Generating deterministic demo contract");
+function generateDeterministicContract(ctx: ContractContext): GeneratedContract {
+  logAI("Generating deterministic contract");
   
   const vendorOrVenue = ctx.vendor || ctx.venue;
   if (!vendorOrVenue) {
@@ -278,15 +278,10 @@ Date: _______________`;
 export async function generateContractFromProposal(
   ctx: ContractContext
 ): Promise<GeneratedContract> {
-  // Demo mode: use deterministic fallback
-  if (isDemoMode()) {
-    return generateDemoContract(ctx);
-  }
-
-  // Check AI availability - if unavailable, fall back to demo mode
+  // Check AI availability - if unavailable, use deterministic fallback
   if (!isAIAvailable() || !openai) {
-    logDemoMode("AI unavailable, using demo fallback");
-    return generateDemoContract(ctx);
+    logAI("AI unavailable, using deterministic contract fallback");
+    return generateDeterministicContract(ctx);
   }
 
   const vendorOrVenue = ctx.vendor || ctx.venue;
@@ -529,13 +524,11 @@ Return ONLY the contract text in markdown format, starting with the title (#). D
     logAI("Error generating contract:", error);
     if (error instanceof Error) {
       logAI("Error stack:", error.stack);
-      // Fallback to demo mode on error
-      logDemoMode("AI error, falling back to demo contract");
-      return generateDemoContract(ctx);
+      logAI("AI error, falling back to deterministic contract");
+      return generateDeterministicContract(ctx);
     }
-    // Fallback to demo mode on unknown error
-    logDemoMode("Unknown AI error, falling back to demo contract");
-    return generateDemoContract(ctx);
+    logAI("Unknown AI error, falling back to deterministic contract");
+    return generateDeterministicContract(ctx);
   }
 }
 

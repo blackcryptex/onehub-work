@@ -16,8 +16,7 @@ export async function GET(request: NextRequest) {
     const location = searchParams.get("location") || "";
     const categories = searchParams.get("categories")?.split(",").filter(Boolean) || [];
 
-    // Mock external vendor results for demonstration
-    // In production, this would call actual external APIs
+    // Mock external vendor results until external provider integration is wired
     const mockExternalResults: ExternalVendorResult[] = [];
 
     // Only return mock results if there's a meaningful search query

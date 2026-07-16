@@ -22,8 +22,7 @@ export default async function ProVaultPage() {
   }
 
   if (!canAccessDashboard(user, "PRO_PLANNER")) {
-    // For demo friendliness, redirect to demo launcher if not authorized
-    redirect("/demo");
+    redirect("/app");
   }
 
   const userId = user.id;

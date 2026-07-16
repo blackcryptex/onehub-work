@@ -3,8 +3,7 @@
  */
 
 import { openai, isAIAvailable } from "./client";
-import { isDemoMode, logDemoMode, logAI } from "@/lib/demo-mode";
-import type { Prisma } from "@prisma/client";
+import { logAI } from "./logging";
 
 /**
  * Context needed to generate a proposal
@@ -85,10 +84,10 @@ export interface GeneratedProposal {
 }
 
 /**
- * Generate a deterministic demo proposal (fallback when AI unavailable)
+ * Generate a deterministic proposal fallback when AI is unavailable.
  */
-function generateDemoProposal(ctx: ProposalContext): GeneratedProposal {
-  logDemoMode("Generating deterministic demo proposal");
+function generateDeterministicProposal(ctx: ProposalContext): GeneratedProposal {
+  logAI("Generating deterministic proposal");
   
   const vendorOrVenue = ctx.vendor || ctx.venue;
   const vendorName = vendorOrVenue?.name || "Vendor";
@@ -388,15 +387,10 @@ function generateDemoProposal(ctx: ProposalContext): GeneratedProposal {
 export async function generateProposalFromContext(
   ctx: ProposalContext
 ): Promise<GeneratedProposal> {
-  // Demo mode: use deterministic fallback
-  if (isDemoMode()) {
-    return generateDemoProposal(ctx);
-  }
-
-  // Check AI availability - if unavailable, fall back to demo mode
+  // Check AI availability - if unavailable, use deterministic fallback
   if (!isAIAvailable() || !openai) {
-    logDemoMode("AI unavailable, using demo fallback");
-    return generateDemoProposal(ctx);
+    logAI("AI unavailable, using deterministic proposal fallback");
+    return generateDeterministicProposal(ctx);
   }
 
   const vendorOrVenue = ctx.vendor || ctx.venue;
@@ -605,13 +599,11 @@ IMPORTANT:
     logAI("Error generating proposal:", error);
     if (error instanceof Error) {
       logAI("Error stack:", error.stack);
-      // Fallback to demo mode on error
-      logDemoMode("AI error, falling back to demo proposal");
-      return generateDemoProposal(ctx);
+      logAI("AI error, falling back to deterministic proposal");
+      return generateDeterministicProposal(ctx);
     }
-    // Fallback to demo mode on unknown error
-    logDemoMode("Unknown AI error, falling back to demo proposal");
-    return generateDemoProposal(ctx);
+    logAI("Unknown AI error, falling back to deterministic proposal");
+    return generateDeterministicProposal(ctx);
   }
 }
 

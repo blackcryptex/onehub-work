@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Button, Money } from "@/components/ui";
-import { DollarSign, TrendingUp, Info, Sparkles, Plus, CheckCircle2, FileText } from "lucide-react";
+import { DollarSign, TrendingUp, Sparkles, Plus, CheckCircle2, FileText } from "lucide-react";
 import { EditPaymentLineModal } from "./EditPaymentLineModal";
 import { DepositActions, PayoutActions } from "./PaymentPlanActions";
 import { useToast } from "@/hooks/useToast";
@@ -11,11 +11,6 @@ import { useToast } from "@/hooks/useToast";
 const formatStatus = (s?: string) =>
   (s ?? "").toLowerCase().replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
-const formatDate = (d?: string | Date) => {
-  if (!d) return "";
-  const dt = typeof d === "string" ? new Date(d) : d;
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(dt);
-};
 
 const getStatusBadgeColor = (status?: string) => {
   switch (status) {
@@ -98,7 +93,6 @@ interface PaymentPlanPageClientProps {
   listings: Listing[];
   firstProposal: Proposal | undefined;
   isPlanner: boolean;
-  demoModeActive: boolean;
   hasAcceptedProposals: boolean;
   heldFundsBalance: number;
   fundedTotal: number;
@@ -111,8 +105,6 @@ interface PaymentPlanPageClientProps {
   totalVendorPayout: number;
 }
 
-const PLATFORM_FEE_BPS = 300;
-
 export function PaymentPlanPageClient({
   event,
   deposits,
@@ -120,12 +112,11 @@ export function PaymentPlanPageClient({
   listings,
   firstProposal,
   isPlanner,
-  demoModeActive,
   hasAcceptedProposals,
   heldFundsBalance,
   fundedTotal,
   releasedTotal,
-  pendingTotal,
+  pendingTotal: _pendingTotal,
   revenueBreakdown,
   totalGross,
   totalPlatformFee,
@@ -291,23 +282,10 @@ export function PaymentPlanPageClient({
         </p>
       </div>
 
-      {demoModeActive && (
-        <div className="flex items-center gap-2 text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 p-3 rounded-lg">
-          <Sparkles className="w-4 h-4" />
-          <span>Demo simulation active — no real transactions.</span>
-        </div>
-      )}
-
       {/* Held Funds Summary */}
       <Card className="p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Held Funds Summary</h2>
-          {demoModeActive && (
-            <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700">
-              <Info className="w-3 h-3 mr-1" />
-              Demo simulation
-            </span>
-          )}
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           <div>
@@ -332,11 +310,9 @@ export function PaymentPlanPageClient({
             <div className="mt-1 text-xs text-slate-500">Payments completed</div>
           </div>
         </div>
-        {!demoModeActive && (
-          <p className="mt-4 text-xs text-slate-500">
-            Stripe Connect held funds pending release coming next.
-          </p>
-        )}
+        <p className="mt-4 text-xs text-slate-500">
+          Stripe Connect held funds pending release coming next.
+        </p>
       </Card>
 
       {/* Client Funding */}
@@ -450,11 +426,9 @@ export function PaymentPlanPageClient({
                     </td>
                     <td className="whitespace-nowrap px-4 py-4 text-sm">
                       <DepositActions
-                        depositId={deposit.id}
                         currentStatus={deposit.status}
                         onEdit={() => handleEdit(deposit, "deposit")}
                         onDelete={() => handleDelete(deposit, "deposit")}
-                        isDemoMode={demoModeActive}
                         isPlanner={isPlanner}
                       />
                     </td>
@@ -599,7 +573,6 @@ export function PaymentPlanPageClient({
                             heldFundsBalanceCents={heldFundsBalance}
                             onEdit={() => handleEdit(payout, "payout")}
                             onDelete={() => handleDelete(payout, "payout")}
-                            isDemoMode={demoModeActive}
                             isPlanner={isPlanner}
                             isLocked={isLocked}
                           />
@@ -621,11 +594,7 @@ export function PaymentPlanPageClient({
             <TrendingUp className="w-5 h-5" />
             OneHub Revenue
           </h2>
-          {demoModeActive && (
-            <span className="text-xs text-slate-500">
-              Platform fee: {PLATFORM_FEE_BPS / 100}% • Processing fee: illustrative
-            </span>
-          )}
+
         </div>
 
         {revenueBreakdown.length === 0 ? (
@@ -699,14 +668,6 @@ export function PaymentPlanPageClient({
               </table>
             </div>
 
-            {demoModeActive && (
-              <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
-                <p className="text-xs text-indigo-800">
-                  <strong>Demo simulation</strong> — Stripe Connect held funds pending release in production. Platform fee of{" "}
-                  {PLATFORM_FEE_BPS / 100}% applies to all released payments.
-                </p>
-              </div>
-            )}
           </div>
         )}
       </Card>

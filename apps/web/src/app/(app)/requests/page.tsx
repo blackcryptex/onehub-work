@@ -1,8 +1,7 @@
-import { Card, Button } from "@onehub/ui";
+import { Card } from "@onehub/ui";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
-import { isDemoMode } from "@/lib/demo-mode";
 import { Calendar, User, Mail, Phone, Users, MessageSquare } from "lucide-react";
 import { vaultDetail } from "@/lib/routes";
 
@@ -26,7 +25,6 @@ export default async function RequestsPage() {
   const userId = session?.user?.id as string | undefined;
   const userRole = session?.user?.role;
   if (!userId) return <div>Unauthorized</div>;
-  const demoMode = isDemoMode();
   
   const orgs = await prisma.organization.findMany({
     where: { members: { some: { userId } } },
@@ -48,12 +46,6 @@ export default async function RequestsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Booking Requests</h1>
       </div>
-
-      {demoMode && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          <strong>DEMO DATA</strong> — Pre-seeded booking requests
-        </div>
-      )}
 
       {requests.length === 0 ? (
         <Card className="p-12 text-center">

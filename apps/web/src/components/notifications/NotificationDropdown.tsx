@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Card, Button } from "@/components/ui";
 import { Bell, X, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { isDemoMode } from "@/lib/demo-mode";
 
 interface Notification {
   id: string;
@@ -21,7 +19,6 @@ export function NotificationDropdown() {
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const demoMode = isDemoMode();
 
   useEffect(() => {
     async function fetchNotifications() {
@@ -100,12 +97,6 @@ export function NotificationDropdown() {
               <X className="w-4 h-4" />
             </button>
           </div>
-
-          {demoMode && (
-            <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              <strong>DEMO DATA</strong> — Pre-seeded notifications
-            </div>
-          )}
 
           <div className="max-h-96 overflow-y-auto">
             {loading ? (

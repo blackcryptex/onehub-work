@@ -1,7 +1,7 @@
 import { Card, Button } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
-import { canManageEvent, canEditEvent, canDeleteEvent, isPlanner, canAccessDashboard } from "@/lib/rbac";
+import { canManageEvent, canEditEvent, canDeleteEvent, canAccessDashboard } from "@/lib/rbac";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -20,7 +20,7 @@ import { EventActions } from "@/components/events/EventActions";
 import { ShareEventButton } from "@/components/events/ShareEventButton";
 import { StakeholdersSectionClient } from "@/components/vault/StakeholdersSectionClient";
 import { AiSourceVendorsVenuesPanel } from "@/components/vault/AiSourceVendorsVenuesPanel";
-import { DemoTour } from "@/components/vault/DemoTour";
+
 import { getVaultBasePath, proposalDetail } from "@/lib/routes";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
@@ -46,8 +46,7 @@ export default async function DIYVaultDetailPage({
   }
 
   if (!canAccessDashboard(user, "DIY_PLANNER")) {
-    // For demo friendliness, redirect to demo launcher if not authorized
-    redirect("/demo");
+    redirect("/app");
   }
 
   const userId = user.id;
@@ -232,27 +231,8 @@ export default async function DIYVaultDetailPage({
     CANCELED: "bg-rose-100 text-rose-700",
   };
 
-  const firstProposal = event.proposals[0];
-  const firstContract = firstProposal ? await prisma.contract.findUnique({
-    where: { proposalId: firstProposal.id },
-    select: { id: true },
-  }) : null;
-
-  const isDemoModeEnabled = process.env.ONEHUB_DEMO_MODE === "true";
-
   return (
     <div className="space-y-6">
-      {isDemoModeEnabled && (
-        <DemoTour
-          eventSlug={eventSlug}
-          eventId={event.id}
-          role={user.role}
-          proposalId={firstProposal?.id}
-          contractId={firstContract?.id}
-          show={true}
-        />
-      )}
-
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{event.name}</h1>

@@ -96,19 +96,10 @@ export function InviteVendorModal({
         throw new Error(data.error || "Failed to send invite");
       }
 
-      const data = await response.json();
       setSuccess(true);
-      
-      if (data.mode === "demo") {
-        // In demo mode, show success message
-        setTimeout(() => {
-          if (onSuccess) onSuccess();
-          onClose();
-        }, 2000);
-      } else {
-        if (onSuccess) onSuccess();
-        onClose();
-      }
+
+      if (onSuccess) onSuccess();
+      onClose();
     } catch (err) {
       console.error("Error sending invite:", err);
       setError(err instanceof Error ? err.message : "Failed to send invite");
@@ -134,9 +125,9 @@ export function InviteVendorModal({
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Mail className="w-8 h-8 text-green-600" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Invite Queued (Demo)</h3>
+            <h3 className="text-lg font-semibold mb-2">Invite Queued</h3>
             <p className="text-sm text-slate-600 mb-4">
-              In demo mode, the invite has been queued. In production, this would send an email to {email}.
+              The invite has been queued for {email}.
             </p>
             <Button onClick={onClose} className="w-full">
               Close

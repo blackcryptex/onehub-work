@@ -20,7 +20,7 @@ import { EventActions } from "@/components/events/EventActions";
 import { ShareEventButton } from "@/components/events/ShareEventButton";
 import { StakeholdersSectionClient } from "@/components/vault/StakeholdersSectionClient";
 import { AiSourceVendorsVenuesPanel } from "@/components/vault/AiSourceVendorsVenuesPanel";
-import { DemoTour } from "@/components/vault/DemoTour";
+
 import { getVaultBasePath, eventBudget, eventGuests, eventChecklists, proposalDetail, vaultDetail } from "@/lib/routes";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
@@ -265,29 +265,9 @@ export default async function EventVaultDetailPage({ params }: { params: Promise
     CANCELED: "bg-rose-100 text-rose-700",
   };
 
-  // Get first proposal/contract for demo tour (if exists)
-  const firstProposal = event.proposals[0];
-  const firstContract = firstProposal ? await prisma.contract.findUnique({
-    where: { proposalId: firstProposal.id },
-    select: { id: true },
-  }) : null;
-
-  const isDemoModeEnabled = process.env.ONEHUB_DEMO_MODE === "true";
-
+  // Detail page data prepared above.
   return (
     <div className="space-y-6">
-      {/* Demo Tour (only in demo mode) */}
-      {isDemoModeEnabled && (
-        <DemoTour
-          eventSlug={resolvedParams.eventSlug}
-          eventId={event.id}
-          role={user.role}
-          proposalId={firstProposal?.id}
-          contractId={firstContract?.id}
-          show={true}
-        />
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

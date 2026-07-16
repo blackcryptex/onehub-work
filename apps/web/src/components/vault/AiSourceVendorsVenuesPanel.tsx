@@ -46,7 +46,7 @@ export function AiSourceVendorsVenuesPanel({ eventId, eventName, eventLocation }
   const [addingToList, setAddingToList] = useState<string | null>(null);
   const router = useRouter();
 
-  // Fallback results (demo-safe, deterministic)
+  // Fallback results (deterministic)
   const getFallbackResults = (): Result[] => {
     return [
       {
@@ -93,7 +93,7 @@ export function AiSourceVendorsVenuesPanel({ eventId, eventName, eventLocation }
       setResults(data.results || []);
     } catch (err) {
       console.error("[AiSourceVendorsVenuesPanel] Error sourcing vendors:", err);
-      // Demo-safe: show fallback results instead of error
+      // Use fallback results instead of showing a hard failure
       setResults(getFallbackResults());
       setError("Using fallback results. API unavailable.");
     } finally {

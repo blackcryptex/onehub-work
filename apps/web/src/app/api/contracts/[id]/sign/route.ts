@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent, isOrgMember } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { isDemoMode } from "@/lib/demo-mode";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
 import { resolveBookingClassification } from "@/lib/booking-classification";
 import { getLegalSurface } from "@/lib/legal-surface";
@@ -122,7 +121,7 @@ export async function POST(
           signerName,
           signerEmail,
           signedAt: new Date(),
-          method: isDemoMode() ? "DEMO" : "ELECTRONIC",
+          method: "ELECTRONIC",
         },
       });
     } else {
@@ -133,7 +132,7 @@ export async function POST(
           signerName,
           signerEmail,
           signedAt: new Date(),
-          method: isDemoMode() ? "DEMO" : "ELECTRONIC",
+          method: "ELECTRONIC",
         },
       });
     }
@@ -200,18 +199,6 @@ export async function POST(
         contractStatusAfter: newStatus,
       },
     });
-
-    // Demo mode: Log instead of sending email
-    if (isDemoMode()) {
-      console.log("[DEMO_MODE] Contract signed:", {
-        contractId: contract.id,
-        signerEmail,
-        newStatus,
-      });
-    } else {
-      // TODO: Send email notification
-      // await sendEmail(...)
-    }
 
     return NextResponse.json({ success: true, signature, status: newStatus });
   } catch (error) {

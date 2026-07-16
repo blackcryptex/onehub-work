@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Card, Button, Input, Label } from "@/components/ui";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { isDemoMode } from "@/lib/demo-mode";
 import { useRouter } from "next/navigation";
 import { CURRENT_ACCEPTANCE_VERSIONS } from "@/lib/acceptance-versions";
 
@@ -19,14 +18,13 @@ export function ContractSignatureForm({
   prefilledSignerEmail,
 }: ContractSignatureFormProps) {
   const router = useRouter();
-  const demoMode = isDemoMode();
   const [loading, setLoading] = useState(false);
   const [signed, setSigned] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    signerName: demoMode ? "Jane Planner" : "",
-    signerEmail: prefilledSignerEmail ?? (demoMode ? "pro@example.com" : ""),
+    signerName: "",
+    signerEmail: prefilledSignerEmail ?? "",
     agreed: false,
   });
 
@@ -67,12 +65,6 @@ export function ContractSignatureForm({
   return (
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4">Sign Contract</h3>
-
-      {demoMode && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-          <strong>DEMO DATA</strong> — Signature will be saved to database (no e-signature service)
-        </div>
-      )}
 
       {signed ? (
         <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">

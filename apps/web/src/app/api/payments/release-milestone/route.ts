@@ -8,7 +8,6 @@ import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
 import { recordAudit } from "@/server/lib/audit";
 import { getRequestLogger } from "@/lib/logger";
 import { trackError } from "@/lib/errorTracker";
-import { isDemoMode, logDemoMode } from "@/lib/demo-mode";
 import { resolveBookingClassification } from "@/lib/booking-classification";
 import { resolveFeeProfile } from "@/lib/fee-profile";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
@@ -232,15 +231,6 @@ export async function POST(request: NextRequest) {
 
     if (milestone.amountCents <= 0) {
       return NextResponse.json({ error: "Amount override at release is disallowed in guarded MVP" }, { status: 409 });
-    }
-
-    // Guarded MVP: demo-mode release bypass is disabled because every successful release
-    // path must emit the canonical audit and admin-override evidence package.
-    if (isDemoMode()) {
-      logDemoMode("Guarded MVP: demo-mode release path blocked because canonical release evidence is required");
-      return NextResponse.json({
-        error: "Demo mode release is disabled in guarded MVP. Use the canonical release path to produce audit evidence.",
-      }, { status: 409 });
     }
 
     // Wrap in transaction for atomicity

@@ -22,8 +22,7 @@ export default async function DIYVaultPage() {
   }
 
   if (!canAccessDashboard(user, "DIY_PLANNER")) {
-    // For demo friendliness, redirect to demo launcher if not authorized
-    redirect("/demo");
+    redirect("/app");
   }
 
   const userId = user.id;

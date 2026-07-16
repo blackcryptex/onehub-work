@@ -1,5 +1,3 @@
-import { isDemoMode } from "@/lib/demo-mode";
-
 interface ReceiptData {
   payoutId: string;
   payoutAmountCents: number;
@@ -18,7 +16,6 @@ interface ReceiptData {
 }
 
 export function generateReceiptHTML(data: ReceiptData): string {
-  const demoMode = isDemoMode();
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -54,16 +51,6 @@ export function generateReceiptHTML(data: ReceiptData): string {
     .header p {
       margin: 5px 0;
       color: #64748b;
-    }
-    .demo-banner {
-      background: #fef3c7;
-      border: 1px solid #fbbf24;
-      padding: 10px;
-      text-align: center;
-      margin-bottom: 20px;
-      border-radius: 4px;
-      font-size: 12px;
-      color: #92400e;
     }
     .section {
       margin-bottom: 30px;
@@ -118,8 +105,6 @@ export function generateReceiptHTML(data: ReceiptData): string {
     <h1>OneHub</h1>
     <p>Payment Receipt</p>
   </div>
-
-  ${demoMode ? '<div class="demo-banner"><strong>DEMO DATA</strong> — This is a demo receipt</div>' : ''}
 
   <div class="section">
     <h2>Payment Details</h2>
@@ -178,7 +163,6 @@ export function generateReceiptHTML(data: ReceiptData): string {
   <div class="footer">
     <p>This is an official receipt from OneHub.</p>
     <p>For questions, contact support@onehub.com</p>
-    ${demoMode ? '<p><strong>DEMO MODE</strong> — This receipt is for demonstration purposes only.</p>' : ''}
   </div>
 </body>
 </html>

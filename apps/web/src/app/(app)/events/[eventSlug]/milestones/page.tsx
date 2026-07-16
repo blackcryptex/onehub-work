@@ -1,15 +1,12 @@
-import { Card, Button, Money } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { canViewEvent, canManageEvent } from "@/lib/rbac";
-import { isDemoMode } from "@/lib/demo-mode";
-import { DollarSign, TrendingUp, Info, Sparkles } from "lucide-react";
-import { parseDepositMetadata, isDepositLine } from "@/lib/payment-plan-helpers";
+import { canViewEvent } from "@/lib/rbac";
+import { isDepositLine } from "@/lib/payment-plan-helpers";
 import { PaymentPlanPageClient } from "@/components/payments/PaymentPlanPageClient";
 import { getLockMap } from "@/lib/payments/payoutLock";
 
-// Platform fee constants (demo assumptions)
+// Platform fee constants
 const PLATFORM_FEE_BPS = 300; // 3.00%
 const PROCESSING_FEE_RATE = 0.029; // 2.9%
 const PROCESSING_FEE_FIXED = 30; // $0.30
@@ -57,7 +54,6 @@ export default async function EventMilestonesPage({
   }
 
   const isPlanner = user.role === "PRO_PLANNER";
-  const demoModeActive = isDemoMode();
 
   // Get first proposal for linking deposits/payouts
   const firstProposal = event.proposals[0];
@@ -65,7 +61,6 @@ export default async function EventMilestonesPage({
   // Separate deposits from regular milestones
   const allMilestones = event.proposals.flatMap((p) => p.milestones);
   const deposits = allMilestones.filter((m) => isDepositLine(m));
-  const regularMilestones = allMilestones.filter((m) => !isDepositLine(m));
 
   // Fetch payouts for this event (through proposals)
   const proposalIds = event.proposals.map((p) => p.id);
@@ -238,7 +233,6 @@ export default async function EventMilestonesPage({
       listings={listings}
       firstProposal={firstProposal}
       isPlanner={isPlanner}
-      demoModeActive={demoModeActive}
       hasAcceptedProposals={hasAcceptedProposals}
       heldFundsBalance={heldFundsBalance}
       fundedTotal={fundedTotal}

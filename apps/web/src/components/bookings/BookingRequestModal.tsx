@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { Card, Button, Input, Label } from "@/components/ui";
 import { X, Loader2, CheckCircle2 } from "lucide-react";
-import { isDemoMode } from "@/lib/demo-mode";
 import { useRouter } from "next/navigation";
 
 interface BookingRequestModalProps {
@@ -21,19 +20,18 @@ export function BookingRequestModal({
   onClose,
 }: BookingRequestModalProps) {
   const router = useRouter();
-  const demoMode = isDemoMode();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    contactName: demoMode ? "Jane Planner" : "",
-    contactEmail: demoMode ? "pro@example.com" : "",
-    contactPhone: demoMode ? "(555) 123-4567" : "",
+    contactName: "",
+    contactEmail: "",
+    contactPhone: "",
     startAt: "",
     endAt: "",
     guests: "",
-    message: demoMode ? "Interested in booking for our wedding event." : "",
+    message: "",
   });
 
   const hasEventContext = Boolean(eventId);
@@ -88,11 +86,6 @@ export function BookingRequestModal({
             <p className="text-sm text-slate-600 mb-4">
               Your request has been sent to {listingTitle}. They will respond soon.
             </p>
-            {demoMode && (
-              <p className="text-xs text-amber-600 mb-4">
-                <strong>DEMO DATA</strong> — Request saved to database
-              </p>
-            )}
             <Button onClick={onClose} variant="secondary">
               Close
             </Button>
@@ -115,12 +108,6 @@ export function BookingRequestModal({
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {demoMode && (
-          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-            <strong>DEMO DATA</strong> — Form pre-filled with demo values
-          </div>
-        )}
 
         {!hasEventContext && (
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
