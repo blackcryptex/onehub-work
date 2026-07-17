@@ -15,6 +15,34 @@ const confirmPaymentSchema = z.object({
   paymentIntentId: z.string(),
 });
 
+const CONFIRMABLE_PAYMENT_STATES = new Set(["REQUIRES_PAYMENT", "PROCESSING"]);
+
+function stripeIntentMatchesLocal(
+  stripeIntent: {
+    amount?: number;
+    currency?: string;
+    metadata?: Record<string, string | undefined> | null;
+  },
+  paymentIntent: {
+    id: string;
+    contractId: string;
+    milestoneId?: string | null;
+    amountCents: number;
+    currency: string;
+  }
+) {
+  const metadata = stripeIntent.metadata ?? {};
+  const expectedMilestoneId = paymentIntent.milestoneId ?? "";
+
+  return {
+    amountMatches: stripeIntent.amount === paymentIntent.amountCents &&
+      stripeIntent.currency?.toUpperCase() === paymentIntent.currency.toUpperCase(),
+    metadataMatches: metadata.paymentIntentId === paymentIntent.id &&
+      metadata.contractId === paymentIntent.contractId &&
+      (metadata.milestoneId ?? "") === expectedMilestoneId,
+  };
+}
+
 export async function POST(request: NextRequest) {
   const requestId = request.headers.get("x-request-id") || undefined;
   const logger = getRequestLogger(requestId);
@@ -68,6 +96,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Only the payer can confirm payment" }, { status: 403 });
     }
 
+    // Idempotency guard: if already succeeded, return success without processing
+    if (paymentIntent.status === "SUCCEEDED") {
+      return NextResponse.json({
+        success: true,
+        message: "Payment already confirmed.",
+      });
+    }
+
+    if (!CONFIRMABLE_PAYMENT_STATES.has(paymentIntent.status)) {
+      return NextResponse.json({ error: "Payment intent is not confirmable" }, { status: 409 });
+    }
+
+    if (!paymentIntent.stripeIntentId) {
+      return NextResponse.json({ error: "Payment intent is missing Stripe reference" }, { status: 409 });
+    }
+
     await requireAcceptanceProof({
       paymentIntentId,
       legalSurface: `payment.${resolveBookingClassification({
@@ -85,9 +129,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify Stripe payment intent
-    const stripeIntent = await stripe.paymentIntents.retrieve(paymentIntent.stripeIntentId || "");
+    const stripeIntent = await stripe.paymentIntents.retrieve(paymentIntent.stripeIntentId);
     if (!stripeIntent) {
       return NextResponse.json({ error: "Stripe payment intent not found" }, { status: 404 });
+    }
+
+    const stripeMatch = stripeIntentMatchesLocal(stripeIntent, paymentIntent);
+    if (!stripeMatch.metadataMatches) {
+      return NextResponse.json({ error: "Stripe payment intent does not match local payment record" }, { status: 409 });
+    }
+
+    if (!stripeMatch.amountMatches) {
+      return NextResponse.json({ error: "Stripe payment intent amount or currency mismatch" }, { status: 409 });
     }
 
     if (stripeIntent.status !== "succeeded") {
@@ -101,14 +154,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         status: "processing",
         message: "Payment is being processed",
-      });
-    }
-
-    // Idempotency guard: if already succeeded, return success without processing
-    if (paymentIntent.status === "SUCCEEDED") {
-      return NextResponse.json({
-        success: true,
-        message: "Payment already confirmed.",
       });
     }
 
@@ -144,6 +189,10 @@ export async function POST(request: NextRequest) {
       // Idempotency guard: check status again within transaction
       if (currentPaymentIntent.status === "SUCCEEDED") {
         return; // Already processed, exit early
+      }
+
+      if (!CONFIRMABLE_PAYMENT_STATES.has(currentPaymentIntent.status)) {
+        throw new Error("Payment intent is not confirmable");
       }
 
       const bookingClassification = resolveBookingClassification({

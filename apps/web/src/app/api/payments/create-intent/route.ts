@@ -164,12 +164,17 @@ export async function POST(request: NextRequest) {
     });
 
     const stripe = getStripeOrThrow();
+    let replacingExistingPaymentIntent = false;
 
     if (existingPaymentIntent?.stripeIntentId) {
       const existingStripeIntent = await stripe.paymentIntents.retrieve(existingPaymentIntent.stripeIntentId);
       const allowRedirects = existingStripeIntent.automatic_payment_methods?.allow_redirects;
 
-      if (allowRedirects === "never") {
+      const existingStripeMatchesLocal =
+        existingStripeIntent.amount === existingPaymentIntent.amountCents &&
+        existingStripeIntent.currency?.toUpperCase() === existingPaymentIntent.currency?.toUpperCase();
+
+      if (allowRedirects === "never" && existingStripeMatchesLocal) {
         return NextResponse.json({
           paymentIntentId: existingPaymentIntent.id,
           clientSecret: existingStripeIntent.client_secret,
@@ -187,6 +192,13 @@ export async function POST(request: NextRequest) {
         where: { id: existingPaymentIntent.id },
         data: { status: "CANCELLED" },
       });
+      replacingExistingPaymentIntent = true;
+    } else if (existingPaymentIntent) {
+      await prisma.paymentIntent.update({
+        where: { id: existingPaymentIntent.id },
+        data: { status: "CANCELLED" },
+      });
+      replacingExistingPaymentIntent = true;
     }
 
     const paymentIntent = await prisma.paymentIntent.create({
@@ -227,9 +239,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const idempotencyKey = targetMilestone
-      ? `contract:${contract.id}:milestone:${targetMilestone.id}:amount:${amount}:redirects-never:v1`
-      : `contract:${contract.id}:full:${amount}:redirects-never:v1`;
+    const idempotencyKey = replacingExistingPaymentIntent
+      ? `payment-intent:${paymentIntent.id}:replacement:redirects-never:v1`
+      : targetMilestone
+        ? `contract:${contract.id}:milestone:${targetMilestone.id}:amount:${amount}:redirects-never:v1`
+        : `contract:${contract.id}:full:${amount}:redirects-never:v1`;
 
     const stripeIntent = await stripe.paymentIntents.create(
       {
