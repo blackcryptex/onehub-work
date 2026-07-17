@@ -283,6 +283,111 @@ describe("release milestone payment guardrails", () => {
     });
   });
 
+  it("uses canonical in-transaction amount and payout ids in release transfer, money transaction, activity, and audit metadata", async () => {
+    const currentMilestone = { ...milestone, amountCents: 8000 };
+    prisma.paymentMilestone.findUnique
+      .mockResolvedValueOnce(milestone)
+      .mockResolvedValueOnce(currentMilestone);
+    prisma.escrowAccount.findUnique.mockResolvedValue({ id: "escrow-1", balanceCents: 8000, status: "OPEN" });
+    prisma.payout.create.mockResolvedValue({ id: "payout-1", status: "PENDING", amountCents: 8000, stripeTransfer: null });
+    prisma.payout.update.mockResolvedValue({ id: "payout-1", status: "SENT", amountCents: 8000, stripeTransfer: "tr_1" });
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(200);
+    expect(stripe.transfers.create).toHaveBeenCalledWith(expect.objectContaining({
+      amount: 8000,
+      metadata: expect.objectContaining({ payoutId: "payout-1", milestoneId: "milestone-1" }),
+    }), expect.any(Object));
+    expect(prisma.moneyTx.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: "RELEASE_ESCROW",
+        amountCents: 8000,
+        stripeId: "tr_1",
+        meta: expect.objectContaining({
+          payoutId: "payout-1",
+          escrowBalanceBefore: 8000,
+          escrowBalanceAfter: 0,
+          feeProfile: expect.objectContaining({ payoutBasisAmountCents: 10000 }),
+        }),
+      }),
+    });
+    expect(recordActivity).toHaveBeenCalledWith(expect.objectContaining({
+      meta: expect.objectContaining({
+        amountCents: 8000,
+        payoutId: "payout-1",
+        stripeTransferId: "tr_1",
+        escrowStatusAfter: "RELEASED",
+      }),
+    }));
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        amountCents: 8000,
+        payoutId: "payout-1",
+        stripeTransferId: "tr_1",
+      }),
+    }));
+    expect(recordAdminOverride).toHaveBeenCalledWith(expect.objectContaining({
+      targetId: "payout-1",
+      payoutId: "payout-1",
+      metadata: expect.objectContaining({ stripeTransferId: "tr_1" }),
+    }));
+  });
+
+  it("finalizes an existing pending payout retry with canonical escrow metadata", async () => {
+    prisma.payout.findFirst.mockResolvedValue({
+      id: "payout-pending",
+      status: "PENDING",
+      amountCents: 10000,
+      stripeTransfer: null,
+    });
+    prisma.escrowAccount.findUnique.mockResolvedValue({ id: "escrow-1", balanceCents: 0, status: "RELEASED" });
+    prisma.payout.update.mockResolvedValue({
+      id: "payout-pending",
+      status: "SENT",
+      amountCents: 10000,
+      stripeTransfer: "tr_retry",
+    });
+    stripe.transfers.create.mockResolvedValue({ id: "tr_retry" });
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(200);
+    expect(prisma.escrowAccount.updateMany).not.toHaveBeenCalled();
+    expect(prisma.payout.create).not.toHaveBeenCalled();
+    expect(stripe.transfers.create).toHaveBeenCalledWith(expect.objectContaining({
+      amount: 10000,
+      metadata: expect.objectContaining({ payoutId: "payout-pending", milestoneId: "milestone-1" }),
+    }), {
+      idempotencyKey: "release-milestone:milestone-1:payout:payout-pending:v1",
+    });
+    expect(prisma.moneyTx.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: "RELEASE_ESCROW",
+        amountCents: 10000,
+        stripeId: "tr_retry",
+        meta: expect.objectContaining({
+          payoutId: "payout-pending",
+          escrowBalanceBefore: 10000,
+          escrowBalanceAfter: 0,
+        }),
+      }),
+    });
+    expect(recordActivity).toHaveBeenCalledWith(expect.objectContaining({
+      meta: expect.objectContaining({
+        payoutId: "payout-pending",
+        stripeTransferId: "tr_retry",
+        escrowStatusAfter: "RELEASED",
+      }),
+    }));
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        payoutId: "payout-pending",
+        stripeTransferId: "tr_retry",
+      }),
+    }));
+  });
+
   it("preserves idempotent already-paid behavior when an existing payout is present", async () => {
     prisma.paymentMilestone.findUnique.mockResolvedValue({ ...milestone, status: "PAID" });
     prisma.payout.findFirst.mockResolvedValue({ id: "payout-existing", status: "SENT" });

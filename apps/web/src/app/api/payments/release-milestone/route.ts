@@ -177,10 +177,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const feeProfile = resolveFeeProfile({
-      bookingClassification,
-      grossAmountCents: milestone.amountCents,
-    });
     const adminOverrideId = `milestone-release:${milestone.id}`;
 
     const acceptanceProof = await recordAcceptance({
@@ -270,13 +266,21 @@ export async function POST(request: NextRequest) {
 
       if (existingPayout) {
         if (existingPayout.status === "PENDING") {
+          const currentEscrowAccount = await tx.escrowAccount.findUnique({
+            where: { proposalId: milestone.proposalId },
+          });
+
+          if (!currentEscrowAccount) {
+            throw new ReleaseMilestoneError("Insufficient escrow balance", 400);
+          }
+
           return {
             payout: existingPayout,
             alreadyProcessed: false,
             currentMilestone,
             reservationReused: true,
-            escrowBalanceBefore: null,
-            escrowBalanceAfter: null,
+            escrowBalanceBefore: currentEscrowAccount.balanceCents + currentMilestone.amountCents,
+            escrowBalanceAfter: currentEscrowAccount.balanceCents,
           };
         }
         throw new ReleaseMilestoneError("Payout already exists for milestone", 409);
@@ -340,6 +344,12 @@ export async function POST(request: NextRequest) {
       throw new ReleaseMilestoneError("Milestone reservation is missing current milestone", 500);
     }
 
+    const releasedAmountCents = currentMilestone.amountCents;
+    const releaseFeeProfile = resolveFeeProfile({
+      bookingClassification,
+      grossAmountCents: releasedAmountCents,
+    });
+
     // If Stripe Connect account exists, create transfer only after durable local reservation.
     let stripeTransferId: string | undefined;
     if (canonicalRecipient.stripeAccountId && stripe) {
@@ -357,7 +367,7 @@ export async function POST(request: NextRequest) {
         });
 
         const transfer = await stripe.transfers.create({
-          amount: currentMilestone.amountCents,
+          amount: releasedAmountCents,
           currency: milestone.proposal.currency.toLowerCase(),
           destination: canonicalRecipient.stripeAccountId,
           source_transaction: sourceTransaction?.stripeChargeId || undefined,
@@ -415,7 +425,7 @@ export async function POST(request: NextRequest) {
           type: "RELEASE_ESCROW",
           proposalId: milestone.proposalId,
           milestoneId: milestone.id,
-          amountCents: currentMilestone.amountCents,
+          amountCents: releasedAmountCents,
           currency: milestone.proposal.currency,
           stripeId: stripeTransferId,
           meta: {
@@ -424,7 +434,7 @@ export async function POST(request: NextRequest) {
             releasedByRole: user?.role,
             escrowBalanceBefore: reservation.escrowBalanceBefore,
             escrowBalanceAfter: reservation.escrowBalanceAfter,
-            feeProfile,
+            feeProfile: releaseFeeProfile,
           },
         },
       });
@@ -449,18 +459,18 @@ export async function POST(request: NextRequest) {
       meta: {
         milestoneId: milestone.id,
         milestoneTitle: milestone.title,
-        amountCents: milestone.amountCents,
+        amountCents: releasedAmountCents,
         currency: milestone.proposal.currency,
         payoutId: payout.id,
         payoutStatus: payout.status,
         stripeTransferId: finalizedStripeTransferId || payout.stripeTransfer,
         releasedByRole: user.role,
         escrowStatusBefore: escrowAccount.status,
-        escrowStatusAfter: escrowAccount.balanceCents === milestone.amountCents ? "RELEASED" : "PARTIALLY_RELEASED",
+        escrowStatusAfter: reservation.escrowBalanceAfter === 0 ? "RELEASED" : "PARTIALLY_RELEASED",
         contractStatusBefore,
         contractStatusAfter: allPaid && (contractStatusBefore as string) === "IN_PAYMENT" ? "COMPLETED" : contractStatusBefore,
         bookingClassification,
-        feeProfile,
+        feeProfile: releaseFeeProfile,
       },
     });
 
@@ -473,7 +483,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         milestoneId: milestone.id,
         milestoneTitle: milestone.title,
-        amountCents: milestone.amountCents,
+        amountCents: releasedAmountCents,
         currency: milestone.proposal.currency,
         payoutId: payout.id,
         stripeTransferId: finalizedStripeTransferId || payout.stripeTransfer,
@@ -481,7 +491,7 @@ export async function POST(request: NextRequest) {
         contractId: contract.id,
         eventId: event.id,
         bookingClassification,
-        feeProfile,
+        feeProfile: releaseFeeProfile,
         reason,
       },
     });
@@ -493,7 +503,7 @@ export async function POST(request: NextRequest) {
       targetType: "PAYOUT",
       targetId: payout.id,
       bookingClassification,
-      feeProfileSnapshot: feeProfile,
+      feeProfileSnapshot: releaseFeeProfile,
       acceptanceCaptureId: acceptanceProof.id,
       exceptionType: "PAYOUT_RELEASE",
       decision: "RELEASED",

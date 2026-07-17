@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { generateReceiptHTML } from "@/server/lib/receipt";
 import { resolveBookingClassification } from "@/lib/booking-classification";
 import { resolveFeeProfile } from "@/lib/fee-profile";
+import { canViewEvent } from "@/lib/rbac";
 
 export async function GET(
   request: NextRequest,
@@ -26,8 +27,33 @@ export async function GET(
             event: {
               select: {
                 id: true,
+                orgId: true,
                 name: true,
                 startAt: true,
+                createdById: true,
+                org: {
+                  select: {
+                    ownerId: true,
+                    members: {
+                      select: {
+                        userId: true,
+                        role: true,
+                      },
+                    },
+                  },
+                },
+                stakeholders: {
+                  select: {
+                    userId: true,
+                    role: true,
+                  },
+                },
+                shares: {
+                  select: {
+                    viewerUserId: true,
+                    scope: true,
+                  },
+                },
               },
             },
             listing: {
@@ -72,6 +98,13 @@ export async function GET(
       );
     }
 
+    if (!canViewEvent(user, event)) {
+      return NextResponse.json(
+        { error: "You do not have permission to view this receipt" },
+        { status: 403 }
+      );
+    }
+
     const bookingClassification = resolveBookingClassification({
       proposal: {
         bookingClassification: payout.proposal?.bookingClassification,
@@ -91,7 +124,7 @@ export async function GET(
 
     const receiptData = {
       payoutId: payout.id,
-      payoutAmountCents: feeProfile.grossAmountCents,
+      payoutAmountCents: payout.amountCents,
       vendorName: payout.proposal?.listing?.title || "Vendor",
       vendorEmail: payout.proposal?.listing?.org?.contactEmail || undefined,
       eventName: event.name,
