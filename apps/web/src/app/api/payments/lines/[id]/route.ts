@@ -2,13 +2,43 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { canManageEvent } from "@/lib/rbac";
-import { encodeDepositMetadata } from "@/lib/payment-plan-helpers";
-import { computePayoutAmountFromProposal } from "@/lib/payout-lock-helpers";
+import { isDepositLine } from "@/lib/payment-plan-helpers";
 import { setLocked, getLockMap } from "@/lib/payments/payoutLock";
+
+const MUTABLE_MILESTONE_STATUSES = new Set(["PENDING", "OVERDUE"]);
+const MUTABLE_PAYOUT_STATUSES = new Set(["PENDING"]);
+
+function isPositiveInt(value: unknown): value is number {
+  return Number.isInteger(value) && typeof value === "number" && value > 0;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function milestoneIsDepositLine(milestone: {
+  id: string;
+  title: string;
+  amountCents: number;
+  status: string;
+  description: string | null;
+  dueDate: Date | null;
+  proposalId: string;
+}) {
+  return isDepositLine({
+    id: milestone.id,
+    title: milestone.title,
+    amountCents: milestone.amountCents,
+    status: milestone.status,
+    description: milestone.description,
+    dueDate: milestone.dueDate,
+    proposalId: milestone.proposalId,
+  });
+}
 
 /**
  * PATCH /api/payments/lines/[id]
- * Update a payment line (deposit or payout)
+ * Update a mutable payment schedule line or pending payout line.
  */
 export async function PATCH(
   request: NextRequest,
@@ -20,7 +50,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only Pro Planner can edit payment lines
     if (user.role !== "PRO_PLANNER") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -28,9 +57,8 @@ export async function PATCH(
     const resolvedParams = await params;
     const lineId = resolvedParams.id;
     const body = await request.json();
-    const { label, amountCents, payeeListingId, mode, lockedToProposal } = body;
+    const { label, amountCents, payeeListingId, lockedToProposal } = body;
 
-    // Try to find as PaymentMilestone (deposit) first
     const milestone = await prisma.paymentMilestone.findUnique({
       where: { id: lineId },
       include: {
@@ -49,23 +77,50 @@ export async function PATCH(
     });
 
     if (milestone) {
-      // This is a deposit line
       if (!canManageEvent(user, milestone.proposal.event)) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
+      if (!milestoneIsDepositLine(milestone)) {
+        return NextResponse.json(
+          { error: "Only client payment schedule lines can be edited here" },
+          { status: 400 }
+        );
+      }
+
+      if (!MUTABLE_MILESTONE_STATUSES.has(milestone.status)) {
+        return NextResponse.json(
+          { error: "Paid, held, escrowed, or refunded payment lines cannot be edited" },
+          { status: 409 }
+        );
+      }
+
+      const data: { title?: string; amountCents?: number } = {};
+      if (label !== undefined) {
+        if (!isNonEmptyString(label)) {
+          return NextResponse.json({ error: "label must be a non-empty string" }, { status: 400 });
+        }
+        data.title = label.trim();
+      }
+      if (amountCents !== undefined) {
+        if (!isPositiveInt(amountCents)) {
+          return NextResponse.json({ error: "amountCents must be a positive integer" }, { status: 400 });
+        }
+        data.amountCents = amountCents;
+      }
+
+      if (Object.keys(data).length === 0) {
+        return NextResponse.json({ error: "No editable fields provided" }, { status: 400 });
+      }
+
       const updated = await prisma.paymentMilestone.update({
         where: { id: lineId },
-        data: {
-          title: label || milestone.title,
-          amountCents: amountCents ?? milestone.amountCents,
-        },
+        data,
       });
 
       return NextResponse.json(updated);
     }
 
-    // Try to find as Payout
     const payout = await prisma.payout.findUnique({
       where: { id: lineId },
       include: {
@@ -84,45 +139,58 @@ export async function PATCH(
     });
 
     if (payout) {
-      // This is a payout line
       if (!canManageEvent(user, payout.proposal.event)) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
-      // Handle lock/unlock: if locking, sync amount to proposal total
-      let finalAmountCents = amountCents ?? payout.amountCents;
-      if (lockedToProposal !== undefined) {
-        if (lockedToProposal) {
-          // Locking: sync amount to proposal total and set lock state
-          finalAmountCents = payout.proposal.totalCents;
-          await setLocked(
-            prisma,
-            payout.id,
-            payout.proposalId,
-            payout.milestoneId,
-            true
-          );
-        } else {
-          // Unlocking: keep current amount and remove lock state
-          await setLocked(
-            prisma,
-            payout.id,
-            payout.proposalId,
-            payout.milestoneId,
-            false
-          );
-        }
+      if (!MUTABLE_PAYOUT_STATUSES.has(payout.status)) {
+        return NextResponse.json(
+          { error: "Sent, failed, or canceled payout lines cannot be edited" },
+          { status: 409 }
+        );
       }
 
-      const updated = await prisma.payout.update({
-        where: { id: lineId },
-        data: {
-          amountCents: finalAmountCents,
-          listingId: payeeListingId ?? payout.listingId,
-        },
+      let finalAmountCents = payout.amountCents;
+      if (amountCents !== undefined) {
+        if (!isPositiveInt(amountCents)) {
+          return NextResponse.json({ error: "amountCents must be a positive integer" }, { status: 400 });
+        }
+        finalAmountCents = amountCents;
+      }
+
+      if (lockedToProposal !== undefined && lockedToProposal) {
+        finalAmountCents = payout.proposal.totalCents;
+      }
+
+      const data: { amountCents: number; listingId?: string | null } = {
+        amountCents: finalAmountCents,
+      };
+      if (payeeListingId !== undefined) {
+        if (!isNonEmptyString(payeeListingId)) {
+          return NextResponse.json({ error: "payeeListingId must be a non-empty string" }, { status: 400 });
+        }
+        data.listingId = payeeListingId;
+      }
+
+      const updated = await prisma.$transaction(async (tx) => {
+        const payoutUpdate = await tx.payout.update({
+          where: { id: lineId },
+          data,
+        });
+
+        if (lockedToProposal !== undefined) {
+          await setLocked(
+            tx,
+            payout.id,
+            payout.proposalId,
+            payout.milestoneId,
+            !!lockedToProposal
+          );
+        }
+
+        return payoutUpdate;
       });
 
-      // Return updated payout with lock state
       const lockMap = await getLockMap(prisma, [payout.id]);
       return NextResponse.json({
         ...updated,
@@ -144,10 +212,10 @@ export async function PATCH(
 
 /**
  * DELETE /api/payments/lines/[id]
- * Soft delete a payment line (set status to CANCELED for payouts, or delete milestone)
+ * Delete only mutable client schedule lines or cancel pending payout lines.
  */
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -156,7 +224,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only Pro Planner can delete payment lines
     if (user.role !== "PRO_PLANNER") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -164,7 +231,6 @@ export async function DELETE(
     const resolvedParams = await params;
     const lineId = resolvedParams.id;
 
-    // Try to find as PaymentMilestone (deposit) first
     const milestone = await prisma.paymentMilestone.findUnique({
       where: { id: lineId },
       include: {
@@ -187,7 +253,20 @@ export async function DELETE(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
-      // Delete milestone (deposits can be deleted)
+      if (!milestoneIsDepositLine(milestone)) {
+        return NextResponse.json(
+          { error: "Only client payment schedule lines can be deleted here" },
+          { status: 400 }
+        );
+      }
+
+      if (!MUTABLE_MILESTONE_STATUSES.has(milestone.status)) {
+        return NextResponse.json(
+          { error: "Paid, held, escrowed, or refunded payment lines cannot be deleted" },
+          { status: 409 }
+        );
+      }
+
       await prisma.paymentMilestone.delete({
         where: { id: lineId },
       });
@@ -195,7 +274,6 @@ export async function DELETE(
       return NextResponse.json({ success: true });
     }
 
-    // Try to find as Payout
     const payout = await prisma.payout.findUnique({
       where: { id: lineId },
       include: {
@@ -218,7 +296,13 @@ export async function DELETE(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
-      // Soft delete: set status to CANCELED
+      if (!MUTABLE_PAYOUT_STATUSES.has(payout.status)) {
+        return NextResponse.json(
+          { error: "Only pending payout lines can be canceled" },
+          { status: 409 }
+        );
+      }
+
       await prisma.payout.update({
         where: { id: lineId },
         data: { status: "CANCELED" },
@@ -238,4 +322,3 @@ export async function DELETE(
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

@@ -1,4 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
+
+type PrismaLike = PrismaClient | Prisma.TransactionClient;
 
 /**
  * Generate a unique lock key for a payout
@@ -12,7 +14,7 @@ export function lockKey(payoutId: string): string {
  * Returns a record where key is payoutId and value is true if locked
  */
 export async function getLockMap(
-  prisma: PrismaClient,
+  prisma: PrismaLike,
   payoutIds: string[]
 ): Promise<Record<string, boolean>> {
   if (payoutIds.length === 0) {
@@ -51,7 +53,7 @@ export async function getLockMap(
  * @param locked - Whether to lock (true) or unlock (false)
  */
 export async function setLocked(
-  prisma: PrismaClient,
+  prisma: PrismaLike,
   payoutId: string,
   proposalId: string,
   milestoneId: string | null,

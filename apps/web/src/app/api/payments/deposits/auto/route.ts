@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { canManageEvent } from "@/lib/rbac";
 import { encodeDepositMetadata, isDepositLine } from "@/lib/payment-plan-helpers";
 
+const PAYABLE_CONTRACT_STATUSES = new Set(["FULLY_SIGNED", "IN_PAYMENT"]);
+const MUTABLE_SCHEDULE_STATUSES = new Set(["PENDING", "OVERDUE"]);
+
 /**
  * POST /api/payments/deposits/auto
  * Auto-create client deposit schedule that matches total payout allocation
@@ -39,6 +42,7 @@ export async function POST(request: NextRequest) {
         },
         proposals: {
           include: {
+            contract: { select: { id: true, status: true } },
             milestones: true,
           },
         },
@@ -54,6 +58,13 @@ export async function POST(request: NextRequest) {
     if (!firstProposal) {
       return NextResponse.json(
         { error: "No proposals found for this event" },
+        { status: 400 }
+      );
+    }
+
+    if (!firstProposal.contract || !PAYABLE_CONTRACT_STATUSES.has(firstProposal.contract.status)) {
+      return NextResponse.json(
+        { error: "Client payment schedules require a signed payable contract" },
         { status: 400 }
       );
     }
@@ -108,13 +119,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Upsert deposits (idempotent by title + proposalId)
-    const createdDeposits = [];
-    const updatedDeposits = [];
+    // Preflight every target line before any write so rebuilds cannot partially mutate.
+    const depositPlan = [];
 
     for (const { label, amountCents } of depositAmounts) {
-      // Find existing deposit with this title for this proposal
-      // We need to check all milestones and filter for deposit lines
       const allMilestones = await prisma.paymentMilestone.findMany({
         where: {
           proposalId: firstProposal.id,
@@ -122,8 +130,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Find the one that's actually a deposit line
-      const existingDeposit = allMilestones.find((m) =>
+      const existingDeposits = allMilestones.filter((m) =>
         isDepositLine({
           id: m.id,
           title: m.title,
@@ -135,22 +142,33 @@ export async function POST(request: NextRequest) {
         })
       );
 
+      const lockedDeposit = existingDeposits.find(
+        (m) => !MUTABLE_SCHEDULE_STATUSES.has(m.status)
+      );
+      if (lockedDeposit) {
+        return NextResponse.json(
+          { error: "Paid, held, escrowed, or refunded payment schedule lines cannot be rebuilt" },
+          { status: 409 }
+        );
+      }
+
+      depositPlan.push({ label, amountCents, existingDeposit: existingDeposits[0] });
+    }
+
+    // Upsert deposits (idempotent by title + proposalId) only after preflight passes.
+    const createdDeposits = [];
+    const updatedDeposits = [];
+
+    for (const { label, amountCents, existingDeposit } of depositPlan) {
       if (existingDeposit) {
-        // Update existing deposit
         const updated = await prisma.paymentMilestone.update({
           where: { id: existingDeposit.id },
           data: {
             amountCents,
-            // Preserve status unless it's REFUNDED, then reset to PENDING
-            status:
-              existingDeposit.status === "REFUNDED"
-                ? "PENDING"
-                : existingDeposit.status,
           },
         });
         updatedDeposits.push(updated);
       } else {
-        // Create new deposit
         const created = await prisma.paymentMilestone.create({
           data: {
             proposalId: firstProposal.id,
