@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Card, Button, Input, Label } from "@/components/ui";
-import { DollarSign, CreditCard, CheckCircle2, XCircle } from "lucide-react";
-import { PaymentModal } from "@/components/payments/PaymentModal";
+import { Card } from "@/components/ui";
+import { DollarSign, CheckCircle2, XCircle } from "lucide-react";
 
 interface Deposit {
   id: string;
@@ -19,16 +17,7 @@ interface DepositPanelProps {
   deposits: Deposit[];
 }
 
-export function DepositPanel({ eventSlug, deposits }: DepositPanelProps) {
-  const [amount, setAmount] = useState("");
-  const [notes, setNotes] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [paymentAmountCents, setPaymentAmountCents] = useState<number>(0);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
-
+export function DepositPanel({ eventSlug: _eventSlug, deposits }: DepositPanelProps) {
   const formatCurrency = (cents: number, currency: string = "USD") => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -36,82 +25,31 @@ export function DepositPanel({ eventSlug, deposits }: DepositPanelProps) {
     }).format(cents / 100);
   };
 
-  const handleCreateDeposit = async () => {
-    setError(null);
-    setLoading(true);
-
-    const amountCents = Math.round(parseFloat(amount) * 100);
-    if (isNaN(amountCents) || amountCents <= 0) {
-      setError("Please enter a valid amount");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/events/${eventSlug}/deposits`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amountCents,
-          currency: "USD",
-          notes: notes || undefined,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.error || "Failed to create deposit");
-        setLoading(false);
-        return;
-      }
-
-      const data = await response.json();
-      setClientSecret(data.clientSecret);
-      setPaymentAmountCents(amountCents);
-      setPaymentIntentId(data.deposit?.id || null);
-      setShowPaymentModal(true);
-
-      setAmount("");
-      setNotes("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create deposit");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDepositSuccess = () => {
-    setShowPaymentModal(false);
-    setClientSecret(null);
-    setPaymentIntentId(null);
-    window.location.reload();
-  };
-
   const getStatusBadge = (status: Deposit["status"]) => {
     switch (status) {
       case "SUCCEEDED":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
-            <CheckCircle2 className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+            <CheckCircle2 className="h-3 w-3" />
             Completed
           </span>
         );
       case "PENDING":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+          <span className="inline-flex items-center gap-1 rounded bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
             Pending
           </span>
         );
       case "FAILED":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
-            <XCircle className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+            <XCircle className="h-3 w-3" />
             Failed
           </span>
         );
       case "REFUNDED":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+          <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800">
             Refunded
           </span>
         );
@@ -120,66 +58,20 @@ export function DepositPanel({ eventSlug, deposits }: DepositPanelProps) {
 
   return (
     <div className="space-y-6">
-      {/* Create Deposit Form */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <CreditCard className="w-5 h-5 text-slate-600" />
-          <h3 className="text-lg font-semibold">Make a Deposit</h3>
+        <div className="flex items-center gap-2 mb-3">
+          <DollarSign className="h-5 w-5 text-slate-600" />
+          <h3 className="text-lg font-semibold">Payments</h3>
         </div>
-        
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="amount">Amount</Label>
-            <div className="relative mt-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="pl-8"
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="notes">Notes (Optional)</Label>
-            <Input
-              id="notes"
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add a note about this deposit"
-              disabled={loading}
-            />
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-800">
-              {error}
-            </div>
-          )}
-
-          <Button
-            onClick={handleCreateDeposit}
-            disabled={loading || !amount}
-            className="w-full"
-          >
-            {loading ? "Processing..." : "Create Deposit"}
-          </Button>
-
-        </div>
+        <p className="text-sm text-slate-600">
+          Client payments are handled through signed contracts and their approved payment schedules.
+        </p>
       </Card>
 
-      {/* Deposit History */}
       {deposits.length > 0 && (
         <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <DollarSign className="w-5 h-5 text-slate-600" />
+          <div className="mb-4 flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-slate-600" />
             <h3 className="text-lg font-semibold">Deposit History</h3>
           </div>
 
@@ -187,10 +79,10 @@ export function DepositPanel({ eventSlug, deposits }: DepositPanelProps) {
             {deposits.map((deposit) => (
               <div
                 key={deposit.id}
-                className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                className="flex items-center justify-between rounded-lg bg-slate-50 p-3"
               >
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="mb-1 flex items-center gap-2">
                     <span className="font-medium">
                       {formatCurrency(deposit.amountCents, deposit.currency)}
                     </span>
@@ -206,30 +98,13 @@ export function DepositPanel({ eventSlug, deposits }: DepositPanelProps) {
                     })}
                   </div>
                   {deposit.notes && (
-                    <div className="text-sm text-slate-500 mt-1">{deposit.notes}</div>
+                    <div className="mt-1 text-sm text-slate-500">{deposit.notes}</div>
                   )}
                 </div>
               </div>
             ))}
           </div>
         </Card>
-      )}
-
-      {showPaymentModal && clientSecret && (
-        <PaymentModal
-          isOpen={showPaymentModal}
-          onClose={() => {
-            setShowPaymentModal(false);
-            setClientSecret(null);
-            setPaymentIntentId(null);
-          }}
-          amountCents={paymentAmountCents}
-          currency="USD"
-          milestoneLabel="event deposit"
-          paymentIntentId={paymentIntentId || undefined}
-          clientSecret={clientSecret}
-          onSuccess={handleDepositSuccess}
-        />
       )}
     </div>
   );

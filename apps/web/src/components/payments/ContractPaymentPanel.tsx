@@ -288,7 +288,7 @@ export function ContractPaymentPanel({
         )}
       </div>
 
-      {showPaymentModal && paymentIntentId && (
+      {showPaymentModal && paymentIntentId && clientSecret && (
         <PaymentModal
           isOpen={showPaymentModal}
           onClose={() => {
@@ -299,8 +299,8 @@ export function ContractPaymentPanel({
           amountCents={selectedMilestone?.amountCents || totalDue}
           currency={contract.proposal?.currency || "USD"}
           milestoneLabel={selectedMilestone?.title}
-          paymentIntentId={paymentIntentId || undefined}
-          clientSecret={clientSecret || undefined}
+          paymentIntentId={paymentIntentId}
+          clientSecret={clientSecret}
           onSuccess={handlePaymentSuccess}
         />
       )}

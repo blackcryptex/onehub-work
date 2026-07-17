@@ -1,131 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { canCreateDeposit, canViewEvent } from "@/lib/rbac";
-import { getStripeOrThrow } from "@/server/lib/stripe";
-import { z } from "zod";
-
-const createDepositSchema = z.object({
-  amountCents: z.number().int().positive(),
-  currency: z.string().default("USD"),
-  notes: z.string().optional(),
-});
+import { canViewEvent } from "@/lib/rbac";
+import type { Prisma } from "@prisma/client";
 
 /**
- * Phase 7A: Create a deposit for an event
+ * Standalone event deposits are disabled.
  * 
  * POST /api/events/[eventSlug]/deposits
  * 
- * Only CLIENT users who are stakeholders can create deposits.
+ * Client payments must use signed contracts and approved payment schedules.
  */
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ eventSlug: string }> }
 ) {
-  const resolvedParams = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only CLIENT users can create deposits
-    if (user.role !== "CLIENT") {
-      return NextResponse.json({ error: "Forbidden: Only clients can create deposits" }, { status: 403 });
-    }
-
-    // Fetch event with stakeholders and shares
-    const event = await prisma.event.findFirst({
-      where: { slug: resolvedParams.eventSlug },
-      include: {
-        org: true,
-        stakeholders: {
-          where: { userId: user.id },
-        },
-        shares: {
-          where: { viewerUserId: user.id, scope: "SUMMARY" },
-        },
+    await params;
+    return NextResponse.json(
+      {
+        error:
+          "Standalone deposits are disabled. Use signed contract payment schedules for client payments.",
       },
-    });
-
-    if (!event) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
-    }
-
-    // Check if user can create deposit (stakeholder + share or stakeholder only)
-    if (!canCreateDeposit(user, event)) {
-      return NextResponse.json(
-        { error: "Forbidden: You must be a stakeholder to create deposits for this event" },
-        { status: 403 }
-      );
-    }
-
-    const body = await request.json();
-    const { amountCents, currency, notes } = createDepositSchema.parse(body);
-
-    // Create Stripe PaymentIntent
-    const stripe = getStripeOrThrow();
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountCents,
-      currency: currency.toLowerCase(),
-      metadata: {
-        type: "deposit",
-        eventId: event.id,
-        eventSlug: event.slug,
-        clientUserId: user.id,
-        proOrgId: event.orgId,
-      },
-    });
-
-    // Create Deposit record
-    const deposit = await prisma.deposit.create({
-      data: {
-        eventId: event.id,
-        clientUserId: user.id,
-        proOrgId: event.orgId,
-        amountCents,
-        currency,
-        status: "PENDING",
-        stripePaymentIntentId: paymentIntent.id,
-        notes: notes || null,
-      },
-      include: {
-        event: {
-          select: {
-            name: true,
-            slug: true,
-          },
-        },
-        clientUser: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-        proOrg: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      deposit: {
-        id: deposit.id,
-        amountCents: deposit.amountCents,
-        currency: deposit.currency,
-        status: deposit.status,
-        createdAt: deposit.createdAt,
-      },
-      clientSecret: paymentIntent.client_secret,
-    });
+      { status: 410 }
+    );
   } catch (error) {
     console.error("Error creating deposit:", error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid request", details: error.issues }, { status: 400 });
-    }
     return NextResponse.json({ error: "Failed to create deposit" }, { status: 500 });
   }
 }
@@ -173,7 +78,7 @@ export async function GET(
     }
 
     // Build where clause based on role
-    const where: any = { eventId: event.id };
+    const where: Prisma.DepositWhereInput = { eventId: event.id };
     
     if (user.role === "CLIENT") {
       // Clients can only see their own deposits

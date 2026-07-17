@@ -1,11 +1,31 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, Input } from "@/components/ui";
+import { Button } from "@/components/ui";
+
+type StripePaymentElement = {
+  mount: (element: HTMLElement) => void;
+  destroy: () => void;
+};
+
+type StripeElements = {
+  create: (type: "payment") => StripePaymentElement;
+};
+
+type StripeInstance = {
+  elements: (options: { clientSecret: string }) => StripeElements;
+  confirmPayment: (options: {
+    elements: StripeElements;
+    redirect: "if_required";
+    confirmParams: Record<string, never>;
+  }) => Promise<{ error?: { message?: string } }>;
+};
+
+type StripeConstructor = (publishableKey: string) => StripeInstance;
 
 declare global {
   interface Window {
-    Stripe?: (publishableKey: string) => any;
+    Stripe?: StripeConstructor;
   }
 }
 
@@ -15,14 +35,13 @@ interface PaymentModalProps {
   amountCents: number;
   currency: string;
   milestoneLabel?: string;
-  paymentIntentId?: string;
-  clientSecret?: string;
+  paymentIntentId: string;
+  clientSecret: string;
   onSuccess?: () => void;
 }
 
 type PaymentUiState =
   | "idle"
-  | "creating-intent"
   | "awaiting-payment-input"
   | "processing"
   | "failed"
@@ -61,16 +80,16 @@ function formatMoney(amountCents: number, currency: string) {
   }).format(amountCents / 100);
 }
 
-async function loadStripeJs(): Promise<any> {
+async function loadStripeJs(): Promise<StripeConstructor | null | undefined> {
   if (typeof window === "undefined") return null;
   if (window.Stripe) return window.Stripe;
 
   await new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector(`script[src=\"${STRIPE_JS_SRC}\"]`) as HTMLScriptElement | null;
+    const existing = document.querySelector(`script[src="${STRIPE_JS_SRC}"]`) as HTMLScriptElement | null;
     if (existing) {
       existing.addEventListener("load", () => resolve(), { once: true });
       existing.addEventListener("error", () => reject(new Error("Failed to load Stripe.js")), { once: true });
-      if ((window as any).Stripe) resolve();
+      if (window.Stripe) resolve();
       return;
     }
 
@@ -100,57 +119,20 @@ export function PaymentModal({
   const [paymentIntentClientSecret, setPaymentIntentClientSecret] = useState<string | null>(clientSecret ?? null);
   const [internalPaymentIntentId, setInternalPaymentIntentId] = useState<string | null>(paymentIntentId ?? null);
   const [stripeReady, setStripeReady] = useState(false);
-  const [stripeInstance, setStripeInstance] = useState<any>(null);
-  const [elementsInstance, setElementsInstance] = useState<any>(null);
+  const [stripeInstance, setStripeInstance] = useState<StripeInstance | null>(null);
+  const [elementsInstance, setElementsInstance] = useState<StripeElements | null>(null);
   const paymentElementRef = useRef<HTMLDivElement | null>(null);
-  const mountedElementRef = useRef<any>(null);
+  const mountedElementRef = useRef<StripePaymentElement | null>(null);
 
   const amountLabel = useMemo(() => formatMoney(amountCents, currency), [amountCents, currency]);
 
   useEffect(() => {
     if (!isOpen) return;
-    setPaymentIntentClientSecret(clientSecret ?? null);
-    setInternalPaymentIntentId(paymentIntentId ?? null);
-    setUiState(clientSecret ? "awaiting-payment-input" : "creating-intent");
+    setPaymentIntentClientSecret(clientSecret);
+    setInternalPaymentIntentId(paymentIntentId);
+    setUiState("awaiting-payment-input");
     setError(null);
   }, [isOpen, clientSecret, paymentIntentId]);
-
-  useEffect(() => {
-    if (!isOpen || paymentIntentClientSecret || paymentIntentId) return;
-
-    let cancelled = false;
-
-    const createIntent = async () => {
-      setUiState("creating-intent");
-      setError(null);
-      try {
-        const response = await fetch("/api/payments/create-intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amountCents }),
-        });
-        const data = await response.json().catch(() => null);
-        if (!response.ok) {
-          throw new Error(data?.error || "Failed to create payment intent");
-        }
-        if (!cancelled) {
-          setPaymentIntentClientSecret(data.clientSecret);
-          setInternalPaymentIntentId(data.paymentIntentId);
-          setUiState("awaiting-payment-input");
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to start payment");
-          setUiState("failed");
-        }
-      }
-    };
-
-    createIntent();
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, paymentIntentClientSecret, paymentIntentId, amountCents]);
 
   useEffect(() => {
     if (!isOpen || !paymentIntentClientSecret || !paymentElementRef.current) return;
@@ -159,6 +141,9 @@ export function PaymentModal({
 
     const mountElements = async () => {
       try {
+        const mountTarget = paymentElementRef.current;
+        if (!mountTarget) return;
+
         const StripeCtor = await loadStripeJs();
         const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
         if (!StripeCtor || !publishableKey) {
@@ -168,7 +153,7 @@ export function PaymentModal({
         const stripe = StripeCtor(publishableKey);
         const elements = stripe.elements({ clientSecret: paymentIntentClientSecret });
         const paymentElement = elements.create("payment");
-        paymentElement.mount(paymentElementRef.current);
+        paymentElement.mount(mountTarget);
 
         if (cancelled) {
           paymentElement.destroy();
@@ -261,12 +246,6 @@ export function PaymentModal({
         {error ? (
           <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
-          </div>
-        ) : null}
-
-        {uiState === "creating-intent" ? (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
-            Preparing secure payment...
           </div>
         ) : null}
 
