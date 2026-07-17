@@ -132,6 +132,81 @@ beforeEach(() => {
 });
 
 describe("release milestone payment guardrails", () => {
+  it("blocks release while an open refund request exists before escrow debit, payout, or Stripe transfer", async () => {
+    hasBlockingRefundRequest.mockResolvedValue({ id: "refund-open-1", status: "OPEN" });
+
+    const response = await POST(request());
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body).toEqual({
+      error: "Release blocked while an open refund request is under admin review",
+      refundRequestId: "refund-open-1",
+    });
+    expect(hasBlockingRefundRequest).toHaveBeenCalledWith("proposal-1", "milestone-1");
+    expect(getBlockingDisputeCase).not.toHaveBeenCalled();
+    expect(getBlockingHoldbackForMilestone).not.toHaveBeenCalled();
+    expect(recordAcceptance).not.toHaveBeenCalled();
+    expect(prisma.escrowAccount.updateMany).not.toHaveBeenCalled();
+    expect(prisma.payout.create).not.toHaveBeenCalled();
+    expect(prisma.paymentMilestone.update).not.toHaveBeenCalled();
+    expect(stripe.transfers.create).not.toHaveBeenCalled();
+  });
+
+  it("blocks release while an open dispute case exists before escrow debit, payout, or Stripe transfer", async () => {
+    getBlockingDisputeCase.mockResolvedValue({
+      id: "dispute-open-1",
+      status: "UNDER_ADMIN_REVIEW",
+      freezeState: "ADMIN_REVIEW",
+    });
+
+    const response = await POST(request());
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body).toEqual({
+      error: "Release blocked while an open dispute case is frozen for admin review",
+      disputeId: "dispute-open-1",
+      disputeStatus: "UNDER_ADMIN_REVIEW",
+      freezeState: "ADMIN_REVIEW",
+    });
+    expect(hasBlockingRefundRequest).toHaveBeenCalledWith("proposal-1", "milestone-1");
+    expect(getBlockingDisputeCase).toHaveBeenCalledWith("proposal-1", "milestone-1");
+    expect(getBlockingHoldbackForMilestone).not.toHaveBeenCalled();
+    expect(recordAcceptance).not.toHaveBeenCalled();
+    expect(prisma.escrowAccount.updateMany).not.toHaveBeenCalled();
+    expect(prisma.payout.create).not.toHaveBeenCalled();
+    expect(prisma.paymentMilestone.update).not.toHaveBeenCalled();
+    expect(stripe.transfers.create).not.toHaveBeenCalled();
+  });
+
+  it("blocks release while an active holdback exists before escrow debit, payout, or Stripe transfer", async () => {
+    getBlockingHoldbackForMilestone.mockResolvedValue({
+      id: "holdback-active-1",
+      state: "ACTIVE",
+      reason: "manual risk review",
+    });
+
+    const response = await POST(request());
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body).toEqual({
+      error: "Release blocked while a payment holdback is active",
+      holdbackId: "holdback-active-1",
+      holdbackState: "ACTIVE",
+      holdbackReason: "manual risk review",
+    });
+    expect(hasBlockingRefundRequest).toHaveBeenCalledWith("proposal-1", "milestone-1");
+    expect(getBlockingDisputeCase).toHaveBeenCalledWith("proposal-1", "milestone-1");
+    expect(getBlockingHoldbackForMilestone).toHaveBeenCalledWith("milestone-1");
+    expect(recordAcceptance).not.toHaveBeenCalled();
+    expect(prisma.escrowAccount.updateMany).not.toHaveBeenCalled();
+    expect(prisma.payout.create).not.toHaveBeenCalled();
+    expect(prisma.paymentMilestone.update).not.toHaveBeenCalled();
+    expect(stripe.transfers.create).not.toHaveBeenCalled();
+  });
+
   it("blocks release when the atomic escrow debit reservation cannot decrement the balance", async () => {
     prisma.escrowAccount.updateMany.mockResolvedValue({ count: 0 });
 
