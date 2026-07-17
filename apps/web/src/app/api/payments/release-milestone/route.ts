@@ -23,6 +23,13 @@ const releaseMilestoneSchema = z.object({
   acceptance: acceptanceInputSchema,
 });
 
+class ReleaseMilestoneError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "ReleaseMilestoneError";
+  }
+}
+
 export async function POST(request: NextRequest) {
   const requestId = request.headers.get("x-request-id") || undefined;
   const logger = getRequestLogger(requestId);
@@ -152,9 +159,9 @@ export async function POST(request: NextRequest) {
       }, { status: 409 });
     }
 
-    // Verify escrow has sufficient balance
+    // Verify escrow account exists; balance is reserved with an atomic conditional update inside the transaction.
     const escrowAccount = milestone.proposal.escrowAccount;
-    if (!escrowAccount || escrowAccount.balanceCents < milestone.amountCents) {
+    if (!escrowAccount) {
       return NextResponse.json({ error: "Insufficient escrow balance" }, { status: 400 });
     }
 
@@ -233,9 +240,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Amount override at release is disallowed in guarded MVP" }, { status: 409 });
     }
 
-    // Wrap in transaction for atomicity
-    const result = await prisma.$transaction(async (tx) => {
-      // Re-check milestone status within transaction
+    // First transaction: make the local debit/reservation durable before any external transfer.
+    const reservation = await prisma.$transaction(async (tx) => {
       const currentMilestone = await tx.paymentMilestone.findUnique({
         where: { id: milestoneId },
       });
@@ -254,76 +260,140 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Create payout record (unique constraint on milestoneId prevents duplicates)
+      if ((currentMilestone.status as string) !== "IN_ESCROW") {
+        throw new ReleaseMilestoneError("Milestone is not in escrow", 409);
+      }
+
+      const existingPayout = await tx.payout.findFirst({
+        where: { milestoneId: milestone.id },
+      });
+
+      if (existingPayout) {
+        if (existingPayout.status === "PENDING") {
+          return {
+            payout: existingPayout,
+            alreadyProcessed: false,
+            currentMilestone,
+            reservationReused: true,
+            escrowBalanceBefore: null,
+            escrowBalanceAfter: null,
+          };
+        }
+        throw new ReleaseMilestoneError("Payout already exists for milestone", 409);
+      }
+
+      const currentEscrowAccount = await tx.escrowAccount.findUnique({
+        where: { proposalId: milestone.proposalId },
+      });
+
+      if (!currentEscrowAccount) {
+        throw new ReleaseMilestoneError("Insufficient escrow balance", 400);
+      }
+
+      const escrowDebit = await tx.escrowAccount.updateMany({
+        where: {
+          id: currentEscrowAccount.id,
+          balanceCents: { gte: currentMilestone.amountCents },
+        },
+        data: {
+          balanceCents: { decrement: currentMilestone.amountCents },
+          status: currentEscrowAccount.balanceCents === currentMilestone.amountCents ? "RELEASED" : "PARTIALLY_RELEASED",
+        },
+      });
+
+      if (escrowDebit.count !== 1) {
+        throw new ReleaseMilestoneError("Insufficient escrow balance", 400);
+      }
+
+      // Create payout record only after the escrow debit reservation succeeds.
       const payout = await tx.payout.create({
         data: {
           proposalId: milestone.proposalId,
           milestoneId: milestone.id,
           listingId: canonicalRecipient.listingId,
           orgId: canonicalRecipient.orgId,
-          amountCents: milestone.amountCents,
+          amountCents: currentMilestone.amountCents,
           status: "PENDING",
         },
       });
 
-      // If Stripe Connect account exists, create transfer
-      let stripeTransferId: string | undefined;
-      let payoutStatus: "PENDING" | "SENT" = "PENDING";
-      if (canonicalRecipient.stripeAccountId && stripe) {
-        try {
-          const sourceTransaction = await (tx as any).transaction.findFirst({
-            where: {
-              paymentIntent: {
-                milestoneId: milestone.id,
-                status: "SUCCEEDED",
-              },
-              stripeChargeId: { not: null },
-            },
-            orderBy: { processedAt: "desc" },
-            select: { stripeChargeId: true },
-          });
+      return {
+        payout,
+        alreadyProcessed: false,
+        currentMilestone,
+        escrowBalanceBefore: currentEscrowAccount.balanceCents,
+        escrowBalanceAfter: currentEscrowAccount.balanceCents - currentMilestone.amountCents,
+      };
+    });
 
-          const transfer = await stripe.transfers.create({
-            amount: milestone.amountCents,
-            currency: milestone.proposal.currency.toLowerCase(),
-            destination: canonicalRecipient.stripeAccountId,
-            source_transaction: sourceTransaction?.stripeChargeId || undefined,
-            metadata: {
-              payoutId: payout.id,
+    // If already processed, return early
+    if (reservation.alreadyProcessed) {
+      return NextResponse.json({
+        success: true,
+        payoutId: reservation.payout.id,
+        message: "Payment already released",
+      });
+    }
+
+    const currentMilestone = reservation.currentMilestone;
+    if (!currentMilestone) {
+      throw new ReleaseMilestoneError("Milestone reservation is missing current milestone", 500);
+    }
+
+    // If Stripe Connect account exists, create transfer only after durable local reservation.
+    let stripeTransferId: string | undefined;
+    if (canonicalRecipient.stripeAccountId && stripe) {
+      try {
+        const sourceTransaction = await (prisma as any).transaction.findFirst({
+          where: {
+            paymentIntent: {
               milestoneId: milestone.id,
-              proposalId: milestone.proposalId,
-              sourceTransaction: sourceTransaction?.stripeChargeId || "",
+              status: "SUCCEEDED",
             },
-          });
+            stripeChargeId: { not: null },
+          },
+          orderBy: { processedAt: "desc" },
+          select: { stripeChargeId: true },
+        });
 
-          stripeTransferId = transfer.id;
-          payoutStatus = "SENT";
-          await tx.payout.update({
-            where: { id: payout.id },
-            data: {
-              stripeTransfer: transfer.id,
-              status: payoutStatus,
-            },
-          });
-        } catch (stripeError) {
-          console.error("Stripe transfer error:", stripeError);
-          // Continue with payout creation even if Stripe transfer fails
-        }
+        const transfer = await stripe.transfers.create({
+          amount: currentMilestone.amountCents,
+          currency: milestone.proposal.currency.toLowerCase(),
+          destination: canonicalRecipient.stripeAccountId,
+          source_transaction: sourceTransaction?.stripeChargeId || undefined,
+          metadata: {
+            payoutId: reservation.payout.id,
+            milestoneId: milestone.id,
+            proposalId: milestone.proposalId,
+            sourceTransaction: sourceTransaction?.stripeChargeId || "",
+          },
+        }, {
+          idempotencyKey: `release-milestone:${milestone.id}:payout:${reservation.payout.id}:v1`,
+        });
+
+        stripeTransferId = transfer.id;
+      } catch (stripeError) {
+        console.error("Stripe transfer error:", stripeError);
+        throw new ReleaseMilestoneError("Stripe transfer failed; payment was not released", 502);
       }
+    }
+
+    // Finalize local state only after the external transfer (if required) succeeds.
+    const result = await prisma.$transaction(async (tx) => {
+      const payout = stripeTransferId
+        ? await tx.payout.update({
+            where: { id: reservation.payout.id },
+            data: {
+              stripeTransfer: stripeTransferId,
+              status: "SENT",
+            },
+          })
+        : reservation.payout;
 
       // Update milestone status
       await tx.paymentMilestone.update({
         where: { id: milestoneId },
         data: { status: "PAID" },
-      });
-
-      // Update escrow account balance
-      await tx.escrowAccount.update({
-        where: { id: escrowAccount.id },
-        data: {
-          balanceCents: { decrement: milestone.amountCents },
-          status: escrowAccount.balanceCents === milestone.amountCents ? "RELEASED" : "PARTIALLY_RELEASED",
-        },
       });
 
       // Update contract status if all milestones are paid
@@ -340,60 +410,34 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Create MoneyTx entry for the release (unique constraint on stripeId prevents duplicates if transfer exists)
-      if (stripeTransferId) {
-        await tx.moneyTx.create({
-          data: {
-            type: "RELEASE_ESCROW",
-            proposalId: milestone.proposalId,
-            milestoneId: milestone.id,
-            amountCents: milestone.amountCents,
-            currency: milestone.proposal.currency,
-            stripeId: stripeTransferId,
-            meta: {
-              payoutId: payout.id,
-              releasedBy: user?.id,
-              releasedByRole: user?.role,
-              escrowBalanceBefore: escrowAccount.balanceCents,
-              escrowBalanceAfter: escrowAccount.balanceCents - milestone.amountCents,
-              feeProfile,
-            },
+      await tx.moneyTx.create({
+        data: {
+          type: "RELEASE_ESCROW",
+          proposalId: milestone.proposalId,
+          milestoneId: milestone.id,
+          amountCents: currentMilestone.amountCents,
+          currency: milestone.proposal.currency,
+          stripeId: stripeTransferId,
+          meta: {
+            payoutId: payout.id,
+            releasedBy: user?.id,
+            releasedByRole: user?.role,
+            escrowBalanceBefore: reservation.escrowBalanceBefore,
+            escrowBalanceAfter: reservation.escrowBalanceAfter,
+            feeProfile,
           },
-        });
-      } else {
-        // Create MoneyTx without stripeId if no transfer
-        await tx.moneyTx.create({
-          data: {
-            type: "RELEASE_ESCROW",
-            proposalId: milestone.proposalId,
-            milestoneId: milestone.id,
-            amountCents: milestone.amountCents,
-            currency: milestone.proposal.currency,
-            meta: {
-              payoutId: payout.id,
-              releasedBy: user?.id,
-              releasedByRole: user?.role,
-              escrowBalanceBefore: escrowAccount.balanceCents,
-              escrowBalanceAfter: escrowAccount.balanceCents - milestone.amountCents,
-              feeProfile,
-            },
-          },
-        });
-      }
+        },
+      });
 
       return { payout, contractStatusBefore, allPaid, stripeTransferId };
     });
 
-    // If already processed, return early
-    if (result.alreadyProcessed) {
-      return NextResponse.json({
-        success: true,
-        payoutId: result.payout.id,
-        message: "Payment already released",
-      });
-    }
-
-    const { payout, contractStatusBefore, allPaid, stripeTransferId } = result;
+    const {
+      payout,
+      contractStatusBefore,
+      allPaid,
+      stripeTransferId: finalizedStripeTransferId,
+    } = result;
 
     // Audit: Log that funds were released from escrow for this milestone (Activity for event timeline)
     await recordActivity({
@@ -409,7 +453,7 @@ export async function POST(request: NextRequest) {
         currency: milestone.proposal.currency,
         payoutId: payout.id,
         payoutStatus: payout.status,
-        stripeTransferId: stripeTransferId || payout.stripeTransfer,
+        stripeTransferId: finalizedStripeTransferId || payout.stripeTransfer,
         releasedByRole: user.role,
         escrowStatusBefore: escrowAccount.status,
         escrowStatusAfter: escrowAccount.balanceCents === milestone.amountCents ? "RELEASED" : "PARTIALLY_RELEASED",
@@ -432,7 +476,7 @@ export async function POST(request: NextRequest) {
         amountCents: milestone.amountCents,
         currency: milestone.proposal.currency,
         payoutId: payout.id,
-        stripeTransferId: stripeTransferId || payout.stripeTransfer,
+        stripeTransferId: finalizedStripeTransferId || payout.stripeTransfer,
         proposalId: milestone.proposalId,
         contractId: contract.id,
         eventId: event.id,
@@ -460,7 +504,7 @@ export async function POST(request: NextRequest) {
       payoutId: payout.id,
       metadata: {
         milestoneId: milestone.id,
-        stripeTransferId: stripeTransferId || payout.stripeTransfer || null,
+        stripeTransferId: finalizedStripeTransferId || payout.stripeTransfer || null,
       },
     });
 
@@ -504,6 +548,9 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid request", details: error.issues }, { status: 400 });
+    }
+    if (error instanceof ReleaseMilestoneError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     return NextResponse.json({ error: "Failed to release payment" }, { status: 500 });
   }
