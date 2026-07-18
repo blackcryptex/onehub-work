@@ -177,6 +177,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const bookingClassificationForPersistence = bookingClassification.toUpperCase() as "MARKETPLACE" | "PLANNER_MEDIATED" | "DIRECT";
+
     const adminOverrideId = `milestone-release:${milestone.id}`;
 
     const acceptanceProof = await recordAcceptance({
@@ -502,7 +504,7 @@ export async function POST(request: NextRequest) {
       orgId: event.orgId,
       targetType: "PAYOUT",
       targetId: payout.id,
-      bookingClassification,
+      bookingClassification: bookingClassificationForPersistence,
       feeProfileSnapshot: releaseFeeProfile,
       acceptanceCaptureId: acceptanceProof.id,
       exceptionType: "PAYOUT_RELEASE",
