@@ -1,4 +1,5 @@
 import { Card } from "@onehub/ui";
+import type { AbuseReport } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
@@ -10,7 +11,7 @@ export default async function AbuseReportsPage() {
   if (!user || !canAccessDashboard(user, "ADMIN")) {
     redirect("/app");
   }
-  const reports = await prisma.abuseReport.findMany({
+  const reports: AbuseReport[] = await prisma.abuseReport.findMany({
     orderBy: { createdAt: "desc" },
     take: 50,
   });
