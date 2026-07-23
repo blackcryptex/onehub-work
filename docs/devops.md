@@ -119,6 +119,7 @@ into docs or reports.
 
 - Database: `DATABASE_URL`
 - Auth and canonical URLs: `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, `ONEHUB_CANONICAL_URL`, `ONEHUB_PRIMARY_DOMAIN`
+- Optional Google OAuth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` canonical placeholders; legacy `GOOGLE_ID`, `GOOGLE_SECRET` aliases are accepted by code for compatibility
 - Maintenance/write freeze: `ONEHUB_MAINTENANCE_MODE`
 - Stripe placeholders: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 - Error tracking placeholders: `ERROR_TRACKING_PROVIDER`, `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `ONEHUB_ERROR_LOG_SAMPLE_RATE`

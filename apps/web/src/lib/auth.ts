@@ -103,6 +103,10 @@ export function createStopImpersonationSessionUpdate(input: {
     }),
   };
 }
+
+const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_SECRET;
+
 export const authConfig: NextAuthConfig = {
   session: {
     strategy: "jwt",
@@ -158,11 +162,11 @@ export const authConfig: NextAuthConfig = {
       },
     }),
     // Only add Google provider if credentials are configured
-    ...(process.env.GOOGLE_ID && process.env.GOOGLE_SECRET
+    ...(googleClientId && googleClientSecret
       ? [
           Google({
-            clientId: process.env.GOOGLE_ID,
-            clientSecret: process.env.GOOGLE_SECRET,
+            clientId: googleClientId,
+            clientSecret: googleClientSecret,
             allowDangerousEmailAccountLinking: true,
             checks: ["pkce", "state"],
             authorization: {
