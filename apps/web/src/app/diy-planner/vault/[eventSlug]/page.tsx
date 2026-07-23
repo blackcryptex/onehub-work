@@ -248,6 +248,7 @@ export default async function DIYVaultDetailPage({
           proposalId={firstProposal?.id}
           contractId={firstContract?.id}
           show={true}
+          role={user.role}
         />
       )}
 

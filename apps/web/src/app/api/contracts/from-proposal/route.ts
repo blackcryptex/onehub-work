@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
           title: generated.title,
           bodyMd: generated.bodyMd,
           version: 1,
-          status: "DRAFT",
+          status: "OUT_FOR_SIGNATURE",
           buyerId,
           sellerId,
           platformFeePercent: feeProfile.platformFeePercent,

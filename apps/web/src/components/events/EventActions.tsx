@@ -7,6 +7,7 @@ import { useState } from "react";
 import type { Role } from "@onehub/types/src/roles";
 import { vaultDetail } from "@/lib/routes";
 import { eventDeleteResultMessage, parseEventDeleteResult, type EventDeleteUiResult } from "@/lib/event-delete-lifecycle";
+import { eventDeleteSemantics } from "@/lib/event-command-center";
 
 interface EventActionsProps {
   /**
@@ -49,6 +50,10 @@ interface EventActionsProps {
    * Whether to show labels or just icons
    */
   showLabels?: boolean;
+  /**
+   * Commerce-linked events are canceled and archived by the server, not hard-deleted.
+   */
+  commerceLinked?: boolean;
 }
 
 /**
@@ -72,12 +77,14 @@ export function EventActions({
   onDelete,
   size = "sm",
   showLabels = true,
+  commerceLinked = false,
 }: EventActionsProps) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+  const deleteSemantics = eventDeleteSemantics(commerceLinked);
 
   const handleDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete "${eventName}"? This action cannot be undone.`)) {
+    if (!window.confirm(deleteSemantics.confirmMessage(eventName))) {
       return;
     }
 
@@ -147,7 +154,7 @@ export function EventActions({
           className="text-red-600 hover:text-red-700 hover:bg-red-50"
         >
           <Trash2 className="w-4 h-4 mr-1.5" />
-          {showLabels && (deleting ? "Deleting..." : "Delete")}
+          {showLabels && (deleting ? deleteSemantics.busyLabel : deleteSemantics.label)}
         </Button>
       )}
     </div>

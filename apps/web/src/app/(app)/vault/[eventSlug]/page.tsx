@@ -213,7 +213,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
   const canManage = canManageEvent(user, event);
   const canEdit = canEditEvent(user, event);
   const canDelete = canDeleteEvent(user, event);
-  
+  const currentEventPath = vaultDetail(user.role, event.slug);
   console.log("[Event Vault Detail] Access check:", {
     userId,
     canManage,
@@ -282,6 +282,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
           proposalId={firstProposal?.id}
           contractId={firstContract?.id}
           show={true}
+          role={user.role}
         />
       )}
 
@@ -677,7 +678,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
                           <div className="flex flex-wrap gap-2 lg:justify-end">
                             <Button asChild size="sm" variant="secondary">
                               <Link
-                                href={`/marketplace/${item.listing.slug}?eventId=${event.id}&eventSlug=${event.slug}&eventName=${encodeURIComponent(event.name)}&returnTo=${encodeURIComponent(`/app/vault/${event.slug}`)}`}
+                                href={`/marketplace/${item.listing.slug}?eventId=${event.id}&eventSlug=${event.slug}&eventName=${encodeURIComponent(event.name)}&returnTo=${encodeURIComponent(currentEventPath)}`}
                               >
                                 Request booking
                               </Link>
@@ -729,7 +730,7 @@ export default async function EventVaultDetailPage({ params }: { params: { event
                       </p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Button asChild size="sm" variant="secondary">
-                          <Link href={`/marketplace?eventId=${event.id}&eventSlug=${event.slug}&eventName=${encodeURIComponent(event.name)}&returnTo=${encodeURIComponent(`/app/vault/${event.slug}`)}`}>
+                          <Link href={`/marketplace?eventId=${event.id}&eventSlug=${event.slug}&eventName=${encodeURIComponent(event.name)}&returnTo=${encodeURIComponent(currentEventPath)}`}>
                             Browse marketplace for this event
                           </Link>
                         </Button>

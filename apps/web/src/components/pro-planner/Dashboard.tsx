@@ -148,7 +148,7 @@ export function ProPlannerDashboard({ orgName, events, userId, userRole, orgOwne
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               <Link
-                                href={`/pro/planner/vault/${event.slug}` as any}
+                                href={vaultDetail(userRole as any, event.slug) as any}
                                 className="text-lg font-semibold text-slate-900 hover:text-[color:var(--oh-primary)] transition-colors"
                               >
                                 {event.name}

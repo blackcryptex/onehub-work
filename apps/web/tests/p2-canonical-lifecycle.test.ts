@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { z } from "zod";
 
 import {
@@ -82,6 +84,22 @@ describe("P2 canonical proposal-contract-payment lifecycle guards", () => {
         sellerUserIds: ["seller_owner"],
       })
     ).toEqual({ buyerSigned: true, sellerSigned: true, nextStatus: "FULLY_SIGNED" });
+  });
+
+  it("keeps generated contracts immediately signable and hides DRAFT signing forms", () => {
+    const routeSource = readFileSync(
+      join(process.cwd(), "apps/web/src/app/api/contracts/from-proposal/route.ts"),
+      "utf8"
+    );
+    const pageSource = readFileSync(
+      join(process.cwd(), "apps/web/src/components/contracts/ContractPageClient.tsx"),
+      "utf8"
+    );
+
+    expect(routeSource).toContain('status: "OUT_FOR_SIGNATURE"');
+    expect(routeSource).not.toContain('status: "DRAFT",');
+    expect(pageSource).toContain('SIGNABLE_CONTRACT_STATUSES.has(contract.status)');
+    expect(pageSource).not.toContain('contract.status !== "FULLY_SIGNED" &&');
   });
 
   it("requires full-contract payment amount to equal the server-derived milestone sum", () => {

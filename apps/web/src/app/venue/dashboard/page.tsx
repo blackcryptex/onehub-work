@@ -28,6 +28,67 @@ export default async function VenueDashboardPage() {
     redirect("/providers/onboarding?providerType=venue");
   }
 
-  return <VenueDashboard orgName={org.name} />;
+  const listings = await db.listing.findMany({
+    where: admin ? {} : { orgId: org.id },
+    select: { id: true },
+  });
+  const listingIds = listings.map((listing) => listing.id);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const allBookingRequests =
+    listingIds.length > 0 || admin
+      ? await db.bookingRequest.findMany({
+          where: admin ? {} : { listingId: { in: listingIds } },
+          include: {
+            event: {
+              select: {
+                id: true,
+                name: true,
+                startAt: true,
+              },
+            },
+            listing: {
+              select: {
+                title: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        })
+      : [];
+
+  const todaysLeads = allBookingRequests.filter(
+    (request) =>
+      request.status === "PENDING" &&
+      request.createdAt >= today &&
+      request.createdAt < tomorrow
+  ).length;
+
+  const upcomingBookings = allBookingRequests.filter(
+    (request) =>
+      request.startAt >= new Date() &&
+      request.status !== "DECLINED" &&
+      request.status !== "WITHDRAWN"
+  ).length;
+
+  const unreadMessages = await db.notification.count({
+    where: {
+      userId: user.id,
+      orgId: org.id,
+      read: false,
+    },
+  });
+
+  return (
+    <VenueDashboard
+      orgName={org.name}
+      stats={{ todaysLeads, upcomingBookings, unreadMessages }}
+      recentRequests={allBookingRequests.slice(0, 5)}
+    />
+  );
 }
 

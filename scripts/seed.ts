@@ -330,8 +330,8 @@ async function main() {
       bodyMd: "Contract terms...",
       signatures: {
         create: [
-          { signerName: "Jane Planner", signerEmail: "pro@example.com", signedAt: new Date() },
-          { signerName: "Venue Manager", signerEmail: "venue@example.com" },
+          { signerId: pro.id, signerName: "Jane Planner", signerEmail: "pro@example.com", signedAt: new Date() },
+          { signerId: venue.id, signerName: "Venue Manager", signerEmail: "venue@example.com" },
         ],
       },
     },

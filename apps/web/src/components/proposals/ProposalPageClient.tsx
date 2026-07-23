@@ -97,7 +97,7 @@ export function ProposalPageClient({
               <Edit2 className="w-4 h-4 mr-1" />
               Edit
             </Button>
-            <DeleteProposalButton proposalId={proposal.id} />
+            <DeleteProposalButton proposalId={proposal.id} returnTo={eventVaultHref} />
           </div>
         )}
       </div>

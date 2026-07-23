@@ -1,4 +1,4 @@
-import { Card, Button } from "@onehub/ui";
+import { Card } from "@onehub/ui";
 import { db } from "@/server/db";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
@@ -75,7 +75,7 @@ export default async function RequestsPage() {
         <Card className="p-12 text-center">
           <div className="text-slate-500 mb-2">No booking requests yet.</div>
           <div className="text-sm text-slate-400">
-            Booking requests from vendors will appear here.
+            Booking requests for your provider listings or planner events will appear here.
           </div>
         </Card>
       ) : (

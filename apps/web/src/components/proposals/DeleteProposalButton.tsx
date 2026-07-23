@@ -7,9 +7,10 @@ import { Trash2, Loader2 } from "lucide-react";
 
 interface DeleteProposalButtonProps {
   proposalId: string;
+  returnTo?: string | null;
 }
 
-export function DeleteProposalButton({ proposalId }: DeleteProposalButtonProps) {
+export function DeleteProposalButton({ proposalId, returnTo }: DeleteProposalButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,8 +33,7 @@ export function DeleteProposalButton({ proposalId }: DeleteProposalButtonProps) 
         throw new Error(data.error || "Failed to delete proposal");
       }
 
-      // Return to the canonical in-app commercial surface after deletion.
-      router.push("/app/vault");
+      router.push((returnTo || "/app") as any);
       router.refresh();
     } catch (err) {
       console.error("Error deleting proposal:", err);

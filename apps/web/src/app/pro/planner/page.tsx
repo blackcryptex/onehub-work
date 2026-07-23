@@ -3,12 +3,17 @@ import { redirect } from "next/navigation";
 import { ProPlannerDashboard } from "@/components/pro-planner/Dashboard";
 import { db } from "@/server/db";
 import { canAccessDashboard, isPlanner } from "@/lib/rbac";
+import { dashboard } from "@/lib/routes";
 
 export default async function ProPlannerPage() {
   const user = await getCurrentUser();
   
-  if (!user || !canAccessDashboard(user, "PRO_PLANNER")) {
-    redirect("/app");
+  if (!user) {
+    redirect("/signin?callbackUrl=/pro/planner");
+  }
+
+  if (!canAccessDashboard(user, "PRO_PLANNER")) {
+    redirect(dashboard(user.role) as any);
   }
 
   const admin = isAdmin(user);

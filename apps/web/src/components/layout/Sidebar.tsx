@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { Role } from "@onehub/types/src/roles";
 import type { Route } from "next";
+import { vaultIndex } from "@/lib/routes";
 import { SignOutButton } from "./SignOutButton";
 
 function itemsForRole(role: Role | undefined) {
@@ -23,13 +24,13 @@ function itemsForRole(role: Role | undefined) {
     case "VENDOR":
       return [
         { href: "/vendor/dashboard", label: "Dashboard" },
-        { href: "/app/vault", label: "Event Vault" },
+        { href: vaultIndex(role), label: "Event Vault" },
         { href: "/marketplace/manage", label: "Listings" },
       ];
     case "VENUE":
       return [
         { href: "/venue/dashboard", label: "Dashboard" },
-        { href: "/app/vault", label: "Event Vault" },
+        { href: vaultIndex(role), label: "Event Vault" },
         { href: "/marketplace/manage", label: "Availability" },
       ];
     case "ADMIN":

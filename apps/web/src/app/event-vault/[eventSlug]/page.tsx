@@ -1,8 +1,11 @@
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth-helpers";
+import { vaultDetail } from "@/lib/routes";
 
-// This is the OLD event vault page. Redirect to the new feature-rich vault page at /app/vault/[eventSlug]
+// This is the OLD event vault page. Redirect to the role-aware event surface.
 // The new page includes booking request proposal generation and all event management features
 export default async function EventVaultDetailPage({ params }: { params: { eventSlug: string } }) {
-  // Type assertion: Next.js typed routes don't support dynamic template strings, so we cast to satisfy TypeScript
-  redirect(`/app/vault/${params.eventSlug}` as any);
+  const user = await getCurrentUser();
+
+  redirect(vaultDetail(user?.role, params.eventSlug) as any);
 }

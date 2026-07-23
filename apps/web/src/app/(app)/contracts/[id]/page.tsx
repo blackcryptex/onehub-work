@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ContractPageClient } from "@/components/contracts/ContractPageClient";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
+import { vaultDetail } from "@/lib/routes";
 
 export default async function ContractPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -51,16 +52,9 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
 
   if (!contract) return notFound();
 
-  let eventVaultHref: string | null = null;
-  if (contract.proposal?.event?.slug) {
-    if (user?.role === "DIY_PLANNER") {
-      eventVaultHref = `/diy-planner/vault/${contract.proposal.event.slug}`;
-    } else if (user?.role === "PRO_PLANNER") {
-      eventVaultHref = `/pro/planner/vault/${contract.proposal.event.slug}`;
-    } else {
-      eventVaultHref = `/app/vault/${contract.proposal.event.slug}`;
-    }
-  }
+  const eventVaultHref = contract.proposal?.event?.slug
+    ? vaultDetail(user?.role, contract.proposal.event.slug)
+    : null;
 
   const canEdit = Boolean(user && contract.proposal?.event && canManageEvent(user, contract.proposal.event) && contract.status === "DRAFT");
   const isBuyerSideUser = Boolean(

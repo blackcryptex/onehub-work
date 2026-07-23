@@ -5,7 +5,7 @@ import { isPlanner, canAccessDashboard } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Folder, Calendar, Users, DollarSign, CheckCircle2 } from "lucide-react";
-import { vaultDetail } from "@/lib/routes";
+import { dashboard, vaultDetail } from "@/lib/routes";
 
 /**
  * Pro Planner Event Vault List Page
@@ -22,8 +22,7 @@ export default async function ProVaultPage() {
   }
 
   if (!canAccessDashboard(user, "PRO_PLANNER")) {
-    // For demo friendliness, redirect to demo launcher if not authorized
-    redirect("/demo");
+    redirect(dashboard(user.role) as any);
   }
 
   const userId = user.id;

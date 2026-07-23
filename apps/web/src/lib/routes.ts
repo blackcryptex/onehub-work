@@ -10,7 +10,7 @@ import type { Role } from "@onehub/types/src/roles";
  * - DIY_PLANNER: /diy-planner/vault/*
  * - PRO_PLANNER: /pro/planner/vault/*
  * - CLIENT detail: /client/events/*
- * - VENDOR/VENUE/ADMIN/EVENT_DREAMER/others: /app/vault/* (legacy route)
+ * - VENDOR/VENUE/ADMIN/EVENT_DREAMER: their canonical dashboards (no vault surface)
  * 
  * Shared routes (not role-specific):
  * - Proposals: /proposals/[id]
@@ -26,9 +26,18 @@ export function getVaultBasePath(role: Role | undefined): string {
       return "/diy-planner/vault";
     case "PRO_PLANNER":
       return "/pro/planner/vault";
+    case "CLIENT":
+      return "/client";
+    case "VENDOR":
+      return "/vendor/dashboard";
+    case "VENUE":
+      return "/venue/dashboard";
+    case "ADMIN":
+      return "/admin/overview";
+    case "EVENT_DREAMER":
+      return "/diy-planner";
     default:
-      // VENDOR, VENUE, ADMIN, CLIENT, EVENT_DREAMER use legacy route
-      return "/app/vault";
+      return "/app";
   }
 }
 
@@ -50,8 +59,16 @@ export function vaultDetail(role: Role | undefined, eventSlug: string): string {
       return `/pro/planner/vault/${eventSlug}`;
     case "CLIENT":
       return `/client/events/${eventSlug}`;
+    case "VENDOR":
+      return "/vendor/dashboard";
+    case "VENUE":
+      return "/venue/dashboard";
+    case "ADMIN":
+      return "/admin/overview";
+    case "EVENT_DREAMER":
+      return "/diy-planner";
     default:
-      return `/app/vault/${eventSlug}`;
+      return "/app";
   }
 }
 
@@ -107,6 +124,21 @@ export function proposalDetail(proposalId: string): string {
  */
 export function contractDetail(contractId: string): string {
   return `/contracts/${contractId}`;
+}
+
+/**
+ * Get the safe return path after proposal actions.
+ */
+export function proposalReturnPath(role: Role | undefined, eventSlug: string | undefined | null): string {
+  if (eventSlug) {
+    return vaultDetail(role, eventSlug);
+  }
+
+  if (role) {
+    return dashboard(role);
+  }
+
+  return "/app";
 }
 
 /**

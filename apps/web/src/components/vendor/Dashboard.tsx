@@ -15,13 +15,11 @@
 import { VendorHeader } from "./Header";
 import { VendorSidebar } from "./Sidebar";
 import { Card } from "@/components/ui";
+import Link from "next/link";
 import { useState } from "react";
 import {
-  Store,
   Calendar,
   MessageSquare,
-  DollarSign,
-  Settings,
   Sparkles,
   TrendingUp,
 } from "lucide-react";
@@ -99,6 +97,20 @@ export function VendorDashboard({
               <p className="text-slate-600">
                 Manage your services, respond to leads, and grow your business.
               </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href="/requests"
+                  className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                >
+                  View booking requests
+                </Link>
+                <Link
+                  href="/marketplace/manage"
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Manage listings
+                </Link>
+              </div>
             </div>
 
             {/* Stats */}
@@ -143,7 +155,12 @@ export function VendorDashboard({
             {/* Recent Booking Requests */}
             {recentRequests.length > 0 && (
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Recent Booking Requests</h3>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold">Recent Booking Requests</h3>
+                  <Link href="/requests" className="text-sm font-medium text-indigo-600 hover:underline">
+                    View all
+                  </Link>
+                </div>
                 <div className="space-y-3">
                   {recentRequests.map((request) => (
                     <div
@@ -177,6 +194,12 @@ export function VendorDashboard({
                         >
                           {request.status}
                         </span>
+                        <Link
+                          href="/requests"
+                          className="mt-2 block text-right text-xs font-medium text-indigo-600 hover:underline"
+                        >
+                          Respond
+                        </Link>
                       </div>
                     </div>
                   ))}
@@ -198,6 +221,12 @@ export function VendorDashboard({
                     <li>Set your availability calendar</li>
                     <li>Configure payment and contract settings</li>
                   </ol>
+                  <Link
+                    href="/marketplace/manage"
+                    className="mt-4 inline-flex rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                  >
+                    Create or update listing
+                  </Link>
                 </div>
               </div>
             </Card>
@@ -209,7 +238,12 @@ export function VendorDashboard({
           <section className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
             <h2 className="text-xl font-semibold mb-4">Leads & Booking Requests</h2>
             {recentRequests.length === 0 ? (
-              <p className="text-slate-600">No booking requests yet. Your leads will appear here.</p>
+              <div className="space-y-3">
+                <p className="text-slate-600">No booking requests yet. Your leads will appear here.</p>
+                <Link href="/marketplace/manage" className="text-sm font-medium text-indigo-600 hover:underline">
+                  Confirm your listing is ready for discovery
+                </Link>
+              </div>
             ) : (
               <div className="space-y-3">
                 {recentRequests.map((request) => (
@@ -245,6 +279,12 @@ export function VendorDashboard({
                       >
                         {request.status}
                       </span>
+                      <Link
+                        href="/requests"
+                        className="mt-2 block text-right text-xs font-medium text-indigo-600 hover:underline"
+                      >
+                        Open request
+                      </Link>
                     </div>
                   </div>
                 ))}

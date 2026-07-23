@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
+import { proposalDetail } from "@/lib/routes";
 
 interface GenerateProposalButtonProps {
   eventId: string;
@@ -55,9 +56,7 @@ export function GenerateProposalButton({
       if (onSuccess) {
         onSuccess(proposal.id);
       } else {
-        // Navigate to proposal page to view the generated proposal
-        // Type assertion: Next.js typed routes don't support dynamic template strings, so we cast to satisfy TypeScript
-        router.push(`/app/proposals/${proposal.id}` as any);
+        router.push(proposalDetail(proposal.id) as any);
       }
     } catch (err) {
       console.error("[UI] Error generating proposal:", err);

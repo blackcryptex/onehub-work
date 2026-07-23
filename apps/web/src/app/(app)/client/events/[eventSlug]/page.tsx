@@ -2,6 +2,7 @@ import { Card } from "@/components/ui";
 import { db } from "@/server/db";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canViewEvent, isEventSharedWithUser } from "@/lib/rbac";
+import { dashboard } from "@/lib/routes";
 import { redirect, notFound } from "next/navigation";
 import { Calendar, MapPin, Users, DollarSign, MessageSquare } from "lucide-react";
 import { DepositPanel } from "@/components/client/DepositPanel";
@@ -28,7 +29,7 @@ export default async function ClientEventSummaryPage({
 
   // Only CLIENT users can access this route
   if (user.role !== "CLIENT") {
-    redirect("/app");
+    redirect(dashboard(user.role) as any);
   }
 
   // Fetch event with stakeholders, shares, and deposits
@@ -97,7 +98,7 @@ export default async function ClientEventSummaryPage({
     }
     
     // Not a stakeholder or not authorized
-    redirect("/app");
+    redirect(dashboard("CLIENT") as any);
   }
 
   // Client-safe summary view - only show basic, non-sensitive information

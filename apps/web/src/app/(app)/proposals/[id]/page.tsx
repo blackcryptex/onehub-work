@@ -6,7 +6,7 @@ import { ApproveProposalButton } from "@/components/proposals/ApproveProposalBut
 import { ProposalPageClient } from "@/components/proposals/ProposalPageClient";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
-import Link from "next/link";
+import { proposalReturnPath } from "@/lib/routes";
 
 type ThreadMessage = {
   id: string;
@@ -51,18 +51,8 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
   if (!proposal) return notFound();
   const thread = await db.thread.findFirst({ where: { proposalId: proposal.id }, include: { messages: true } });
   
-  // Determine vault route based on user role
   const user = await getCurrentUser();
-  let eventVaultHref: string | null = null;
-  if (proposal.event?.slug) {
-    if (user?.role === "DIY_PLANNER") {
-      eventVaultHref = `/diy-planner/vault/${proposal.event.slug}`;
-    } else if (user?.role === "PRO_PLANNER") {
-      eventVaultHref = `/pro/planner/vault/${proposal.event.slug}`;
-    } else {
-      eventVaultHref = `/app/vault/${proposal.event.slug}`;
-    }
-  }
+  const eventVaultHref = proposal.event?.slug ? proposalReturnPath(user?.role, proposal.event.slug) : null;
   
   const hasContent = Boolean(proposal.summary || (proposal.sections && proposal.sections.length > 0) || (proposal.lineItems && proposal.lineItems.length > 0));
   const canEdit = Boolean(user && canManageEvent(user, proposal.event) && (proposal.status === "DRAFT" || proposal.status === "SENT"));

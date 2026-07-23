@@ -13,6 +13,7 @@ import { CURRENT_ACCEPTANCE_VERSIONS } from "@/lib/acceptance-versions";
 import { PUBLIC_LEGAL_PAGES } from "@/lib/legal-surface";
 
 const PAYABLE_CONTRACT_STATUSES = new Set(["FULLY_SIGNED", "IN_PAYMENT"]);
+const SIGNABLE_CONTRACT_STATUSES = new Set(["OUT_FOR_SIGNATURE", "PARTIALLY_SIGNED"]);
 
 interface ContractPageClientProps {
   contract: any;
@@ -35,11 +36,7 @@ export function ContractPageClient({
 }: ContractPageClientProps) {
   const [isEditing, setIsEditing] = useState(false);
   const canShowPaymentEntry = canEnterPayment && PAYABLE_CONTRACT_STATUSES.has(contract.status);
-  const canShowSignatureForm =
-    contract.status !== "FULLY_SIGNED" &&
-    contract.status !== "ACTIVE" &&
-    contract.status !== "COMPLETED" &&
-    !currentUserAlreadySigned;
+  const canShowSignatureForm = SIGNABLE_CONTRACT_STATUSES.has(contract.status) && !currentUserAlreadySigned;
 
   if (isEditing) {
     return (

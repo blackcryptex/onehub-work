@@ -7,6 +7,8 @@ import {
   maintenanceModeResponseBody,
   shouldBlockForMaintenance,
 } from "@/lib/maintenance";
+import { dashboard } from "@/lib/routes";
+import type { Role } from "@onehub/types/src/roles";
 
 function generateRequestId(): string {
   // Use Web Crypto API for Edge Runtime compatibility
@@ -105,7 +107,7 @@ export default async function middleware(req: NextRequest) {
       pathname.startsWith("/diy-planner") ||
       pathname.startsWith("/app/vault")
     ) {
-      return NextResponse.redirect(new URL("/app", req.url));
+      return NextResponse.redirect(new URL(dashboard("CLIENT"), req.url));
     }
   }
   
@@ -115,7 +117,7 @@ export default async function middleware(req: NextRequest) {
     // (They can access via their own vault routes)
     if (pathname.startsWith("/client/events") && !pathname.includes("/admin")) {
       // Allow if it's an admin view, otherwise redirect
-      return NextResponse.redirect(new URL("/app", req.url));
+      return NextResponse.redirect(new URL(dashboard(userRole as Role), req.url));
     }
   }
   

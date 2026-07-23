@@ -44,8 +44,13 @@ import { ShareEventButton } from "@/components/events/ShareEventButton";
 import { StakeholdersSectionClient } from "@/components/vault/StakeholdersSectionClient";
 import { AiSourceVendorsVenuesPanel } from "@/components/vault/AiSourceVendorsVenuesPanel";
 import { AddToShortlistButtonClient } from "@/components/shortlist/AddToShortlistButtonClient";
-import { getVaultBasePath, proposalDetail, contractDetail } from "@/lib/routes";
+import { dashboard, getVaultBasePath, proposalDetail, contractDetail } from "@/lib/routes";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
+import {
+  chipClassForSpineState,
+  computeEventProgress,
+  spineStepState,
+} from "@/lib/event-command-center";
 
 /**
  * Pro Planner Event Vault Detail Page
@@ -69,8 +74,7 @@ export default async function ProVaultDetailPage({
   }
 
   if (!canAccessDashboard(user, "PRO_PLANNER")) {
-    // For demo friendliness, redirect to demo launcher if not authorized
-    redirect("/demo");
+    redirect(dashboard(user.role) as any);
   }
 
   const userId = user.id;
@@ -265,9 +269,6 @@ export default async function ProVaultDetailPage({
     (sum, c) => sum + c.items.filter((i) => i.done).length,
     0,
   );
-  const progress =
-    checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
-
   const guestList = event.guestLists;
   const totalGuests = guestList?.guests.length || 0;
   const rsvped =
@@ -316,6 +317,7 @@ export default async function ProVaultDetailPage({
     (payment) =>
       payment.status === "REQUIRES_PAYMENT" || payment.status === "PROCESSING",
   ).length;
+  const commerceLinked = event.proposals.length > 0 || contracts.length > 0 || paymentIntents.length > 0;
   const nextCommerceAction = shortlistCount === 0
     ? "Source and shortlist vendors or venues for this selected event."
     : bookingRequestCount === 0 && draftProposalCount === 0 && realProposalCount === 0
@@ -333,7 +335,10 @@ export default async function ProVaultDetailPage({
   const commerceSpine = [
     {
       label: "Discovery",
-      state: shortlistCount > 0 || bookingRequestCount > 0 || event.proposals.length > 0 ? "Happened" : "Pending",
+      state: spineStepState({
+        happened: shortlistCount > 0 || bookingRequestCount > 0 || event.proposals.length > 0,
+        blocked: false,
+      }),
       detail: shortlistCount > 0 || bookingRequestCount > 0 || event.proposals.length > 0
         ? "Event-specific sourcing has produced attached vendor activity."
         : "No persisted discovery activity yet; sourcing is available but not counted as completion.",
@@ -342,47 +347,69 @@ export default async function ProVaultDetailPage({
     },
     {
       label: "Shortlist",
-      state: shortlistCount > 0 ? "Happened" : "Pending",
+      state: spineStepState({ happened: shortlistCount > 0, blocked: shortlistCount === 0 }),
       detail: `${shortlistCount} vendor${shortlistCount === 1 ? "" : "s"} or venue${shortlistCount === 1 ? "" : "s"} attached to this event.`,
       blocked: shortlistCount === 0,
       next: shortlistCount > 0 ? "Choose who should receive a request." : "Add at least one vendor or venue to the event shortlist.",
     },
     {
       label: "Request",
-      state: bookingRequestCount > 0 || draftProposalCount > 0 ? "Happened" : "Pending",
+      state: spineStepState({
+        happened: bookingRequestCount > 0 || draftProposalCount > 0,
+        blocked: shortlistCount === 0,
+      }),
       detail: `${bookingRequestCount} booking request${bookingRequestCount === 1 ? "" : "s"}; ${draftProposalCount} draft proposal request${draftProposalCount === 1 ? "" : "s"}.`,
       blocked: shortlistCount === 0,
       next: bookingRequestCount > 0 ? "Track vendor response status." : "Create a request from a shortlisted vendor.",
     },
     {
       label: "Proposal",
-      state: realProposalCount > 0 ? "Happened" : "Pending",
+      state: spineStepState({
+        happened: realProposalCount > 0,
+        blocked: bookingRequestCount === 0 && draftProposalCount === 0,
+      }),
       detail: `${realProposalCount} non-draft proposal${realProposalCount === 1 ? "" : "s"}; drafts are not counted as vendor-ready.`,
       blocked: bookingRequestCount === 0 && draftProposalCount === 0,
       next: realProposalCount > 0 ? "Review proposal status and accepted scope." : "Wait for or prepare a real proposal from request state.",
     },
     {
       label: "Contract",
-      state: contracts.length > 0 ? "Happened" : "Pending",
+      state: spineStepState({
+        happened: contracts.length > 0,
+        blocked: acceptedProposalCount === 0 && contracts.length === 0,
+      }),
       detail: `${contracts.length} contract${contracts.length === 1 ? "" : "s"}; ${signedOrActiveContracts} signed/active.`,
       blocked: acceptedProposalCount === 0 && contracts.length === 0,
       next: contracts.length > 0 ? "Complete signature/review." : "Advance only accepted proposals to contract.",
     },
     {
       label: "Payment",
-      state: fundedPayments > 0 ? "Happened" : openPaymentIntents > 0 || paymentPlanPending > 0 ? "Pending" : "Blocked",
+      state: spineStepState({
+        happened: fundedPayments > 0,
+        blocked: signedOrActiveContracts === 0 && openPaymentIntents === 0 && paymentPlanPending === 0,
+      }),
       detail: `${fundedPayments} funded payment${fundedPayments === 1 ? "" : "s"}; ${openPaymentIntents} open payment intent${openPaymentIntents === 1 ? "" : "s"}; ${paymentPlanPending} pending payment-plan milestone${paymentPlanPending === 1 ? "" : "s"}.`,
       blocked: signedOrActiveContracts === 0,
       next: signedOrActiveContracts > 0 ? "Resolve open payment intent or milestone." : "Payment waits for a signed/active contract.",
     },
     {
       label: "Execution",
-      state: event.status === "ACTIVE" || event.status === "COMPLETED" ? "Happened" : "Pending",
+      state: spineStepState({
+        happened: event.status === "ACTIVE" || event.status === "COMPLETED",
+        blocked: signedOrActiveContracts === 0,
+      }),
       detail: `Event status is ${event.status}.`,
       blocked: signedOrActiveContracts === 0,
       next: event.status === "COMPLETED" ? "Review closeout." : "Execute only after vendor work is contracted and payment state is clear.",
     },
   ];
+  const commerceStepsDone = commerceSpine.filter((step) => step.state === "Done").length;
+  const progress = computeEventProgress({
+    checklistDone,
+    checklistTotal,
+    commerceStepsDone,
+    commerceStepsTotal: commerceSpine.length,
+  });
 
   const eventWorkspaceTabs = [
     { label: "Overview", href: "#event-workspace" },
@@ -469,12 +496,7 @@ export default async function ProVaultDetailPage({
     { label: "Help", href: "/help", icon: HelpCircle },
   ];
 
-  const chipClassForState = (state: string) =>
-    state === "Happened"
-      ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-      : state === "Blocked"
-        ? "bg-rose-50 text-rose-700 ring-rose-200"
-        : "bg-amber-50 text-amber-700 ring-amber-200";
+  const chipClassForState = chipClassForSpineState;
 
   const commerceIcons: Record<string, ElementType> = {
     Discovery: Search,
@@ -538,7 +560,7 @@ export default async function ProVaultDetailPage({
         confirmedVendorCount > 0
           ? `${confirmedVendorCount} vendor${confirmedVendorCount === 1 ? "" : "s"} backed by accepted proposal or contract state.`
           : "No vendors are confirmed until accepted proposal or contract state supports it.",
-      status: confirmedVendorCount > 0 ? "Happened" : "Pending",
+      status: confirmedVendorCount > 0 ? "Done" : "Pending",
       action: "Review confirmed",
       href: "#workspace-confirmed-vendors-detail",
     },
@@ -586,7 +608,7 @@ export default async function ProVaultDetailPage({
       title: "Guests",
       icon: Users,
       summary: `${rsvped} accepted of ${totalGuests} invited; ${rsvpPending} pending.`,
-      status: rsvpPending > 0 ? "Pending" : totalGuests > 0 ? "Happened" : "Pending",
+      status: rsvpPending > 0 ? "Pending" : totalGuests > 0 ? "Done" : "Pending",
       action: "Manage guests",
       href: `/events/${eventSlug}/guests`,
     },
@@ -595,7 +617,7 @@ export default async function ProVaultDetailPage({
       title: "Budget overview",
       icon: BarChart3,
       summary: `$${(actual / 100).toFixed(0)} actual of $${(planned / 100).toFixed(0)} planned; ${budgetPercent}% used.`,
-      status: budgetPercent > 90 ? "Blocked" : budgetPercent > 0 ? "Happened" : "Pending",
+      status: budgetPercent > 90 ? "Blocked" : budgetPercent > 0 ? "Done" : "Pending",
       action: "View budget",
       href: `/events/${eventSlug}/budget`,
     },
@@ -708,6 +730,7 @@ export default async function ProVaultDetailPage({
                     eventName={event.name}
                     canEdit={false}
                     canDelete={canDelete}
+                    commerceLinked={commerceLinked}
                     size="sm"
                   />
                   {!canDelete && (

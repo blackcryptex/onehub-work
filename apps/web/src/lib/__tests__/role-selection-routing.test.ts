@@ -9,7 +9,14 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { canAccessDashboard } from "../rbac";
-import { dashboard } from "../routes";
+import {
+  contractDetail,
+  dashboard,
+  proposalDetail,
+  proposalReturnPath,
+  vaultDetail,
+  vaultIndex,
+} from "../routes";
 import {
   getRoleForCreatedOrg,
   isPublicSignupRole,
@@ -66,6 +73,37 @@ describe("Gate 3B role routing matrix", () => {
     expect(dashboard("CLIENT")).toBe("/client");
     expect(dashboard("ADMIN")).toBe("/admin/overview");
     expect(dashboard("EVENT_DREAMER")).toBe("/diy-planner");
+  });
+
+  it("keeps vault index helpers on canonical role-aware landings without stale /app vault fallbacks", () => {
+    expect(vaultIndex("DIY_PLANNER")).toBe("/diy-planner/vault");
+    expect(vaultIndex("PRO_PLANNER")).toBe("/pro/planner/vault");
+    expect(vaultIndex("CLIENT")).toBe("/client");
+    expect(vaultIndex("VENDOR")).toBe("/vendor/dashboard");
+    expect(vaultIndex("VENUE")).toBe("/venue/dashboard");
+    expect(vaultIndex("ADMIN")).toBe("/admin/overview");
+    expect(vaultIndex("EVENT_DREAMER")).toBe("/diy-planner");
+  });
+
+  it("keeps vault detail helpers role-aware for planners and clients", () => {
+    expect(vaultDetail("DIY_PLANNER", "summer-gala")).toBe("/diy-planner/vault/summer-gala");
+    expect(vaultDetail("PRO_PLANNER", "summer-gala")).toBe("/pro/planner/vault/summer-gala");
+    expect(vaultDetail("CLIENT", "summer-gala")).toBe("/client/events/summer-gala");
+    expect(vaultDetail("VENDOR", "summer-gala")).toBe("/vendor/dashboard");
+    expect(vaultDetail("VENUE", "summer-gala")).toBe("/venue/dashboard");
+  });
+
+  it("keeps proposal and contract detail helpers on canonical shared routes", () => {
+    expect(proposalDetail("prop_123")).toBe("/proposals/prop_123");
+    expect(contractDetail("contract_123")).toBe("/contracts/contract_123");
+  });
+
+  it("returns from proposal delete to the scoped event route when available", () => {
+    expect(proposalReturnPath("PRO_PLANNER", "summer-gala")).toBe("/pro/planner/vault/summer-gala");
+    expect(proposalReturnPath("DIY_PLANNER", "summer-gala")).toBe("/diy-planner/vault/summer-gala");
+    expect(proposalReturnPath("CLIENT", "summer-gala")).toBe("/client/events/summer-gala");
+    expect(proposalReturnPath("VENDOR", "summer-gala")).toBe("/vendor/dashboard");
+    expect(proposalReturnPath(undefined, undefined)).toBe("/app");
   });
 
   it("keeps dashboard access role-specific with admin override", () => {

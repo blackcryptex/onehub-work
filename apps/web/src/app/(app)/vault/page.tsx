@@ -5,7 +5,7 @@ import { isPlanner, canAccessDashboard, blockClientAccess } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Folder, Calendar, Users, DollarSign, CheckCircle2 } from "lucide-react";
-import { getVaultBasePath, vaultDetail, vaultIndex } from "@/lib/routes";
+import { dashboard, getVaultBasePath, vaultDetail, vaultIndex } from "@/lib/routes";
 
 export default async function EventVaultPage() {
   const user = await getCurrentUser();
@@ -37,7 +37,7 @@ export default async function EventVaultPage() {
   // Phase 0: Security hardening - Block CLIENT users from accessing planner vault
   if (user.role === "CLIENT") {
     console.warn("[Event Vault] CLIENT user attempted to access planner vault, redirecting");
-    redirect("/app");
+    redirect(dashboard("CLIENT") as any);
   }
 
   // Determine vault base path based on user role using centralized helper

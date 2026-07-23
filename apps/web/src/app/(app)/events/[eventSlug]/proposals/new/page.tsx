@@ -3,12 +3,13 @@
 import { Card, Button } from "@/components/ui";
 import { useRouter, useParams } from "next/navigation";
 import { Sparkles } from "lucide-react";
+import { eventDetail } from "@/lib/routes";
 
 /**
  * Manual Proposal Creation Page
  * 
  * NOTE: This page is currently a placeholder. For now, users should generate proposals
- * using AI from the Event Vault page at /app/vault/[eventSlug].
+ * using AI from the role-aware event surface.
  * 
  * This page will be implemented in a future update to allow manual proposal creation.
  */
@@ -35,8 +36,7 @@ export default function NewProposalPage() {
               </p>
               <div className="flex gap-2">
                 <Button 
-                  // Type assertion: Next.js typed routes don't support dynamic template strings, so we cast to satisfy TypeScript
-                  onClick={() => eventSlug && router.push(`/app/vault/${eventSlug}` as any)}
+                  onClick={() => eventSlug && router.push(eventDetail(eventSlug) as any)}
                   className="bg-indigo-600 hover:bg-indigo-700"
                   disabled={!eventSlug}
                 >
