@@ -1,6 +1,7 @@
 import { BudgetTable, Card } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
+import { EventSubpageHeader } from "../_components/EventSubpageHeader";
 
 type BudgetLineData = {
   id: string;
@@ -30,8 +31,16 @@ export default async function EventBudget({ params }: { params: Promise<{ eventS
   }));
 
   return (
-    <Card className="p-4">
-      <BudgetTable lines={lines} />
-    </Card>
+    <div className="space-y-4">
+      <EventSubpageHeader
+        eventName={authorizedEvent.name}
+        eventSlug={resolvedParams.eventSlug}
+        sectionTitle="Budget"
+        description="Track planned and actual spend for this event without leaving the Event Vault context."
+      />
+      <Card className="p-4">
+        <BudgetTable lines={lines} />
+      </Card>
+    </div>
   );
 }

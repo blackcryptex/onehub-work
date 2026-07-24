@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import EventActionBar from '@/components/EventActionBar';
 import VendorsPane from '@/components/panes/VendorsPane';
@@ -11,10 +11,22 @@ import GuestsPane from '@/components/panes/GuestsPane';
 import TasksMilestonesPane from '@/components/panes/TasksMilestonesPane';
 import { EventItem } from '@/lib/types.event';
 
-type Tab = 'vendors'|'proposals'|'contracts'|'budget'|'guests'|'tasks'|'milestones';
+export type EventManagementTab = 'vendors'|'proposals'|'contracts'|'budget'|'guests'|'tasks'|'milestones';
 
-export default function EventManagementSection({ event, onEventChange }:{ event: EventItem; onEventChange:(patch: Partial<EventItem>)=>void }) {
-  const [tab, setTab] = useState<Tab>('vendors');
+export default function EventManagementSection({
+  event,
+  initialTab = 'vendors',
+  onEventChange,
+}:{
+  event: EventItem;
+  initialTab?: EventManagementTab;
+  onEventChange:(patch: Partial<EventItem>)=>void;
+}) {
+  const [tab, setTab] = useState<EventManagementTab>(initialTab);
+
+  useEffect(() => {
+    setTab(initialTab);
+  }, [event.id, initialTab]);
 
   return (
     <div className="space-y-6">

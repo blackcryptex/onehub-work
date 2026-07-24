@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
+import { EventSubpageHeader } from "../_components/EventSubpageHeader";
 
 export default async function EventGuests({ params }: { params: Promise<{ eventSlug: string }> }) {
   const resolvedParams = await params;
@@ -21,6 +22,12 @@ export default async function EventGuests({ params }: { params: Promise<{ eventS
 
   return (
     <div className="space-y-4">
+      <EventSubpageHeader
+        eventName={authorizedEvent.name}
+        eventSlug={resolvedParams.eventSlug}
+        sectionTitle="Guest list"
+        description="Track invited guests, RSVPs, party size, and contact details for this event."
+      />
       {guestLists.map((guestList) => (
         <Card key={guestList.id} className="p-4">
           <div className="font-semibold mb-2">{guestList.title}</div>
@@ -67,7 +74,14 @@ export default async function EventGuests({ params }: { params: Promise<{ eventS
           )}
         </Card>
       ))}
-      {guestLists.length === 0 && <div className="text-sm text-slate-600">No guest lists yet.</div>}
+      {guestLists.length === 0 && (
+        <Card className="p-6">
+          <h2 className="text-base font-semibold text-slate-900">Start by adding guests</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            No guest lists are attached to this event yet. Create a list when you are ready to track invites, RSVP responses, and plus-ones.
+          </p>
+        </Card>
+      )}
     </div>
   );
 }

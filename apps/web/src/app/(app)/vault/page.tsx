@@ -1,7 +1,7 @@
 import { Card, Button } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
-import { isPlanner, canAccessDashboard, blockClientAccess } from "@/lib/rbac";
+import { isPlanner } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Folder, Calendar, Users, DollarSign, CheckCircle2 } from "lucide-react";
@@ -28,7 +28,7 @@ export default async function EventVaultPage() {
 
   // Legacy route protection: Redirect planners to their role-specific vault
   // This ensures planners never use the legacy /app/vault route
-  if (canAccessDashboard(user, "DIY_PLANNER") || canAccessDashboard(user, "PRO_PLANNER")) {
+  if (user.role === "DIY_PLANNER" || user.role === "PRO_PLANNER") {
     const roleSpecificVault = vaultIndex(user.role);
     console.log("[Event Vault] Redirecting planner from legacy route to:", roleSpecificVault);
     redirect(roleSpecificVault as never);

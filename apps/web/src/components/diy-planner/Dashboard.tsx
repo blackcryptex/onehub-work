@@ -15,6 +15,7 @@
 import { Header } from "./Header";
 import DIYSidebar from "./DIYSidebar";
 import EventManagementSection from "@/components/EventManagementSection";
+import type { EventManagementTab } from "@/components/EventManagementSection";
 import CalendarPane from "@/components/panes/CalendarPane";
 import { Overview } from "@/components/overview/Overview";
 import { EventWizard } from "@/components/event-wizard/EventWizard";
@@ -42,6 +43,20 @@ type UIRoute =
   | "wizard"
   | "eventDetail";
 
+const EVENT_MANAGEMENT_TABS: EventManagementTab[] = [
+  "vendors",
+  "proposals",
+  "contracts",
+  "budget",
+  "guests",
+  "tasks",
+  "milestones",
+];
+
+function toEventManagementTab(tab: string): EventManagementTab {
+  return EVENT_MANAGEMENT_TABS.includes(tab as EventManagementTab) ? (tab as EventManagementTab) : "vendors";
+}
+
 // Wrapper component to handle useSearchParams (must be in a client component with Suspense)
 export function DIYPlannerDashboard() {
   const searchParams = useSearchParams();
@@ -59,6 +74,7 @@ export function DIYPlannerDashboard() {
   const [uiRoute, setUiRoute] = useState<UIRoute>(initialRoute);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedEventInitialTab, setSelectedEventInitialTab] = useState<EventManagementTab>("vendors");
   const { success, error } = useToast();
   const { data: session } = useSession();
 
@@ -239,14 +255,14 @@ export function DIYPlannerDashboard() {
               events={events.map(e => adaptEventToNewFormat(e))}
               selectedEventId={selectedEventId}
               onCreateEvent={() => setUiRoute("wizard")}
-              onNavigateToTab={(eventId) => {
+              onNavigateToTab={(eventId, tab) => {
                 setSelectedEventId(eventId);
+                setSelectedEventInitialTab(toEventManagementTab(tab));
                 setUiRoute("eventDetail");
-                // Note: Tab will default to 'vendors', but EventManagementSection can be enhanced
-                // to accept an initialTab prop in the future
               }}
               onNavigateToEvent={(eventId) => {
                 setSelectedEventId(eventId);
+                setSelectedEventInitialTab("vendors");
                 setUiRoute("eventDetail");
               }}
             />
@@ -339,6 +355,7 @@ export function DIYPlannerDashboard() {
             {/* Action Bar + Panes */}
             <EventManagementSection 
               event={adaptEventToNewFormat(selectedEvent)} 
+              initialTab={selectedEventInitialTab}
               onEventChange={handleEventChange} 
             />
           </section>
