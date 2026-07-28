@@ -25,6 +25,7 @@ async function main() {
   }
 
   const admin = await prisma.user.findUniqueOrThrow({ where: { email: "admin@example.com" } });
+  const diy = await prisma.user.findUniqueOrThrow({ where: { email: "diy@example.com" } });
   const pro = await prisma.user.findUniqueOrThrow({ where: { email: "pro@example.com" } });
   const vendor = await prisma.user.findUniqueOrThrow({ where: { email: "vendor@example.com" } });
   const venue = await prisma.user.findUniqueOrThrow({ where: { email: "venue@example.com" } });
@@ -33,6 +34,11 @@ async function main() {
   const plannerAgency = await prisma.organization.upsert({
     where: { slug: "planner-agency" },
     create: { name: "Planner Agency", slug: "planner-agency", type: "PLANNER", ownerId: pro.id, members: { create: [{ userId: pro.id, role: "OWNER" }] }, settings: { create: {} } },
+    update: {},
+  });
+  const diyHousehold = await prisma.organization.upsert({
+    where: { slug: "diy-household" },
+    create: { name: "DIY Household", slug: "diy-household", type: "CLIENT_AGENCY", ownerId: diy.id, members: { create: [{ userId: diy.id, role: "OWNER" }] }, settings: { create: {} } },
     update: {},
   });
   const vendorCo = await prisma.organization.upsert({
@@ -87,6 +93,29 @@ async function main() {
     create: { orgId: plannerAgency.id, createdById: pro.id, name: "Sample Wedding", slug: "agency-sample-event", type: "WEDDING", startAt: in30, endAt: new Date(in30.getTime() + 6*60*60*1000), budgetCents: 0 },
     update: {},
   });
+
+  const diyEvent = await prisma.event.upsert({
+    where: { slug: "diy-sample-event" },
+    create: {
+      orgId: diyHousehold.id,
+      createdById: diy.id,
+      name: "DIY Sample Wedding",
+      slug: "diy-sample-event",
+      type: "WEDDING",
+      startAt: in30,
+      endAt: new Date(in30.getTime() + 6*60*60*1000),
+      venueCity: "Chicago",
+      venueState: "IL",
+      guestTarget: 80,
+      budgetCents: 2500000,
+    },
+    update: {},
+  });
+
+  await prisma.budgetLine.createMany({ data: [
+    { eventId: diyEvent.id, category: "VENUE", label: "Venue estimate", plannedCents: 1500000, actualCents: 0 },
+    { eventId: diyEvent.id, category: "CATERING", label: "Catering estimate", plannedCents: 1000000, actualCents: 0 },
+  ], skipDuplicates: true });
 
   // DEMO EVENT: Stable slug for investor demos
   const demoEvent = await prisma.event.upsert({

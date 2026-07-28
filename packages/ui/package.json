@@ -5,7 +5,9 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --dts --format esm,cjs --out-dir dist --jsx react",
     "storybook": "storybook dev -p 6006",
@@ -16,6 +18,7 @@
     "@storybook/addon-interactions": "^8.2.6",
     "@storybook/addon-links": "^8.2.6",
     "@storybook/react-vite": "^8.2.6",
+    "@testing-library/react": "^16.0.1",
     "tsup": "^8.3.0",
     "typescript": "^5.6.3"
   },

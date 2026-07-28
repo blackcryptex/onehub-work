@@ -240,7 +240,7 @@ export default async function DIYVaultDetailPage({
   const isDemoModeEnabled = process.env.ONEHUB_DEMO_MODE === "true";
 
   return (
-    <div className="space-y-6">
+    <main id="content" className="space-y-6">
       {isDemoModeEnabled && (
         <DemoTour
           eventSlug={eventSlug}
@@ -692,6 +692,6 @@ export default async function DIYVaultDetailPage({
           </Card>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
