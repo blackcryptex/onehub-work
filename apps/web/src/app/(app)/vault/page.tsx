@@ -4,12 +4,23 @@ import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { isPlanner, canAccessDashboard, blockClientAccess } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Folder, Calendar, Users, DollarSign, CheckCircle2 } from "lucide-react";
-import { dashboard, getVaultBasePath, vaultDetail, vaultIndex } from "@/lib/routes";
+import {
+  Folder,
+  Calendar,
+  Users,
+  DollarSign,
+  CheckCircle2,
+} from "lucide-react";
+import {
+  dashboard,
+  getVaultBasePath,
+  vaultDetail,
+  vaultIndex,
+} from "@/lib/routes";
 
 export default async function EventVaultPage() {
   const user = await getCurrentUser();
-  
+
   // Debug logging
   console.log("[Event Vault] Page load started", {
     hasUser: !!user,
@@ -17,7 +28,7 @@ export default async function EventVaultPage() {
     userRole: user?.role,
     userEmail: user?.email,
   });
-  
+
   if (!user) {
     console.warn("[Event Vault] No user found, redirecting to signin");
     redirect("/signin?redirect=/app/vault");
@@ -28,15 +39,23 @@ export default async function EventVaultPage() {
 
   // Legacy route protection: Redirect planners to their role-specific vault
   // This ensures planners never use the legacy /app/vault route
-  if (canAccessDashboard(user, "DIY_PLANNER") || canAccessDashboard(user, "PRO_PLANNER")) {
+  if (
+    canAccessDashboard(user, "DIY_PLANNER") ||
+    canAccessDashboard(user, "PRO_PLANNER")
+  ) {
     const roleSpecificVault = vaultIndex(user.role);
-    console.log("[Event Vault] Redirecting planner from legacy route to:", roleSpecificVault);
-    redirect(roleSpecificVault);
+    console.log(
+      "[Event Vault] Redirecting planner from legacy route to:",
+      roleSpecificVault,
+    );
+    redirect(roleSpecificVault as never);
   }
 
   // Phase 0: Security hardening - Block CLIENT users from accessing planner vault
   if (user.role === "CLIENT") {
-    console.warn("[Event Vault] CLIENT user attempted to access planner vault, redirecting");
+    console.warn(
+      "[Event Vault] CLIENT user attempted to access planner vault, redirecting",
+    );
     redirect(dashboard("CLIENT") as any);
   }
 
@@ -63,16 +82,23 @@ export default async function EventVaultPage() {
         include: {
           createdBy: { select: { name: true, email: true } },
           budgetLines: { select: { plannedCents: true, actualCents: true } },
-          milestones: { select: { id: true, title: true, dueAt: true, done: true }, orderBy: { dueAt: "asc" } },
-          checklists: { 
-            select: { 
-              id: true, 
+          milestones: {
+            select: { id: true, title: true, dueAt: true, done: true },
+            orderBy: { dueAt: "asc" },
+          },
+          checklists: {
+            select: {
+              id: true,
               title: true,
-              items: { select: { id: true, done: true } }
-            } 
+              items: { select: { id: true, done: true } },
+            },
           },
           org: { select: { owner: { select: { name: true, email: true } } } },
-          activities: { select: { id: true, action: true, at: true }, orderBy: { at: "desc" }, take: 5 },
+          activities: {
+            select: { id: true, action: true, at: true },
+            orderBy: { at: "desc" },
+            take: 5,
+          },
         },
       },
     },
@@ -82,7 +108,7 @@ export default async function EventVaultPage() {
     org.events.map((event) => ({
       ...event,
       orgName: org.name,
-    }))
+    })),
   );
 
   console.log("[Event Vault] Loaded events:", {
@@ -97,7 +123,9 @@ export default async function EventVaultPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Event Vault</h1>
-          <p className="text-slate-600 mt-1">All your events organized in one place</p>
+          <p className="text-slate-600 mt-1">
+            All your events organized in one place
+          </p>
         </div>
       </div>
 
@@ -105,7 +133,9 @@ export default async function EventVaultPage() {
         <Card className="p-12 text-center">
           <Folder className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">No events yet</h2>
-          <p className="text-slate-600 mb-6">Create your first event using the Event Wizard</p>
+          <p className="text-slate-600 mb-6">
+            Create your first event using the Event Wizard
+          </p>
           <Button asChild>
             <Link href="/events/new">Create Event</Link>
           </Button>
@@ -113,11 +143,26 @@ export default async function EventVaultPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {allEvents.map((ev) => {
-            const planned = ev.budgetLines.reduce((a, l) => a + l.plannedCents, 0);
-            const actual = ev.budgetLines.reduce((a, l) => a + l.actualCents, 0);
-            const checklistTotal = ev.checklists.reduce((sum, c) => sum + c.items.length, 0);
-            const checklistDone = ev.checklists.reduce((sum, c) => sum + c.items.filter((i) => i.done).length, 0);
-            const progress = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
+            const planned = ev.budgetLines.reduce(
+              (a, l) => a + l.plannedCents,
+              0,
+            );
+            const actual = ev.budgetLines.reduce(
+              (a, l) => a + l.actualCents,
+              0,
+            );
+            const checklistTotal = ev.checklists.reduce(
+              (sum, c) => sum + c.items.length,
+              0,
+            );
+            const checklistDone = ev.checklists.reduce(
+              (sum, c) => sum + c.items.filter((i) => i.done).length,
+              0,
+            );
+            const progress =
+              checklistTotal > 0
+                ? Math.round((checklistDone / checklistTotal) * 100)
+                : 0;
             const ownerName = ev.org.owner?.name || ev.createdBy?.name || "";
             const upcoming = ev.milestones.find((m) => !m.done) || null;
             return (
@@ -126,14 +171,22 @@ export default async function EventVaultPage() {
                 <Card className="p-5 hover:shadow-lg transition-shadow cursor-pointer h-full">
                   {/* Header: "At a glance" section */}
                   <div className="mb-3">
-                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">At a glance</h3>
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      At a glance
+                    </h3>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-lg font-semibold truncate">{ev.name}</h4>
+                        <h4 className="text-lg font-semibold truncate">
+                          {ev.name}
+                        </h4>
                         <div className="mt-1 flex items-center gap-2 text-xs text-slate-600">
                           <Calendar className="w-4 h-4" />
-                          <span>{new Date(ev.startAt).toLocaleDateString()}</span>
-                          <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">{ev.status}</span>
+                          <span>
+                            {new Date(ev.startAt).toLocaleDateString()}
+                          </span>
+                          <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
+                            {ev.status}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -146,10 +199,14 @@ export default async function EventVaultPage() {
                       <span>{progress}%</span>
                     </div>
                     <div className="h-2 w-full rounded bg-slate-200 overflow-hidden">
-                      <div className="h-full bg-indigo-600" style={{ width: `${progress}%` }} />
+                      <div
+                        className="h-full bg-indigo-600"
+                        style={{ width: `${progress}%` }}
+                      />
                     </div>
                     <div className="mt-1 text-xs text-slate-500 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" /> {checklistDone}/{checklistTotal} checklist items done
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />{" "}
+                      {checklistDone}/{checklistTotal} checklist items done
                     </div>
                   </div>
 
@@ -160,7 +217,9 @@ export default async function EventVaultPage() {
                       <div className="text-sm font-medium flex items-center gap-1">
                         <DollarSign className="w-4 h-4" />
                         <span>${(actual / 100).toFixed(0)}</span>
-                        <span className="text-slate-500">of ${(planned / 100).toFixed(0)}</span>
+                        <span className="text-slate-500">
+                          of ${(planned / 100).toFixed(0)}
+                        </span>
                       </div>
                       {planned > 0 && (
                         <div className="mt-1 h-1 w-full rounded bg-slate-200 overflow-hidden">
@@ -169,10 +228,12 @@ export default async function EventVaultPage() {
                               Math.round((actual / planned) * 100) > 90
                                 ? "bg-rose-600"
                                 : Math.round((actual / planned) * 100) > 75
-                                ? "bg-amber-600"
-                                : "bg-green-600"
+                                  ? "bg-amber-600"
+                                  : "bg-green-600"
                             }`}
-                            style={{ width: `${Math.min(Math.round((actual / planned) * 100), 100)}%` }}
+                            style={{
+                              width: `${Math.min(Math.round((actual / planned) * 100), 100)}%`,
+                            }}
                           />
                         </div>
                       )}
@@ -192,18 +253,28 @@ export default async function EventVaultPage() {
                       {upcoming ? (
                         <div className="rounded border border-slate-200 p-2">
                           <div className="truncate">{upcoming.title}</div>
-                          <div className="text-slate-500">{new Date(upcoming.dueAt).toLocaleDateString()}</div>
+                          <div className="text-slate-500">
+                            {new Date(upcoming.dueAt).toLocaleDateString()}
+                          </div>
                         </div>
                       ) : (
-                        <div className="text-slate-500">No upcoming milestones</div>
+                        <div className="text-slate-500">
+                          No upcoming milestones
+                        </div>
                       )}
                     </div>
                     <div>
                       <div className="font-medium mb-1">Recent</div>
-                      {ev.activities && ev.activities.length > 0 && ev.activities[0] ? (
+                      {ev.activities &&
+                      ev.activities.length > 0 &&
+                      ev.activities[0] ? (
                         <div className="rounded border border-slate-200 p-2">
-                          <div className="truncate">{ev.activities[0].action}</div>
-                          <div className="text-slate-500">{new Date(ev.activities[0].at).toLocaleString()}</div>
+                          <div className="truncate">
+                            {ev.activities[0].action}
+                          </div>
+                          <div className="text-slate-500">
+                            {new Date(ev.activities[0].at).toLocaleString()}
+                          </div>
                         </div>
                       ) : (
                         <div className="text-slate-500">No recent activity</div>
@@ -220,22 +291,45 @@ export default async function EventVaultPage() {
       {/* Timeline / Notifications Panel (overview across events) */}
       {allEvents.length > 0 && (
         <Card className="p-5">
-          <h2 className="text-base font-semibold mb-3">Timeline &amp; Notifications</h2>
+          <h2 className="text-base font-semibold mb-3">
+            Timeline &amp; Notifications
+          </h2>
           <div className="grid gap-4 md:grid-cols-3">
             {/* Upcoming Tasks */}
             <div className="rounded-lg border border-slate-200 p-3">
               <div className="font-medium mb-2">Upcoming Tasks</div>
               <ul className="space-y-2 text-sm">
                 {allEvents
-                  .flatMap((ev) => ev.milestones.filter((m) => !m.done).map((m) => ({ ev, m })))
-                  .sort((a, b) => (a.m.dueAt?.getTime?.() || 0) - (b.m.dueAt?.getTime?.() || 0))
+                  .flatMap((ev) =>
+                    ev.milestones
+                      .filter((m) => !m.done)
+                      .map((m) => ({ ev, m })),
+                  )
+                  .sort(
+                    (a, b) =>
+                      (a.m.dueAt?.getTime?.() || 0) -
+                      (b.m.dueAt?.getTime?.() || 0),
+                  )
                   .slice(0, 5)
                   .map(({ ev, m }) => {
-                    const days = Math.ceil((m.dueAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                    const color = days <= 3 ? "text-rose-600" : days <= 7 ? "text-amber-600" : "text-slate-600";
+                    const days = Math.ceil(
+                      (m.dueAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+                    );
+                    const color =
+                      days <= 3
+                        ? "text-rose-600"
+                        : days <= 7
+                          ? "text-amber-600"
+                          : "text-slate-600";
                     return (
-                      <li key={m.id} className="flex items-center justify-between">
-                        <span className="truncate mr-2">{m.title} — <span className="text-slate-500">{ev.name}</span></span>
+                      <li
+                        key={m.id}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="truncate mr-2">
+                          {m.title} —{" "}
+                          <span className="text-slate-500">{ev.name}</span>
+                        </span>
                         <span className={`text-xs ${color}`}>{days}d</span>
                       </li>
                     );
@@ -251,9 +345,17 @@ export default async function EventVaultPage() {
                   .flatMap((ev) => ev.activities.map((a) => ({ ev, a })))
                   .slice(0, 5)
                   .map(({ ev, a }) => (
-                    <li key={a.id} className="flex items-center justify-between">
-                      <span className="truncate mr-2">{a.action} — <span className="text-slate-500">{ev.name}</span></span>
-                      <span className="text-xs text-slate-500">{new Date(a.at).toLocaleString()}</span>
+                    <li
+                      key={a.id}
+                      className="flex items-center justify-between"
+                    >
+                      <span className="truncate mr-2">
+                        {a.action} —{" "}
+                        <span className="text-slate-500">{ev.name}</span>
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {new Date(a.at).toLocaleString()}
+                      </span>
                     </li>
                   ))}
               </ul>
@@ -263,7 +365,9 @@ export default async function EventVaultPage() {
             <div className="rounded-lg border border-slate-200 p-3">
               <div className="font-medium mb-2">Smart Suggestions</div>
               <ul className="space-y-2 text-sm text-slate-700">
-                <li>• You haven’t booked a photographer yet. 90 days remaining.</li>
+                <li>
+                  • You haven’t booked a photographer yet. 90 days remaining.
+                </li>
                 <li>• Finalize guest list to generate seating chart.</li>
                 <li>• Confirm catering numbers based on RSVPs.</li>
               </ul>
@@ -274,4 +378,3 @@ export default async function EventVaultPage() {
     </div>
   );
 }
-

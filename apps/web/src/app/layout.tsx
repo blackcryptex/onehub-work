@@ -1,5 +1,5 @@
 import "../styles/globals.css";
-import type { Metadata } from "next";
+import type { Metadata } from "next/types";
 import { ReactNode } from "react";
 import { auth } from "@/lib/auth";
 import { SessionProvider } from "@/components/providers/SessionProvider";

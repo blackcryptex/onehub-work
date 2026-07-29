@@ -18,10 +18,8 @@ const shareEventSchema = z.object({
  * Only Pro Planners (or event managers) can share content.
  * Requires the viewer to be an EventStakeholder.
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { eventSlug: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -143,10 +141,8 @@ export async function POST(
  * 
  * Only Pro Planners (or event managers) can unshare content.
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { eventSlug: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   try {
     const user = await getCurrentUser();
     if (!user) {

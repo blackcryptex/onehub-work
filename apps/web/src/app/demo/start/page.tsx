@@ -5,11 +5,12 @@ import { db } from "@/server/db";
  * GET /demo/start?role=pro|diy
  * Role-aware redirect to canonical demo vault route
  */
-export default async function DemoStartPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ role?: string }> | { role?: string };
-}) {
+export default async function DemoStartPage(
+  props: {
+    searchParams: Promise<Promise<{ role?: string }> | { role?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   // Handle both Next.js 13-14 (object) and 15+ (Promise) patterns
   const params = searchParams instanceof Promise ? await searchParams : searchParams;
   // Default to pro if role missing or invalid

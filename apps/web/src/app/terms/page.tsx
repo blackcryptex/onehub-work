@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata } from 'next/types';
 import { DraftLegalPageNotice } from '@/components/legal/DraftLegalPageNotice';
 
 export const metadata: Metadata = {

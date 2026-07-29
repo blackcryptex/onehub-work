@@ -9,7 +9,8 @@ type ActivityItem = {
   target?: string | null;
 };
 
-export default async function EventOverview({ params }: { params: { eventSlug: string } }) {
+export default async function EventOverview(props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "view");
 
   const ev = await db.event.findUnique({

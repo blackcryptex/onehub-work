@@ -7,7 +7,8 @@ import { submitHoldbackDecision } from "../../actions";
 
 function pretty(value: unknown) { return JSON.stringify(value, null, 2); }
 
-export default async function HoldbackVerificationDetail({ params }: { params: { id: string } }) {
+export default async function HoldbackVerificationDetail(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 

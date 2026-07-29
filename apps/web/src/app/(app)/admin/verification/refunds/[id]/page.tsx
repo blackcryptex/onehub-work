@@ -9,7 +9,8 @@ function pretty(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
-export default async function RefundVerificationDetail({ params }: { params: { id: string } }) {
+export default async function RefundVerificationDetail(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 

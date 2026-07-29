@@ -6,11 +6,12 @@ import { redactAdminMetadata } from "@/lib/admin-oversight";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminAuditPage({
-  searchParams,
-}: {
-  searchParams: { q?: string; action?: string; targetType?: string };
-}) {
+export default async function AdminAuditPage(
+  props: {
+    searchParams: Promise<{ q?: string; action?: string; targetType?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 

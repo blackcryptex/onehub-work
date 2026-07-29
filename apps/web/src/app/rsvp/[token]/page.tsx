@@ -3,7 +3,8 @@ import { db } from "@/server/db";
 import { notFound } from "next/navigation";
 import { RSVPForm } from "./rsvp-form";
 
-export default async function RSVPPage({ params }: { params: { token: string } }) {
+export default async function RSVPPage(props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const invitation = await db.invitation.findUnique({
     where: { token: params.token },
     include: { guest: true, event: true },

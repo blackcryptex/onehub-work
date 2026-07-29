@@ -2,7 +2,8 @@ import { Card } from "@/components/ui";
 import { db } from "@/server/db";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
-export default async function EventChecklists({ params }: { params: { eventSlug: string } }) {
+export default async function EventChecklists(props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "manage");
 
   const lists = await db.checklist.findMany({

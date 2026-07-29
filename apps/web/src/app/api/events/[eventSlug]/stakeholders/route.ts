@@ -15,10 +15,8 @@ const addStakeholderSchema = z.object({
  * Add a stakeholder (client) to an event.
  * Only planners who can manage the event can add stakeholders.
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { eventSlug: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -121,10 +119,8 @@ export async function POST(
  * Remove a stakeholder from an event.
  * Only planners who can manage the event can remove stakeholders.
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { eventSlug: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   try {
     const user = await getCurrentUser();
     if (!user) {

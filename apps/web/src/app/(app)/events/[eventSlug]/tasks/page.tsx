@@ -3,7 +3,8 @@ import { db } from "@/server/db";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 import type { Task } from "@prisma/client";
 
-export default async function EventTasks({ params }: { params: { eventSlug: string } }) {
+export default async function EventTasks(props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   const { event: authorizedEvent } = await requireAuthorizedEventBySlug(params.eventSlug, "manage");
 
   const [todo, inprog, blocked, done] = await Promise.all([

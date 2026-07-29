@@ -4,25 +4,30 @@ import { getCurrentUser } from "@/lib/auth-helpers";
 import { canViewEvent, isEventSharedWithUser } from "@/lib/rbac";
 import { dashboard } from "@/lib/routes";
 import { redirect, notFound } from "next/navigation";
-import { Calendar, MapPin, Users, DollarSign, MessageSquare } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  Users,
+  DollarSign,
+  MessageSquare,
+} from "lucide-react";
 import { DepositPanel } from "@/components/client/DepositPanel";
 
 /**
  * Phase 2: Client-safe event summary view
- * 
+ *
  * Route: /client/events/[eventSlug]
- * 
+ *
  * Only CLIENT users can access this route.
  * Shows a minimal, client-safe summary of the event.
  * Content is only visible if explicitly shared by the Pro Planner.
  */
-export default async function ClientEventSummaryPage({ 
-  params 
-}: { 
-  params: { eventSlug: string } 
+export default async function ClientEventSummaryPage(props: {
+  params: Promise<{ eventSlug: string }>;
 }) {
+  const params = await props.params;
   const user = await getCurrentUser();
-  
+
   if (!user) {
     redirect("/signin");
   }
@@ -77,7 +82,7 @@ export default async function ClientEventSummaryPage({
     // Check if they're a stakeholder but content isn't shared
     const isStakeholder = event.stakeholders && event.stakeholders.length > 0;
     const isShared = isEventSharedWithUser(user, event, "SUMMARY");
-    
+
     if (isStakeholder && !isShared) {
       // Show "Nothing shared yet" message
       return (
@@ -85,9 +90,7 @@ export default async function ClientEventSummaryPage({
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold mb-4">{event.name}</h1>
             <Card className="p-8">
-              <p className="text-slate-600 text-lg">
-                Nothing shared yet.
-              </p>
+              <p className="text-slate-600 text-lg">Nothing shared yet.</p>
               <p className="text-slate-500 text-sm mt-2">
                 Your planner hasn't shared any information about this event yet.
               </p>
@@ -96,7 +99,7 @@ export default async function ClientEventSummaryPage({
         </div>
       );
     }
-    
+
     // Not a stakeholder or not authorized
     redirect(dashboard("CLIENT") as any);
   }
@@ -123,9 +126,7 @@ export default async function ClientEventSummaryPage({
       <div>
         <h1 className="text-3xl font-bold mb-2">{event.name}</h1>
         {event.org && (
-          <p className="text-slate-600">
-            Event by {event.org.name}
-          </p>
+          <p className="text-slate-600">Event by {event.org.name}</p>
         )}
       </div>
 
@@ -175,7 +176,9 @@ export default async function ClientEventSummaryPage({
               <div className="w-5 h-5 mt-0.5" />
               <div>
                 <h3 className="font-semibold mb-1">Event Type</h3>
-                <p className="text-slate-700 capitalize">{event.eventTypeCanonical}</p>
+                <p className="text-slate-700 capitalize">
+                  {event.eventTypeCanonical}
+                </p>
               </div>
             </div>
           </Card>
@@ -186,7 +189,9 @@ export default async function ClientEventSummaryPage({
       {event.description && (
         <Card className="p-6">
           <h3 className="font-semibold mb-3">About This Event</h3>
-          <p className="text-slate-700 whitespace-pre-wrap">{event.description}</p>
+          <p className="text-slate-700 whitespace-pre-wrap">
+            {event.description}
+          </p>
         </Card>
       )}
 
@@ -194,7 +199,9 @@ export default async function ClientEventSummaryPage({
       {event.objective && (
         <Card className="p-6">
           <h3 className="font-semibold mb-3">Objective</h3>
-          <p className="text-slate-700 whitespace-pre-wrap">{event.objective}</p>
+          <p className="text-slate-700 whitespace-pre-wrap">
+            {event.objective}
+          </p>
         </Card>
       )}
 
@@ -218,14 +225,16 @@ export default async function ClientEventSummaryPage({
           <h3 className="text-lg font-semibold">Messages</h3>
         </div>
         <p className="text-sm text-slate-600">
-          Messaging functionality will be integrated here. You can communicate with your planner about this event.
+          Messaging functionality will be integrated here. You can communicate
+          with your planner about this event.
         </p>
       </Card>
 
       {/* Note about limited access */}
       <Card className="p-4 bg-blue-50 border-blue-200">
         <p className="text-sm text-blue-800">
-          <strong>Note:</strong> This is a summary view. Your planner may share additional details as the event approaches.
+          <strong>Note:</strong> This is a summary view. Your planner may share
+          additional details as the event approaches.
         </p>
       </Card>
     </div>

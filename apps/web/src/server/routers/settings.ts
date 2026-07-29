@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner } from "@/lib/rbac";
 import { recordAudit } from "@/server/lib/audit";
+import { forbidden, notFound } from "@/server/lib/access";
 
 const userSettingsPartial = z.object({
   locale: z.string().optional(),
@@ -37,7 +38,11 @@ export const settingsRouter = router({
     await recordAudit({ actorId: userId, action: "user.settings.update", target: userId, metadata: input });
     return settings;
   }),
-  getOrgSettings: publicProcedure.input(z.object({ orgId: z.string() })).query(({ input }) => {
+  getOrgSettings: protectedProcedure.input(z.object({ orgId: z.string() })).query(async ({ input, ctx }) => {
+    const org = await db.organization.findUnique({ where: { id: input.orgId }, include: { members: true } });
+    if (!org) throw notFound("Org not found");
+    const mem = org.members.find((m) => m.userId === ctx.user.id);
+    if (!isOrgAdminOrOwner(ctx.user, org, mem)) throw forbidden();
     return db.orgSettings.findUnique({ where: { orgId: input.orgId } });
   }),
   updateOrgSettings: publicProcedure.input(z.object({ orgId: z.string(), data: orgSettingsPartial })).mutation(async ({ input }) => {

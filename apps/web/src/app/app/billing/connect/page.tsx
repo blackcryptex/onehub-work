@@ -5,9 +5,9 @@ import { appRouter } from "@/server/router";
 import { redirect } from "next/navigation";
 
 type BillingConnectPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     success?: string;
-  };
+  }>;
 };
 
 async function getEligibleSellerOrg(userId: string) {
@@ -31,7 +31,10 @@ async function getEligibleSellerOrg(userId: string) {
   });
 }
 
-export default async function BillingConnectPage({ searchParams }: BillingConnectPageProps) {
+export default async function BillingConnectPage(
+  props: BillingConnectPageProps,
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
 
   if (!user) {
@@ -54,8 +57,10 @@ export default async function BillingConnectPage({ searchParams }: BillingConnec
     }
 
     const caller = appRouter.createCaller({});
-    const result = await caller.billing.connectOnboard({ orgId: eligibleOrg.id });
-    redirect(result.url);
+    const result = await caller.billing.connectOnboard({
+      orgId: eligibleOrg.id,
+    });
+    redirect(result.url as never);
   }
 
   if (!org) {
@@ -64,7 +69,8 @@ export default async function BillingConnectPage({ searchParams }: BillingConnec
         <h1 className="text-2xl font-bold">Stripe Connect Setup</h1>
         <Card className="p-4">
           <p className="text-sm text-slate-600">
-            You need to be an admin or owner of a vendor or venue organization to connect Stripe.
+            You need to be an admin or owner of a vendor or venue organization
+            to connect Stripe.
           </p>
         </Card>
       </div>
@@ -85,37 +91,58 @@ export default async function BillingConnectPage({ searchParams }: BillingConnec
         detailsSubmitted: false,
       };
 
-  const payoutReady = Boolean(connectStatus.chargesEnabled && connectStatus.payoutsEnabled);
+  const payoutReady = Boolean(
+    connectStatus.chargesEnabled && connectStatus.payoutsEnabled,
+  );
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Stripe Connect Setup</h1>
       <Card className="p-4 space-y-4">
         <div className="space-y-1">
-          <p className="text-sm text-slate-600">Connect your Stripe account to receive payments.</p>
+          <p className="text-sm text-slate-600">
+            Connect your Stripe account to receive payments.
+          </p>
           <p className="text-xs text-slate-500">
-            Organization: {org.name} ({org.type === "VENUE" ? "Venue" : "Vendor"})
+            Organization: {org.name} (
+            {org.type === "VENUE" ? "Venue" : "Vendor"})
           </p>
           {success ? (
             <p className="text-sm text-emerald-600">
-              Stripe returned successfully. Seller payout readiness was refreshed from Stripe.
+              Stripe returned successfully. Seller payout readiness was
+              refreshed from Stripe.
             </p>
           ) : null}
           {isConnected ? (
             <div className="space-y-1 text-xs text-slate-500">
-              <p>Stripe account saved: {connectStatus.accountId ?? org.stripeConnectAccountId}</p>
-              <p>Details submitted: {connectStatus.detailsSubmitted ? "Yes" : "No"}</p>
-              <p>Charges enabled: {connectStatus.chargesEnabled ? "Yes" : "No"}</p>
-              <p>Payouts enabled: {connectStatus.payoutsEnabled ? "Yes" : "No"}</p>
-              <p className={payoutReady ? "text-emerald-600" : "text-amber-600"}>
-                Seller payout readiness: {payoutReady ? "Ready" : "More Stripe onboarding required"}
+              <p>
+                Stripe account saved:{" "}
+                {connectStatus.accountId ?? org.stripeConnectAccountId}
+              </p>
+              <p>
+                Details submitted:{" "}
+                {connectStatus.detailsSubmitted ? "Yes" : "No"}
+              </p>
+              <p>
+                Charges enabled: {connectStatus.chargesEnabled ? "Yes" : "No"}
+              </p>
+              <p>
+                Payouts enabled: {connectStatus.payoutsEnabled ? "Yes" : "No"}
+              </p>
+              <p
+                className={payoutReady ? "text-emerald-600" : "text-amber-600"}
+              >
+                Seller payout readiness:{" "}
+                {payoutReady ? "Ready" : "More Stripe onboarding required"}
               </p>
             </div>
           ) : null}
         </div>
 
         <form action={startOnboarding}>
-          <Button type="submit">{isConnected ? "Continue Onboarding" : "Start Onboarding"}</Button>
+          <Button type="submit">
+            {isConnected ? "Continue Onboarding" : "Start Onboarding"}
+          </Button>
         </form>
       </Card>
     </div>

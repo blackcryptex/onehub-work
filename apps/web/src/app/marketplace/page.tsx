@@ -7,7 +7,7 @@ import type { Route } from "next";
 import { LandingHeader } from "@/components/layout/LandingHeader";
 
 interface MarketplacePageProps {
-  searchParams?: {
+  searchParams?: Promise<{
     eventId?: string;
     eventSlug?: string;
     eventName?: string;
@@ -18,12 +18,13 @@ interface MarketplacePageProps {
     availableStart?: string;
     availableEnd?: string;
     sort?: string;
-  };
+  }>;
 }
 
 const MARKETPLACE_CATEGORIES = Object.values(ListingCategory);
 
-export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
+export default async function MarketplacePage(props: MarketplacePageProps) {
+  const searchParams = await props.searchParams;
   const q = searchParams?.q?.trim();
   const city = searchParams?.city?.trim();
   const availableStart = searchParams?.availableStart ? new Date(searchParams.availableStart) : null;
@@ -91,7 +92,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
     if (value) listingQuery.set(key, value);
   }
   const listingSuffix = listingQuery.toString() ? `?${listingQuery.toString()}` : "";
-  
+
   return (
     <>
       <LandingHeader />

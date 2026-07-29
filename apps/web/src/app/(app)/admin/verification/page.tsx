@@ -9,18 +9,19 @@ function money(cents: number | null | undefined, currency = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format((cents || 0) / 100);
 }
 
-export default async function AdminVerificationPage({
-  searchParams,
-}: {
-  searchParams: {
-    q?: string;
-    refundStatus?: string;
-    disputeStatus?: string;
-    holdbackState?: string;
-    payoutStatus?: string;
-    targetType?: string;
-  };
-}) {
+export default async function AdminVerificationPage(
+  props: {
+    searchParams: Promise<{
+      q?: string;
+      refundStatus?: string;
+      disputeStatus?: string;
+      holdbackState?: string;
+      payoutStatus?: string;
+      targetType?: string;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 

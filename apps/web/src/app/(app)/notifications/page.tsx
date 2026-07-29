@@ -10,7 +10,8 @@ function isInternalRoute(value: string | null): value is Route {
   return Boolean(value?.startsWith("/"));
 }
 
-export default async function NotificationsPage({ searchParams }: { searchParams: { status?: string; type?: string } }) {
+export default async function NotificationsPage(props: { searchParams: Promise<{ status?: string; type?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/signin");
 

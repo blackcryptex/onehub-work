@@ -25,7 +25,11 @@
   ],
   "pnpm": {
     "overrides": {
-      "esbuild": "0.27.0"
+      "esbuild": "0.27.0",
+      "jws": "4.0.1",
+      "ws": "8.21.1",
+      "postcss": "8.5.24",
+      "sharp": "0.35.3"
     }
   },
   "devDependencies": {
@@ -46,7 +50,7 @@
     "jsdom": "^29.0.2",
     "lint-staged": "^15.2.2",
     "playwright": "^1.48.2",
-    "postcss": "^8.4.47",
+    "postcss": "^8.5.24",
     "prettier": "^3.3.3",
     "prisma": "^5.20.0",
     "tsx": "^4.21.0",

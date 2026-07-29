@@ -7,7 +7,8 @@ import { submitDisputeReview } from "../../actions";
 
 function pretty(value: unknown) { return JSON.stringify(value, null, 2); }
 
-export default async function DisputeVerificationDetail({ params }: { params: { id: string } }) {
+export default async function DisputeVerificationDetail(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 

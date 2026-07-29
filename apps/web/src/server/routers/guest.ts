@@ -136,8 +136,7 @@ export const guestRouter = router({
             invitationUrl: `${baseUrl}/rsvp/${token}`,
           },
         });
-        // TODO: Send email via Wave 1/2 placeholder
-        console.log(`[STUB] Sending invitation email to ${guest.email} for event ${input.eventId}`);
+        // Email delivery is intentionally not wired in the guarded MVP path.
         await db.invitation.update({ where: { id: invitation.id }, data: { sentAt: new Date() } });
         return invitation;
       })

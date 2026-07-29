@@ -5,7 +5,10 @@ import { canAccessDashboard } from "@/lib/rbac";
 
 function pretty(value: unknown) { return JSON.stringify(value, null, 2); }
 
-export default async function UnifiedVerificationDetail({ searchParams }: { searchParams: { proposalId?: string; paymentIntentId?: string; payoutId?: string; refundRequestId?: string; disputeId?: string } }) {
+export default async function UnifiedVerificationDetail(
+  props: { searchParams: Promise<{ proposalId?: string; paymentIntentId?: string; payoutId?: string; refundRequestId?: string; disputeId?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 

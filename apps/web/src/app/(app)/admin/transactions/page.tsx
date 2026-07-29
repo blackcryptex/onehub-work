@@ -7,11 +7,12 @@ import { formatCents, isManualAdminOnlyWebhook } from "@/lib/admin-oversight";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminTransactionsPage({
-  searchParams,
-}: {
-  searchParams: { q?: string; paymentStatus?: string; payoutStatus?: string; webhookType?: string };
-}) {
+export default async function AdminTransactionsPage(
+  props: {
+    searchParams: Promise<{ q?: string; paymentStatus?: string; payoutStatus?: string; webhookType?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user || !canAccessDashboard(user, "ADMIN")) redirect("/app");
 

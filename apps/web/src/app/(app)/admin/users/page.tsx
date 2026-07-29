@@ -7,11 +7,12 @@ import Link from "next/link";
 import { Eye, Search } from "lucide-react";
 import { ImpersonateButton } from "@/components/admin/ImpersonateButton";
 
-export default async function AdminUsersPage({
-  searchParams,
-}: {
-  searchParams: { q?: string; cursor?: string };
-}) {
+export default async function AdminUsersPage(
+  props: {
+    searchParams: Promise<{ q?: string; cursor?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   // Centralized permission check: see apps/web/src/lib/rbac.ts
   if (!user || !canAccessDashboard(user, "ADMIN")) {

@@ -18,10 +18,8 @@ const createDepositSchema = z.object({
  * 
  * Only CLIENT users who are stakeholders can create deposits.
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { eventSlug: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -137,10 +135,8 @@ export async function POST(
  * Clients can see their own deposits.
  * Pro Planners can see all deposits for their events.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { eventSlug: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   try {
     const user = await getCurrentUser();
     if (!user) {

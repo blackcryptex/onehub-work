@@ -5,10 +5,8 @@ import { db } from "@/server/db";
 import { recordActivity } from "@/server/lib/activity";
 import { buildEventDeleteActivityRecord, deleteEventWithDependents, EventDeleteBlockedError, buildEventDeleteApiResponse } from "@/server/events/delete-event";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { eventSlug: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -76,10 +74,8 @@ export async function GET(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { eventSlug: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   try {
     const user = await getCurrentUser();
     if (!user) {

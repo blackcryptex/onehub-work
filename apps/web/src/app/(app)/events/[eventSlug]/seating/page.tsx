@@ -2,7 +2,8 @@ import { SeatingCanvas, Card } from "@onehub/ui";
 import { db } from "@/server/db";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
-export default async function SeatingPage({ params }: { params: { eventSlug: string } }) {
+export default async function SeatingPage(props: { params: Promise<{ eventSlug: string }> }) {
+  const params = await props.params;
   const { event } = await requireAuthorizedEventBySlug(params.eventSlug, "manage");
 
   const plan = await db.seatingPlan.findUnique({

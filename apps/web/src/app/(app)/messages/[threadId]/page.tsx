@@ -9,7 +9,8 @@ type ThreadMessage = {
   senderId?: string | null;
 };
 
-export default async function MessageThreadPage({ params }: { params: { threadId: string } }) {
+export default async function MessageThreadPage(props: { params: Promise<{ threadId: string }> }) {
+  const params = await props.params;
   const thread = await db.thread.findUnique({
     where: { id: params.threadId },
     include: { messages: { include: { thread: true } } },

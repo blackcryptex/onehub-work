@@ -7,16 +7,18 @@ import { AddToShortlistButtonClient } from "@/components/shortlist/AddToShortlis
 import Link from "next/link";
 
 interface ListingProfileProps {
-  params: { slug: string };
-  searchParams?: {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{
     eventId?: string;
     eventSlug?: string;
     eventName?: string;
     returnTo?: string;
-  };
+  }>;
 }
 
-export default async function ListingProfile({ params, searchParams }: ListingProfileProps) {
+export default async function ListingProfile(props: ListingProfileProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const listing = await db.listing.findUnique({
     where: { slug: params.slug },
     include: { tags: true, gallery: true, offers: true, availSlots: { orderBy: { startAt: "asc" } }, reviews: { where: { flagged: false }, take: 5, include: { author: true } } },

@@ -14,11 +14,12 @@ const PLATFORM_FEE_BPS = 300; // 3.00%
 const PROCESSING_FEE_RATE = 0.029; // 2.9%
 const PROCESSING_FEE_FIXED = 30; // $0.30
 
-export default async function EventMilestonesPage({
-  params,
-}: {
-  params: { eventSlug: string };
-}) {
+export default async function EventMilestonesPage(
+  props: {
+    params: Promise<{ eventSlug: string }>;
+  }
+) {
+  const params = await props.params;
   const user = await getCurrentUser();
   if (!user) {
     notFound();
