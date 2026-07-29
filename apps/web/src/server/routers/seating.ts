@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { recordActivity } from "@/server/lib/activity";
+import { requireEventAccess } from "@/server/lib/access";
 
 export const seatingRouter = router({
-  getPlan: publicProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
+  getPlan: protectedProcedure.input(z.object({ eventId: z.string() })).query(async ({ input, ctx }) => {
+    await requireEventAccess(ctx.user, input.eventId);
     const plan = await db.seatingPlan.findUnique({
       where: { eventId: input.eventId },
       include: { tables: { include: { seats: { include: { guest: true } } } } },

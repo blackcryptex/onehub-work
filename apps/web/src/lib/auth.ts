@@ -134,20 +134,16 @@ export const authConfig: NextAuthConfig = {
       async authorize(credentials) {
         try {
           if (!credentials?.email || !credentials?.password) {
-            console.log("[Auth] Missing email or password");
             return null;
           }
           const email = String(credentials.email);
           const password = String(credentials.password);
           
-          console.log("[Auth] Attempting to authorize:", email);
           const user = await prisma.user.findUnique({ where: { email } });
           if (!user) {
-            console.log("[Auth] User not found:", email);
             return null;
           }
           if (!user.password) {
-            console.log("[Auth] User has no password:", email);
             return null;
           }
           // Dynamically import bcryptjs to avoid ES module issues
@@ -155,13 +151,10 @@ export const authConfig: NextAuthConfig = {
           const bcrypt = bcryptjsModule.default || bcryptjsModule;
           const ok = await bcrypt.compare(password, user.password);
           if (!ok) {
-            console.log("[Auth] Password mismatch for:", email);
             return null;
           }
-          console.log("[Auth] Successfully authorized:", email);
           return { id: user.id, email: user.email, name: user.name, image: user.image, role: user.role };
-        } catch (err) {
-          console.error("[Auth] Authorize error:", err);
+        } catch {
           return null;
         }
       },
@@ -222,7 +215,6 @@ export const authConfig: NextAuthConfig = {
         // Otherwise, id is the real user
         token.id = token.actingUserId || effectiveLoginUser.id;
         token.role = effectiveLoginUser.role ?? token.role;
-        console.log("[Auth] JWT callback - user id:", effectiveLoginUser.id, "role:", effectiveLoginUser.role, "realUserId:", token.realUserId, "actingUserId:", token.actingUserId);
       }
       
       // Handle session update trigger (used for impersonation)
@@ -247,8 +239,8 @@ export const authConfig: NextAuthConfig = {
                 token.role = targetUser.role;
                 token.id = transition.actingUserId;
               }
-            } catch (error) {
-              console.error("[Auth] Error loading impersonated user role:", error);
+            } catch {
+              // Keep session update fail-closed without writing user identifiers to logs.
             }
           }
 
@@ -263,12 +255,11 @@ export const authConfig: NextAuthConfig = {
                 token.role = realUser.role;
                 token.id = realUserId;
               }
-            } catch (error) {
-              console.error("[Auth] Error loading real user role:", error);
+            } catch {
+              // Keep session update fail-closed without writing user identifiers to logs.
             }
           }
         }
-        console.log("[Auth] JWT update - realUserId:", token.realUserId, "actingUserId:", token.actingUserId, "role:", token.role);
       }
       
       // Store Google tokens for calendar access
@@ -307,7 +298,6 @@ export const authConfig: NextAuthConfig = {
         session.user.actingUserId = token.actingUserId;
       }
       
-      console.log("[Auth] Session callback - effective user id:", session.user.id, "role:", token.role, "realUserId:", token.realUserId, "actingUserId:", token.actingUserId);
       return session;
     },
     async redirect({ url, baseUrl }) {

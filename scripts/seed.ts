@@ -1,5 +1,12 @@
 import { PrismaClient, Role, OrgRole, OrgType, TaskStatus, TaskPriority, BudgetCategory, EventType } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { assertSafeSeedEnvironment } from "./seed-safety";
+
+assertSafeSeedEnvironment({
+  databaseUrl: process.env.DATABASE_URL,
+  allowNonLocalSeed: process.env.ALLOW_NON_LOCAL_SEED === "true",
+  nodeEnv: process.env.NODE_ENV,
+});
 
 const prisma = new PrismaClient();
 
