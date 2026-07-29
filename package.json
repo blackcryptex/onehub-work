@@ -38,11 +38,12 @@
       "mdast-util-to-hast": "13.2.1",
       "minimatch": "9.0.9",
       "picomatch": "4.0.5",
-      "postcss": "8.5.16",
+      "postcss": "8.5.24",
       "qs": "6.15.3",
       "rollup": "4.62.2",
       "uuid": "14.0.1",
-      "ws": "8.21.0",
+      "sharp": "0.35.3",
+      "ws": "8.21.1",
       "yaml": "2.9.0"
     }
   },
@@ -65,7 +66,7 @@
     "jsdom": "^29.0.2",
     "lint-staged": "^15.2.2",
     "playwright": "^1.61.1",
-    "postcss": "^8.5.16",
+    "postcss": "^8.5.24",
     "prettier": "^3.3.3",
     "prisma": "^5.20.0",
     "rollup": "4.62.2",

@@ -18,9 +18,7 @@ export const inviteRouter = router({
     if (!isOrgAdminOrOwner(user, org, mem)) throw new Error("Forbidden");
     const token = randomUUID();
     const invite = await db.invite.create({ data: { orgId: input.orgId, email: input.email, role: input.role, token, expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7) } });
-    // Stub email
-    // eslint-disable-next-line no-console
-    console.log("Resend stub: invite", { to: input.email, token });
+    // Email delivery is intentionally not wired in the guarded MVP path.
     await recordAudit({ actorId: user.id, orgId: input.orgId, action: "invite.create", target: invite.id, metadata: { email: input.email } });
     return invite;
   }),
