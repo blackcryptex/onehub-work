@@ -278,24 +278,25 @@ export const authConfig: NextAuthConfig = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      const liveBaseUrl = process.env.NEXTAUTH_URL || baseUrl;
+      const configuredBaseUrl = process.env.NEXTAUTH_URL || baseUrl;
 
       if (url.startsWith("/")) {
-        return `${liveBaseUrl}${url}`;
+        return `${baseUrl}${url}`;
       }
 
       try {
         const urlObj = new URL(url);
-        const base = new URL(liveBaseUrl);
+        const requestBase = new URL(baseUrl);
+        const configuredBase = new URL(configuredBaseUrl);
 
-        if (urlObj.origin === base.origin) {
+        if (urlObj.origin === requestBase.origin || urlObj.origin === configuredBase.origin) {
           return url;
         }
       } catch {
         // ignore and fall through
       }
 
-      return `${liveBaseUrl}/app`;
+      return `${baseUrl}/app`;
     },
   },
   pages: {

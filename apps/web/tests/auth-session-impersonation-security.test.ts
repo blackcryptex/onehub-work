@@ -39,6 +39,7 @@ describe("auth JWT impersonation session updates", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXTAUTH_SECRET = "test-nextauth-secret-at-least-32-bytes";
+    delete process.env.NEXTAUTH_URL;
   });
 
   it("ignores arbitrary client session.update actingUserId and role changes", async () => {
@@ -132,5 +133,18 @@ describe("auth JWT impersonation session updates", () => {
       where: { id: "real-admin" },
       select: { role: true },
     });
+  });
+
+  it("keeps same-request-host callback URLs when NEXTAUTH_URL points elsewhere", async () => {
+    process.env.NEXTAUTH_URL = "https://onehub.example.com";
+    const redirect = authConfig.callbacks?.redirect;
+    expect(redirect).toBeTypeOf("function");
+
+    await expect(
+      redirect!({
+        url: "https://onehub-work-web-preview.vercel.app/diy-planner",
+        baseUrl: "https://onehub-work-web-preview.vercel.app",
+      }),
+    ).resolves.toBe("https://onehub-work-web-preview.vercel.app/diy-planner");
   });
 });

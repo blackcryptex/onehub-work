@@ -34,9 +34,9 @@ function itemsForRole(role: Role | undefined) {
       ];
     case "ADMIN":
       return [
-        { href: "/app/admin/overview", label: "Dashboard" },
+        { href: "/admin/overview", label: "Dashboard" },
         { href: "/admin/verification", label: "Verification" },
-        { href: "/app/admin/overview", label: "Admin" },
+        { href: "/admin/overview", label: "Admin" },
       ];
     default:
       return [{ href: "/app", label: "Dashboard" }];

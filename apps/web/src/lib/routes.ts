@@ -134,7 +134,7 @@ export function contractDetail(contractId: string): string {
 export function dashboard(role: Role | undefined): string {
   switch (role) {
     case "ADMIN":
-      return "/app/admin/overview";
+      return "/admin/overview";
     case "DIY_PLANNER":
       return "/diy-planner";
     case "PRO_PLANNER":

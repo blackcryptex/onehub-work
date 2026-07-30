@@ -30,6 +30,7 @@ describe("event route helpers", () => {
   });
 
   it("maps role dashboards without sending clients to a dead vault page", () => {
+    expect(dashboard("ADMIN")).toBe("/admin/overview");
     expect(dashboard("CLIENT")).toBe("/app");
     expect(dashboard("DIY_PLANNER")).toBe("/diy-planner");
     expect(dashboard("PRO_PLANNER")).toBe("/pro/planner");
