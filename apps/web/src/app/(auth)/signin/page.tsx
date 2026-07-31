@@ -6,12 +6,16 @@ import { useSearchParams } from "next/navigation";
 import { Button, Label, Card } from "@/components/ui";
 import Link from "next/link";
 
+type AuthProvidersResponse = Record<string, { id?: string; name?: string }> | null;
+
 export default function SignInPage() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isGoogleProviderEnabled, setIsGoogleProviderEnabled] = useState(false);
   const [csrfToken, setCsrfToken] = useState("");
   // Support both callbackUrl (NextAuth standard) and redirect (legacy)
   // Default to /app which will route based on user role
@@ -33,6 +37,19 @@ export default function SignInPage() {
     if (typeof window !== "undefined") {
       setOrigin(window.location.origin);
     }
+
+    fetch("/api/auth/providers")
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json()) as AuthProvidersResponse;
+      })
+      .then((providers) => {
+        setIsGoogleProviderEnabled(Boolean(providers?.google));
+      })
+      .catch((err) => {
+        console.error("[signin] failed to load auth providers", err);
+        setIsGoogleProviderEnabled(false);
+      });
 
     getCsrfToken()
       .then((token) => {
@@ -94,7 +111,21 @@ export default function SignInPage() {
     }
   }
 
-  const targetPath = createEvent ? "/events/new?createEvent=true" : callbackUrl;
+  async function onGoogleSignIn() {
+    setError(null);
+    setIsGoogleLoading(true);
+
+    const targetPath = createEvent ? "/events/new?createEvent=true" : callbackUrl;
+    const targetUrl = origin && targetPath.startsWith("/") ? `${origin}${targetPath}` : targetPath;
+
+    try {
+      await signIn("google", { callbackUrl: targetUrl });
+    } catch (err) {
+      console.error("[signin] google submit failed", err);
+      setError("Unable to sign in with Google right now. Please try again.");
+      setIsGoogleLoading(false);
+    }
+  }
 
   return (
     <main className="mx-auto grid min-h-[70vh] max-w-md place-items-center px-4 py-12">
@@ -136,6 +167,24 @@ export default function SignInPage() {
           <Button type="submit" className="w-full" disabled={isLoading || !csrfToken}>
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
+          {isGoogleProviderEnabled && (
+            <>
+              <div className="flex items-center gap-3 py-1" aria-hidden="true">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-xs text-slate-500">or</span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                disabled={isGoogleLoading}
+                onClick={onGoogleSignIn}
+              >
+                {isGoogleLoading ? "Continuing with Google..." : "Continue with Google"}
+              </Button>
+            </>
+          )}
           <p className="text-xs text-center text-slate-600 mt-3">
             {"Don't have an account?"}{" "}
             <Link
