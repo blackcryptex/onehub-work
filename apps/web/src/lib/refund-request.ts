@@ -285,6 +285,9 @@ async function executeApprovedRefundEffects(existing: any, finalization: {
     return durableReservation;
   });
   const reservedMoneyTxId = refundReservation.moneyTxId;
+  if (typeof reservedMoneyTxId !== "string") {
+    throw new Error("Refund reservation is missing a durable money transaction id");
+  }
 
   const refund = await stripe.refunds.create({
     charge: paymentIntent.transactions.stripeChargeId,
