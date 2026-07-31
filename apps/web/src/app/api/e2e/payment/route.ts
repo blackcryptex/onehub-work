@@ -18,7 +18,23 @@ function assertE2eMode() {
   if (process.env.NODE_ENV === "production" || process.env.ONEHUB_E2E_TEST_MODE !== "1") {
     return NextResponse.json({ error: "E2E test mode is disabled" }, { status: 404 });
   }
+  if (!isIsolatedLocalE2eDatabase(process.env.DATABASE_URL)) {
+    return NextResponse.json({ error: "E2E payment route requires an isolated local e2e database" }, { status: 404 });
+  }
   return null;
+}
+
+function isIsolatedLocalE2eDatabase(databaseUrl?: string) {
+  if (!databaseUrl) return false;
+
+  try {
+    const parsed = new URL(databaseUrl);
+    const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+    const databaseName = parsed.pathname.replace(/^\//, "");
+    return localHosts.has(parsed.hostname) && /(^|[_-])e2e($|[_-])|onehub_e2e/.test(databaseName);
+  } catch {
+    return false;
+  }
 }
 
 async function cleanExistingE2eData() {

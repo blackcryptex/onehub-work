@@ -20,6 +20,7 @@ function createE2eMockStripe() {
   const intents = new Map<string, MockPaymentIntent>();
   let intentCounter = 0;
   let transferCounter = 0;
+  let refundCounter = 0;
 
   return {
     paymentIntents: {
@@ -107,6 +108,20 @@ function createE2eMockStripe() {
           currency: params.currency,
           destination: params.destination,
           source_transaction: params.source_transaction,
+          metadata: params.metadata ?? {},
+        };
+      },
+    },
+    refunds: {
+      async create(params: Stripe.RefundCreateParams) {
+        refundCounter += 1;
+        return {
+          id: `re_e2e_mock_${refundCounter}`,
+          object: "refund",
+          amount: params.amount ?? 0,
+          charge: params.charge,
+          currency: "usd",
+          status: "succeeded",
           metadata: params.metadata ?? {},
         };
       },

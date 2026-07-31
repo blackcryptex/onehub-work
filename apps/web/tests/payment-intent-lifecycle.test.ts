@@ -262,6 +262,47 @@ describe("payment intent lifecycle guardrails", () => {
     );
   });
 
+  it("reuses a valid active Stripe intent whose amount matches the buyer charge amount", async () => {
+    prisma.paymentIntent.findFirst.mockResolvedValue({
+      id: "active-local",
+      stripeIntentId: "pi_stripe_active",
+      amountCents: 10000,
+      currency: "USD",
+    });
+    stripe.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_stripe_active",
+      status: "requires_payment_method",
+      amount: 10300,
+      currency: "usd",
+      client_secret: "active-secret",
+      metadata: { paymentIntentId: "active-local", contractId: "contract-1", milestoneId: "milestone-1" },
+      automatic_payment_methods: { allow_redirects: "never" },
+    });
+
+    const response = await createIntentPOST(request({
+      contractId: "contract-1",
+      milestoneId: "milestone-1",
+      acceptance: { legalVersion: "payment-v1" },
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual(expect.objectContaining({
+      paymentIntentId: "active-local",
+      clientSecret: "active-secret",
+      amountCents: 10000,
+      chargeAmountCents: 10300,
+      payoutBasisAmountCents: 10000,
+    }));
+    expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
+    expect(prisma.paymentIntent.update).not.toHaveBeenCalledWith({
+      where: { id: "active-local" },
+      data: { status: "CANCELLED" },
+    });
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
   it("keeps successful confirm idempotent without double-crediting escrow", async () => {
     prisma.paymentIntent.findUnique.mockResolvedValue({ ...paymentIntent, status: "SUCCEEDED" });
 
@@ -272,5 +313,62 @@ describe("payment intent lifecycle guardrails", () => {
     expect(body).toEqual({ success: true, message: "Payment already confirmed." });
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(prisma.escrowAccount.update).not.toHaveBeenCalled();
+  });
+
+  it("charges the canonical total charge amount while storing gross local payment amount", async () => {
+    const response = await createIntentPOST(request({
+      contractId: "contract-1",
+      milestoneId: "milestone-1",
+      acceptance: { legalVersion: "payment-v1" },
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual(expect.objectContaining({
+      amountCents: 10000,
+      chargeAmountCents: 10300,
+      payoutBasisAmountCents: 10000,
+    }));
+    expect(prisma.paymentIntent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ amountCents: 10000 }),
+    });
+    expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 10300,
+        metadata: expect.objectContaining({
+          paymentIntentId: "pi-local-new",
+          feeProfileJson: expect.stringContaining('"totalChargeAmountCents":10300'),
+        }),
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it("confirms a Stripe intent whose amount is the canonical buyer charge, not the gross local amount", async () => {
+    prisma.paymentIntent.findUnique.mockResolvedValue(paymentIntent);
+    stripe.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_stripe_1",
+      status: "succeeded",
+      amount: 10300,
+      currency: "usd",
+      metadata: { paymentIntentId: "pi-local-1", contractId: "contract-1", milestoneId: "milestone-1" },
+      payment_method_types: ["card"],
+      latest_charge: "ch_1",
+    });
+
+    const response = await confirmPOST(request({ paymentIntentId: "pi-local-1" }));
+
+    expect(response.status).toBe(200);
+    expect(prisma.escrowAccount.update).toHaveBeenCalledWith({
+      where: { id: "escrow-1" },
+      data: expect.objectContaining({ balanceCents: { increment: 10000 } }),
+    });
+    expect(prisma.transaction.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        totalAmountCents: 10000,
+        platformFeeCents: 300,
+        netAmountCents: 9700,
+      }),
+    });
   });
 });

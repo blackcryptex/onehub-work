@@ -311,6 +311,11 @@ export async function POST(request: NextRequest) {
         throw new ReleaseMilestoneError("Insufficient escrow balance", 400);
       }
 
+      const reservedFeeProfile = resolveFeeProfile({
+        bookingClassification,
+        grossAmountCents: currentMilestone.amountCents,
+      });
+
       // Create payout record only after the escrow debit reservation succeeds.
       const payout = await tx.payout.create({
         data: {
@@ -318,7 +323,7 @@ export async function POST(request: NextRequest) {
           milestoneId: milestone.id,
           listingId: canonicalRecipient.listingId,
           orgId: canonicalRecipient.orgId,
-          amountCents: currentMilestone.amountCents,
+          amountCents: reservedFeeProfile.netAmountCents,
           status: "PENDING",
         },
       });
@@ -369,7 +374,7 @@ export async function POST(request: NextRequest) {
         });
 
         const transfer = await stripe.transfers.create({
-          amount: releasedAmountCents,
+          amount: releaseFeeProfile.netAmountCents,
           currency: milestone.proposal.currency.toLowerCase(),
           destination: canonicalRecipient.stripeAccountId,
           source_transaction: sourceTransaction?.stripeChargeId || undefined,
@@ -396,6 +401,7 @@ export async function POST(request: NextRequest) {
         ? await tx.payout.update({
             where: { id: reservation.payout.id },
             data: {
+              amountCents: releaseFeeProfile.netAmountCents,
               stripeTransfer: stripeTransferId,
               status: "SENT",
             },

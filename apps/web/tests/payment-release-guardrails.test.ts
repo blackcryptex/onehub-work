@@ -54,11 +54,11 @@ vi.mock("@/lib/logger", () => ({
 vi.mock("@/lib/errorTracker", () => ({ trackError: vi.fn() }));
 vi.mock("@/lib/booking-classification", () => ({ resolveBookingClassification: () => "standard" }));
 vi.mock("@/lib/fee-profile", () => ({
-  resolveFeeProfile: () => ({
+  resolveFeeProfile: ({ grossAmountCents }: { grossAmountCents: number }) => ({
     platformFeeAmountCents: 300,
-    netAmountCents: 9700,
-    totalChargeAmountCents: 10300,
-    payoutBasisAmountCents: 10000,
+    netAmountCents: grossAmountCents - 300,
+    totalChargeAmountCents: grossAmountCents + 300,
+    payoutBasisAmountCents: grossAmountCents,
   }),
 }));
 vi.mock("@/lib/acceptance", async () => {
@@ -276,7 +276,7 @@ describe("release milestone payment guardrails", () => {
 
     expect(response.status).toBe(200);
     expect(stripe.transfers.create).toHaveBeenCalledWith(expect.objectContaining({
-      amount: 10000,
+      amount: 9700,
       metadata: expect.objectContaining({ payoutId: "payout-1", milestoneId: "milestone-1" }),
     }), {
       idempotencyKey: "release-milestone:milestone-1:payout:payout-1:v1",
@@ -295,8 +295,14 @@ describe("release milestone payment guardrails", () => {
     const response = await POST(request());
 
     expect(response.status).toBe(200);
+    expect(prisma.payout.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        amountCents: 7700,
+        status: "PENDING",
+      }),
+    });
     expect(stripe.transfers.create).toHaveBeenCalledWith(expect.objectContaining({
-      amount: 8000,
+      amount: 7700,
       metadata: expect.objectContaining({ payoutId: "payout-1", milestoneId: "milestone-1" }),
     }), expect.any(Object));
     expect(prisma.moneyTx.create).toHaveBeenCalledWith({
@@ -308,7 +314,7 @@ describe("release milestone payment guardrails", () => {
           payoutId: "payout-1",
           escrowBalanceBefore: 8000,
           escrowBalanceAfter: 0,
-          feeProfile: expect.objectContaining({ payoutBasisAmountCents: 10000 }),
+          feeProfile: expect.objectContaining({ payoutBasisAmountCents: 8000 }),
         }),
       }),
     });
@@ -356,7 +362,7 @@ describe("release milestone payment guardrails", () => {
     expect(prisma.escrowAccount.updateMany).not.toHaveBeenCalled();
     expect(prisma.payout.create).not.toHaveBeenCalled();
     expect(stripe.transfers.create).toHaveBeenCalledWith(expect.objectContaining({
-      amount: 10000,
+      amount: 9700,
       metadata: expect.objectContaining({ payoutId: "payout-pending", milestoneId: "milestone-1" }),
     }), {
       idempotencyKey: "release-milestone:milestone-1:payout:payout-pending:v1",

@@ -29,13 +29,14 @@ function stripeIntentMatchesLocal(
     milestoneId?: string | null;
     amountCents: number;
     currency: string;
-  }
+  },
+  expectedStripeAmountCents: number
 ) {
   const metadata = stripeIntent.metadata ?? {};
   const expectedMilestoneId = paymentIntent.milestoneId ?? "";
 
   return {
-    amountMatches: stripeIntent.amount === paymentIntent.amountCents &&
+    amountMatches: stripeIntent.amount === expectedStripeAmountCents &&
       stripeIntent.currency?.toUpperCase() === paymentIntent.currency.toUpperCase(),
     metadataMatches: metadata.paymentIntentId === paymentIntent.id &&
       metadata.contractId === paymentIntent.contractId &&
@@ -112,15 +113,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Payment intent is missing Stripe reference" }, { status: 409 });
     }
 
+    const bookingClassification = resolveBookingClassification({
+      proposal: {
+        bookingClassification: paymentIntent.contract.proposal.bookingClassification,
+        listingId: paymentIntent.contract.proposal.listingId,
+      },
+      event: paymentIntent.contract.proposal.event,
+    });
+    const feeProfile = resolveFeeProfile({
+      bookingClassification,
+      grossAmountCents: paymentIntent.amountCents,
+    });
+
     await requireAcceptanceProof({
       paymentIntentId,
-      legalSurface: `payment.${resolveBookingClassification({
-        proposal: {
-          bookingClassification: paymentIntent.contract.proposal.bookingClassification,
-          listingId: paymentIntent.contract.proposal.listingId,
-        },
-        event: paymentIntent.contract.proposal.event,
-      })}`,
+      legalSurface: `payment.${bookingClassification}`,
     });
 
     // Check if Stripe is configured
@@ -134,7 +141,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Stripe payment intent not found" }, { status: 404 });
     }
 
-    const stripeMatch = stripeIntentMatchesLocal(stripeIntent, paymentIntent);
+    const stripeMatch = stripeIntentMatchesLocal(stripeIntent, paymentIntent, feeProfile.totalChargeAmountCents);
     if (!stripeMatch.metadataMatches) {
       return NextResponse.json({ error: "Stripe payment intent does not match local payment record" }, { status: 409 });
     }

@@ -4,6 +4,7 @@ import { resolveFeeProfile } from "@/lib/fee-profile";
 import { recordAudit } from "@/server/lib/audit";
 import { feeOverrideRequiresAdminOverride, recordAdminOverride } from "@/lib/admin-override";
 import { getGuardedMvpAuthorityForUserId } from "@/lib/rbac";
+import { stripe } from "@/server/lib/stripe";
 
 export type RefundFeeTreatment = "BUYER_ABSORBS" | "REFUND_TO_BUYER" | "NON_REFUNDABLE";
 export type RefundRequestStatus = "OPEN" | "APPROVED" | "DENIED" | "CANCELED";
@@ -115,6 +116,243 @@ export async function createRefundRequest(input: {
   });
 }
 
+type RefundReservationSnapshot = Record<string, unknown> & {
+  moneyTxId?: string;
+  paymentIntentId?: string;
+  refundRequestId?: string;
+  stripeRefundIdempotencyKey?: string;
+  amountCents?: number;
+  escrowBalanceBefore?: number;
+  escrowBalanceAfter?: number;
+};
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function getRecoverableRefundReservation(existing: {
+  id: string;
+  paymentIntentId: string | null;
+  amountRequestedCents: number;
+  auditTrail: unknown;
+}, refundIdempotencyKey: string): RefundReservationSnapshot | null {
+  const reservation = asRecord(asRecord(existing.auditTrail).refundReservation) as RefundReservationSnapshot;
+
+  if (
+    reservation.refundRequestId !== existing.id ||
+    reservation.paymentIntentId !== existing.paymentIntentId ||
+    reservation.stripeRefundIdempotencyKey !== refundIdempotencyKey ||
+    reservation.amountCents !== existing.amountRequestedCents ||
+    typeof reservation.moneyTxId !== "string" ||
+    !["STRIPE_REFUND_PENDING", "STRIPE_REFUND_CREATED"].includes(String(reservation.state))
+  ) {
+    return null;
+  }
+
+  return reservation;
+}
+
+async function executeApprovedRefundEffects(existing: any, finalization: {
+  adminId: string;
+  decisionReason: string;
+  processingFeeTreatment: RefundFeeTreatment;
+  platformFeeTreatment: RefundFeeTreatment;
+}) {
+  if (!stripe) {
+    throw new Error("Stripe is not configured");
+  }
+
+  const paymentIntent = await (prisma as any).paymentIntent.findUnique({
+    where: { id: existing.paymentIntentId },
+    include: {
+      transactions: true,
+      contract: {
+        include: {
+          proposal: {
+            include: {
+              escrowAccount: true,
+            },
+          },
+        },
+      },
+      milestone: true,
+    },
+  });
+
+  if (!paymentIntent?.transactions?.stripeChargeId) {
+    throw new Error("Refund requires a captured Stripe charge");
+  }
+
+  const escrowAccount = paymentIntent.contract?.proposal?.escrowAccount;
+  if (!escrowAccount) {
+    throw new Error("Refund requires an escrow account");
+  }
+
+  const escrowStatusAfter = escrowAccount.balanceCents === existing.amountRequestedCents
+    ? "REFUNDED"
+    : "PARTIALLY_RELEASED";
+  const fullMilestoneRefund = Boolean(
+    existing.milestoneId &&
+    paymentIntent.milestone?.amountCents === existing.amountRequestedCents
+  );
+
+  const refundIdempotencyKey = `refund-request:${existing.id}:payment-intent:${existing.paymentIntentId}:v1`;
+  const existingAuditTrail = asRecord(existing.auditTrail);
+  const recoverableReservation = getRecoverableRefundReservation(existing, refundIdempotencyKey);
+
+  if (!recoverableReservation && escrowAccount.balanceCents < existing.amountRequestedCents) {
+    throw new Error("Insufficient escrow balance for refund");
+  }
+
+  const newRefundReservation = {
+    refundRequestId: existing.id,
+    paymentIntentId: existing.paymentIntentId,
+    stripeChargeId: paymentIntent.transactions.stripeChargeId,
+    stripeRefundIdempotencyKey: refundIdempotencyKey,
+    escrowAccountId: escrowAccount.id,
+    escrowBalanceBefore: escrowAccount.balanceCents,
+    escrowBalanceAfter: escrowAccount.balanceCents - existing.amountRequestedCents,
+    amountCents: existing.amountRequestedCents,
+    reservedAt: new Date().toISOString(),
+    state: "STRIPE_REFUND_PENDING",
+  };
+
+  const refundReservation = recoverableReservation ?? await prisma.$transaction(async (tx) => {
+    const refundClaim = await tx.refundRequest.updateMany({
+      where: { id: existing.id, status: "OPEN" },
+      data: {
+        auditTrail: {
+          ...existingAuditTrail,
+          refundReservation: newRefundReservation,
+        },
+      },
+    });
+
+    if (refundClaim.count !== 1) {
+      throw new Error("Refund request is not open for review");
+    }
+
+    const escrowDebit = await tx.escrowAccount.updateMany({
+      where: {
+        id: escrowAccount.id,
+        balanceCents: escrowAccount.balanceCents,
+      },
+      data: {
+        balanceCents: { decrement: existing.amountRequestedCents },
+        status: escrowStatusAfter,
+      },
+    });
+
+    if (escrowDebit.count !== 1) {
+      throw new Error("Escrow balance changed before refund reservation; retry required");
+    }
+
+    if (fullMilestoneRefund) {
+      await tx.paymentMilestone.update({
+        where: { id: existing.milestoneId },
+        data: { status: "REFUNDED" },
+      });
+    }
+
+    const reservedMoneyTx = await tx.moneyTx.create({
+      data: {
+        type: "REFUND_ESCROW",
+        proposalId: existing.proposalId,
+        milestoneId: existing.milestoneId,
+        amountCents: existing.amountRequestedCents,
+        currency: existing.currency,
+        meta: {
+          ...newRefundReservation,
+        },
+      },
+    });
+
+    const durableReservation = {
+      ...newRefundReservation,
+      moneyTxId: reservedMoneyTx.id,
+    };
+
+    await tx.refundRequest.update({
+      where: { id: existing.id },
+      data: {
+        auditTrail: {
+          ...existingAuditTrail,
+          refundReservation: durableReservation,
+        },
+      },
+    });
+
+    return durableReservation;
+  });
+  const reservedMoneyTxId = refundReservation.moneyTxId;
+
+  const refund = await stripe.refunds.create({
+    charge: paymentIntent.transactions.stripeChargeId,
+    amount: existing.amountRequestedCents,
+    metadata: {
+      refundRequestId: existing.id,
+      paymentIntentId: existing.paymentIntentId,
+      proposalId: existing.proposalId,
+      milestoneId: existing.milestoneId ?? "",
+      moneyTxId: reservedMoneyTxId,
+    },
+  }, {
+    idempotencyKey: refundIdempotencyKey,
+  });
+
+  const finalizedRefundReservation = {
+    ...refundReservation,
+    state: "STRIPE_REFUND_CREATED",
+    stripeRefundId: refund.id,
+    stripeRefundStatus: refund.status,
+  };
+  const refundEffects = {
+    stripeRefundId: refund.id,
+    stripeRefundStatus: refund.status,
+    stripeRefundIdempotencyKey: refundIdempotencyKey,
+    moneyTxId: reservedMoneyTxId,
+    escrowAccountId: String(refundReservation.escrowAccountId ?? escrowAccount.id),
+    escrowBalanceBefore: Number(refundReservation.escrowBalanceBefore ?? escrowAccount.balanceCents),
+    escrowBalanceAfter: Number(refundReservation.escrowBalanceAfter ?? escrowAccount.balanceCents - existing.amountRequestedCents),
+    milestoneStatusAfter: fullMilestoneRefund ? "REFUNDED" : paymentIntent.milestone?.status,
+  };
+
+  return prisma.$transaction(async (tx) => {
+    await tx.moneyTx.update({
+      where: { id: reservedMoneyTxId },
+      data: {
+        stripeId: refund.id,
+        meta: finalizedRefundReservation,
+      },
+    });
+
+    return tx.refundRequest.update({
+      where: { id: existing.id },
+      data: {
+        status: "APPROVED",
+        adminDecisionAt: new Date(),
+        adminDecisionById: finalization.adminId,
+        adminDecisionReason: finalization.decisionReason,
+        processingFeeTreatment: finalization.processingFeeTreatment,
+        platformFeeTreatment: finalization.platformFeeTreatment,
+        auditTrail: {
+          ...existingAuditTrail,
+          refundReservation: finalizedRefundReservation,
+          adminDecision: {
+            by: finalization.adminId,
+            at: new Date().toISOString(),
+            decision: "APPROVED",
+            reason: finalization.decisionReason,
+            processingFeeTreatment: finalization.processingFeeTreatment,
+            platformFeeTreatment: finalization.platformFeeTreatment,
+          },
+          refundEffects,
+        },
+      },
+    });
+  });
+}
+
 export async function reviewRefundRequest(input: {
   refundRequestId: string;
   adminId: string;
@@ -160,28 +398,35 @@ export async function reviewRefundRequest(input: {
     }
   }
 
-  const updated = await (prisma as any).refundRequest.update({
-    where: { id: input.refundRequestId },
-    data: {
-      status: input.decision,
-      adminDecisionAt: new Date(),
-      adminDecisionById: input.adminId,
-      adminDecisionReason: input.decisionReason,
+  const updated = input.decision === "APPROVED"
+    ? await executeApprovedRefundEffects(existing, {
+      adminId: input.adminId,
+      decisionReason: input.decisionReason,
       processingFeeTreatment,
       platformFeeTreatment,
-      auditTrail: {
-        ...(existing.auditTrail as Record<string, unknown> | null ?? {}),
-        adminDecision: {
-          by: input.adminId,
-          at: new Date().toISOString(),
-          decision: input.decision,
-          reason: input.decisionReason,
-          processingFeeTreatment,
-          platformFeeTreatment,
+    })
+    : await (prisma as any).refundRequest.update({
+      where: { id: input.refundRequestId },
+      data: {
+        status: input.decision,
+        adminDecisionAt: new Date(),
+        adminDecisionById: input.adminId,
+        adminDecisionReason: input.decisionReason,
+        processingFeeTreatment,
+        platformFeeTreatment,
+        auditTrail: {
+          ...(existing.auditTrail as Record<string, unknown> | null ?? {}),
+          adminDecision: {
+            by: input.adminId,
+            at: new Date().toISOString(),
+            decision: input.decision,
+            reason: input.decisionReason,
+            processingFeeTreatment,
+            platformFeeTreatment,
+          },
         },
       },
-    },
-  });
+    });
 
   await recordAudit({
     actorId: input.adminId,

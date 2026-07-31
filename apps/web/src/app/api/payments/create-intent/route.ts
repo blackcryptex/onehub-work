@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
       const allowRedirects = existingStripeIntent.automatic_payment_methods?.allow_redirects;
 
       const existingStripeMatchesLocal =
-        existingStripeIntent.amount === existingPaymentIntent.amountCents &&
+        existingStripeIntent.amount === feeProfile.totalChargeAmountCents &&
         existingStripeIntent.currency?.toUpperCase() === existingPaymentIntent.currency?.toUpperCase();
 
       if (allowRedirects === "never" && existingStripeMatchesLocal) {
@@ -179,6 +179,8 @@ export async function POST(request: NextRequest) {
           paymentIntentId: existingPaymentIntent.id,
           clientSecret: existingStripeIntent.client_secret,
           amountCents: existingPaymentIntent.amountCents,
+          chargeAmountCents: feeProfile.totalChargeAmountCents,
+          payoutBasisAmountCents: feeProfile.payoutBasisAmountCents,
           currency: existingPaymentIntent.currency,
           feeProfile,
         });
@@ -247,7 +249,7 @@ export async function POST(request: NextRequest) {
 
     const stripeIntent = await stripe.paymentIntents.create(
       {
-        amount,
+        amount: feeProfile.totalChargeAmountCents,
         currency: contract.proposal.currency.toLowerCase(),
         metadata: {
           contractId: contract.id,
