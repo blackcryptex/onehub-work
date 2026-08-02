@@ -18,6 +18,15 @@ type ImpersonationSessionUpdate = {
 };
 
 const IMPERSONATION_TRANSITION_TTL_SECONDS = 60;
+const FOUNDER_ADMIN_EMAIL = "marlon.smith35@gmail.com";
+
+function normalizeEmail(email?: string | null) {
+  return email?.trim().toLowerCase() ?? "";
+}
+
+function isFounderAdminEmail(email?: string | null) {
+  return normalizeEmail(email) === FOUNDER_ADMIN_EMAIL;
+}
 
 function getAuthSecret() {
   const secret =
@@ -180,16 +189,40 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user, account, trigger, session }) {
       // When a user first logs in, initialize realUserId
       if (user) {
-        // If this is a new login (not impersonation), set realUserId to the user's ID
+        let effectiveLoginUser = user;
+        const loginEmail = typeof user.email === "string" ? user.email : undefined;
+
+        // Founder bootstrap: Marlon's Google OAuth account is always the canonical
+        // OneHub app ADMIN account. This does not grant Vercel/Supabase/GitHub
+        // infrastructure ownership; it only sets OneHub app-level admin authority.
+        if (account?.provider === "google" && isFounderAdminEmail(loginEmail)) {
+          effectiveLoginUser = await prisma.user.upsert({
+            where: { email: FOUNDER_ADMIN_EMAIL },
+            create: {
+              email: FOUNDER_ADMIN_EMAIL,
+              name: user.name ?? null,
+              image: user.image ?? null,
+              role: "ADMIN",
+            },
+            update: {
+              name: user.name ?? null,
+              image: user.image ?? null,
+              role: "ADMIN",
+            },
+            select: { id: true, email: true, name: true, image: true, role: true },
+          });
+        }
+
+        // If this is a new login (not impersonation), set realUserId
         if (!token.realUserId) {
-          token.realUserId = user.id;
+          token.realUserId = effectiveLoginUser.id;
         }
         // Set effective user ID and role
         // If impersonating, actingUserId is already set, so id should be the acting user
         // Otherwise, id is the real user
-        token.id = token.actingUserId || user.id;
-        token.role = user.role ?? token.role;
-        console.log("[Auth] JWT callback - user id:", user.id, "role:", user.role, "realUserId:", token.realUserId, "actingUserId:", token.actingUserId);
+        token.id = token.actingUserId || effectiveLoginUser.id;
+        token.role = effectiveLoginUser.role ?? token.role;
+        console.log("[Auth] JWT callback - user id:", effectiveLoginUser.id, "role:", effectiveLoginUser.role, "realUserId:", token.realUserId, "actingUserId:", token.actingUserId);
       }
       
       // Handle session update trigger (used for impersonation)

@@ -4,8 +4,15 @@ import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Eye, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { ImpersonateButton } from "@/components/admin/ImpersonateButton";
+import { FounderRoleControl } from "@/components/admin/FounderRoleControl";
+
+const FOUNDER_ADMIN_EMAIL = "marlon.smith35@gmail.com";
+
+function normalizeEmail(email?: string | null) {
+  return email?.trim().toLowerCase() ?? "";
+}
 
 export default async function AdminUsersPage({
   searchParams,
@@ -20,6 +27,7 @@ export default async function AdminUsersPage({
   }
 
   const searchQuery = resolvedSearchParams.q || "";
+  const canManageRoles = normalizeEmail(user.email) === FOUNDER_ADMIN_EMAIL;
   const limit = 20;
 
   // Build where clause for search
@@ -95,6 +103,11 @@ export default async function AdminUsersPage({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <FounderRoleControl
+                    userId={u.id}
+                    currentRole={u.role}
+                    canManageRoles={canManageRoles}
+                  />
                   <ImpersonateButton userId={u.id} userEmail={u.email} />
                 </div>
               </div>

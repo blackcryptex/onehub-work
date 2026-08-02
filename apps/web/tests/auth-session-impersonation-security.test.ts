@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findUnique } = vi.hoisted(() => ({
+const { findUnique, upsert } = vi.hoisted(() => ({
   findUnique: vi.fn(),
+  upsert: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: {
       findUnique,
+      upsert,
     },
   },
 }));
@@ -132,6 +134,75 @@ describe("auth JWT impersonation session updates", () => {
     expect(findUnique).toHaveBeenCalledWith({
       where: { id: "real-admin" },
       select: { role: true },
+    });
+  });
+
+  it("promotes Marlon's Google login to the canonical app ADMIN role", async () => {
+    upsert.mockResolvedValueOnce({
+      id: "founder-user-id",
+      email: "marlon.smith35@gmail.com",
+      name: "Marlon Smith",
+      image: null,
+      role: "ADMIN",
+    });
+    const jwt = authConfig.callbacks?.jwt;
+    expect(jwt).toBeTypeOf("function");
+
+    const updated = await jwt!({
+      token: {},
+      user: {
+        id: "google-profile-id",
+        email: "marlon.smith35@gmail.com",
+        name: "Marlon Smith",
+        image: null,
+        role: "CLIENT",
+      },
+      account: { provider: "google" },
+    } as never);
+
+    expect(upsert).toHaveBeenCalledWith({
+      where: { email: "marlon.smith35@gmail.com" },
+      create: {
+        email: "marlon.smith35@gmail.com",
+        name: "Marlon Smith",
+        image: null,
+        role: "ADMIN",
+      },
+      update: {
+        name: "Marlon Smith",
+        image: null,
+        role: "ADMIN",
+      },
+      select: { id: true, email: true, name: true, image: true, role: true },
+    });
+    expect(updated).toMatchObject({
+      id: "founder-user-id",
+      realUserId: "founder-user-id",
+      role: "ADMIN",
+    });
+  });
+
+  it("does not promote non-founder Google users to ADMIN", async () => {
+    const jwt = authConfig.callbacks?.jwt;
+    expect(jwt).toBeTypeOf("function");
+
+    const updated = await jwt!({
+      token: {},
+      user: {
+        id: "ordinary-google-id",
+        email: "planner@example.com",
+        name: "Planner",
+        image: null,
+        role: "CLIENT",
+      },
+      account: { provider: "google" },
+    } as never);
+
+    expect(upsert).not.toHaveBeenCalled();
+    expect(updated).toMatchObject({
+      id: "ordinary-google-id",
+      realUserId: "ordinary-google-id",
+      role: "CLIENT",
     });
   });
 
