@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@onehub/ui": path.resolve(__dirname, "../../packages/ui/src/index.ts"),
     },
   },
 });

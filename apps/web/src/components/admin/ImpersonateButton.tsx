@@ -16,22 +16,37 @@ interface ImpersonateButtonProps {
  * 
  * Uses NextAuth's update() method with a server-signed transition token.
  */
-export function ImpersonateButton({ userId, userEmail: _userEmail }: ImpersonateButtonProps) {
+export function ImpersonateButton({ userId, userEmail }: ImpersonateButtonProps) {
   const { data: session, update } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [reason, setReason] = useState("");
+  const [incidentTicketId, setIncidentTicketId] = useState("");
 
   const isCurrentlyImpersonating = session?.user?.actingUserId === userId;
   const isImpersonatingAnyone = !!session?.user?.actingUserId;
+  const canStartImpersonation = !!reason.trim() && !!incidentTicketId.trim();
 
   const handleStartImpersonation = async () => {
+    const trimmedReason = reason.trim();
+    const trimmedIncidentTicketId = incidentTicketId.trim();
+
+    if (!trimmedReason || !trimmedIncidentTicketId) {
+      alert("Break-glass reason and incident ticket are required");
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Validate admin access via API route
       const response = await fetch("/api/admin/impersonate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetUserId: userId }),
+        body: JSON.stringify({
+          targetUserId: userId,
+          reason: trimmedReason,
+          incidentTicketId: trimmedIncidentTicketId,
+        }),
       });
 
       if (!response.ok) {
@@ -129,24 +144,49 @@ export function ImpersonateButton({ userId, userEmail: _userEmail }: Impersonate
   }
 
   return (
-    <Button
-      onClick={handleStartImpersonation}
-      disabled={isLoading}
-      size="sm"
-      variant="secondary"
-    >
-      {isLoading ? (
-        <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Starting...
-        </>
-      ) : (
-        <>
-          <Eye className="w-4 h-4 mr-2" />
-          View as
-        </>
-      )}
-    </Button>
+    <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-2">
+      <p className="text-xs font-medium text-amber-900">Break-glass view as {userEmail}</p>
+      <label className="block text-xs font-medium text-slate-700">
+        Break-glass reason
+        <textarea
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          disabled={isLoading}
+          rows={2}
+          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"
+          placeholder="Why is impersonation needed?"
+        />
+      </label>
+      <label className="block text-xs font-medium text-slate-700">
+        Incident ticket
+        <input
+          type="text"
+          value={incidentTicketId}
+          onChange={(event) => setIncidentTicketId(event.target.value)}
+          disabled={isLoading}
+          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"
+          placeholder="INC-1234"
+        />
+      </label>
+      <Button
+        onClick={handleStartImpersonation}
+        disabled={isLoading || !canStartImpersonation}
+        size="sm"
+        variant="secondary"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Starting...
+          </>
+        ) : (
+          <>
+            <Eye className="w-4 h-4 mr-2" />
+            View as
+          </>
+        )}
+      </Button>
+    </div>
   );
 }
 
