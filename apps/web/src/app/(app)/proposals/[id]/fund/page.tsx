@@ -1,14 +1,46 @@
 import { Card, Money } from "@onehub/ui";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth-helpers";
+import { canViewProposalResource } from "@/lib/rbac";
 
 export default async function FundProposalPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const proposal = await prisma.proposal.findUnique({
     where: { id: resolvedParams.id },
-    include: { milestones: true, escrowAccount: true },
+    include: {
+      milestones: true,
+      escrowAccount: true,
+      event: {
+        select: {
+          id: true,
+          orgId: true,
+          createdById: true,
+          org: {
+            select: {
+              ownerId: true,
+              members: { select: { userId: true } },
+            },
+          },
+        },
+      },
+      listing: {
+        select: {
+          orgId: true,
+          org: {
+            select: {
+              ownerId: true,
+              members: { select: { userId: true } },
+            },
+          },
+        },
+      },
+    },
   });
   if (!proposal) return notFound();
+  const user = await getCurrentUser();
+  if (!canViewProposalResource(user, proposal)) return notFound();
+
   const dueAmount = proposal.milestones
     .filter((m) => m.status === "PENDING")
     .reduce((sum, m) => sum + m.amountCents, 0);

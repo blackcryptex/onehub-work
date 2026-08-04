@@ -5,7 +5,7 @@ import { GenerateContractButton } from "@/components/contracts/GenerateContractB
 import { ApproveProposalButton } from "@/components/proposals/ApproveProposalButton";
 import { ProposalPageClient } from "@/components/proposals/ProposalPageClient";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { canManageEvent } from "@/lib/rbac";
+import { canManageEvent, canViewProposalResource } from "@/lib/rbac";
 import Link from "next/link";
 
 type ThreadMessage = {
@@ -27,7 +27,8 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
       event: {
         include: {
           org: {
-            include: {
+            select: {
+              ownerId: true,
               owner: { select: { id: true } },
               members: { select: { userId: true } },
             },
@@ -41,6 +42,13 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
           title: true,
           type: true,
           category: true,
+          orgId: true,
+          org: {
+            select: {
+              ownerId: true,
+              members: { select: { userId: true } },
+            },
+          },
         },
       },
       sections: {
@@ -49,10 +57,12 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
     },
   });
   if (!proposal) return notFound();
+  const user = await getCurrentUser();
+  if (!canViewProposalResource(user, proposal)) return notFound();
+
   const thread = await prisma.thread.findFirst({ where: { proposalId: proposal.id }, include: { messages: true } });
   
   // Determine vault route based on user role
-  const user = await getCurrentUser();
   let eventVaultHref: string | null = null;
   if (proposal.event?.slug) {
     if (user?.role === "DIY_PLANNER") {

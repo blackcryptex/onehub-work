@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { ContractPageClient } from "@/components/contracts/ContractPageClient";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { canManageEvent } from "@/lib/rbac";
+import { canManageEvent, canViewContractResource } from "@/lib/rbac";
 
 export default async function ContractPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -39,6 +39,15 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
               id: true,
               title: true,
               type: true,
+              orgId: true,
+              org: {
+                select: {
+                  ownerId: true,
+                  members: {
+                    select: { userId: true },
+                  },
+                },
+              },
             },
           },
         },
@@ -50,6 +59,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
   });
 
   if (!contract) return notFound();
+  if (!canViewContractResource(user, contract)) return notFound();
 
   let eventVaultHref: string | null = null;
   if (contract.proposal?.event?.slug) {
