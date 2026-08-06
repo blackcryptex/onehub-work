@@ -31,6 +31,8 @@ type UIRoute =
   | "budget"
   | "guests"
   | "tasks"
+  | "settings"
+  | "help"
   | "wizard"
   | "eventDetail";
 
@@ -208,6 +210,7 @@ export default function DIYSidebar({
           label="Settings"
           Icon={Settings}
           onClick={() => {
+            onRoute("settings");
             setIsMobileOpen(false);
           }}
         />
@@ -216,6 +219,7 @@ export default function DIYSidebar({
           label="Help"
           Icon={HelpCircle}
           onClick={() => {
+            onRoute("help");
             setIsMobileOpen(false);
           }}
         />

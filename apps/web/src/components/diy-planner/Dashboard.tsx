@@ -21,6 +21,7 @@ import { Overview } from "@/components/overview/Overview";
 import { EventWizard } from "@/components/event-wizard/EventWizard";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import type { EventItem } from "@/lib/types";
 import { EventItem as EventItemExtended } from "@/lib/types.event";
 import { adaptEventToNewFormat, adaptEventToOldFormat } from "@/lib/eventAdapter";
@@ -29,6 +30,7 @@ import { useToast } from "@/hooks/useToast";
 import { EventActions } from "@/components/events/EventActions";
 import { EmptyStateOnboarding } from "@/components/overview/EmptyStateOnboarding";
 import { useSession } from "next-auth/react";
+import type { Role } from "@onehub/types/src/roles";
 
 type UIRoute =
   | "overview"
@@ -40,6 +42,8 @@ type UIRoute =
   | "budget"
   | "guests"
   | "tasks"
+  | "settings"
+  | "help"
   | "wizard"
   | "eventDetail";
 
@@ -67,7 +71,7 @@ export function DIYPlannerDashboard() {
   // URL -> uiRoute bootstrap with validation and safe fallback
   const initialRoute = useMemo<UIRoute>(() => {
     const raw = searchParams.get('view');
-    const allowed: UIRoute[] = ['overview', 'vault', 'calendar', 'vendors', 'proposals', 'contracts', 'budget', 'guests', 'tasks', 'wizard', 'eventDetail'];
+    const allowed: UIRoute[] = ['overview', 'vault', 'calendar', 'vendors', 'proposals', 'contracts', 'budget', 'guests', 'tasks', 'settings', 'help', 'wizard', 'eventDetail'];
     return (allowed.includes(raw as UIRoute) ? (raw as UIRoute) : 'overview');
   }, [searchParams]);
 
@@ -232,7 +236,7 @@ export function DIYPlannerDashboard() {
       );
     }
 
-    if (uiRoute !== "wizard" && events.length === 0) {
+    if (uiRoute !== "wizard" && uiRoute !== "help" && uiRoute !== "settings" && events.length === 0) {
       return (
         <section className="space-y-6">
           <EmptyStateOnboarding
@@ -266,6 +270,133 @@ export function DIYPlannerDashboard() {
                 setUiRoute("eventDetail");
               }}
             />
+          </section>
+        );
+
+      case "help":
+        return (
+          <section className="space-y-6">
+            <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
+              <p className="text-sm font-medium uppercase tracking-wide text-slate-500">Help</p>
+              <h2 className="text-xl font-semibold text-slate-900">DIY Planner Help</h2>
+              <p className="mt-2 max-w-3xl text-slate-600">
+                Use this dashboard to build an event from first draft through vendor work, contracts, payments, and final milestones.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {[
+                ["Create event", "Start with Create Event to save the event basics, date, location, budget, and planning context."],
+                ["Event vault", "Open an event vault to review the event summary, planning status, contacts, and safe sharing links."],
+                ["Vendors, proposals, and contracts", "Use the planning tabs to compare vendors, review proposals, and keep contract work attached to the selected event."],
+                ["Guests and tasks", "Track guest lists, checklists, tasks, and deadlines from the selected event workspace."],
+                ["Payments and milestones", "Review budget, payment milestones, and held-funds status before taking any payment action."],
+                ["Support contact path", "If something blocks planning, email support with the event name and what you were trying to do."],
+              ].map(([title, description]) => (
+                <div key={title} className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-5">
+                  <h3 className="font-semibold text-slate-900">{title}</h3>
+                  <p className="mt-2 text-sm text-slate-600">{description}</p>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
+              <h3 className="font-semibold text-slate-900">Need support?</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                Contact the OneHub support team at{" "}
+                <a href="mailto:support@onehub.events" className="font-medium text-indigo-600 hover:underline">
+                  support@onehub.events
+                </a>
+                .
+              </p>
+            </div>
+          </section>
+        );
+
+      case "settings":
+        return selectedEvent ? (
+          <section className="space-y-6">
+            <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-wide text-slate-500">Settings</p>
+                  <h2 className="text-xl font-semibold text-slate-900">Event settings</h2>
+                  <p className="mt-2 max-w-2xl text-slate-600">
+                    Manage the selected event’s saved basics and planning workspace actions without changing unsupported account settings.
+                  </p>
+                </div>
+                {selectedEvent.slug && (
+                  <EventActions
+                    role={session?.user?.role as Role | undefined}
+                    eventSlug={selectedEvent.slug}
+                    eventId={selectedEvent.id}
+                    eventName={selectedEvent.name}
+                    canEdit={true}
+                    canDelete={true}
+                    onDeleted={handleEventDeleted}
+                    size="sm"
+                    showLabels={true}
+                  />
+                )}
+              </div>
+            </div>
+            <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
+              <h3 className="font-semibold text-slate-900">{selectedEvent.name}</h3>
+              <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
+                <div>
+                  <dt className="font-medium text-slate-500">Date</dt>
+                  <dd className="mt-1 text-slate-900">{new Date(selectedEvent.date).toLocaleDateString()}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-slate-500">Location</dt>
+                  <dd className="mt-1 text-slate-900">{selectedEvent.location ?? "Location TBD"}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-slate-500">Planning progress</dt>
+                  <dd className="mt-1 text-slate-900">{Math.round(selectedEvent.progress)}%</dd>
+                </div>
+              </dl>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                {selectedEvent.slug ? (
+                  <Link
+                    href={`/diy-planner/vault/${selectedEvent.slug}`}
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-indigo-600 text-center text-sm font-semibold text-white hover:bg-indigo-700"
+                  >
+                    Open event vault
+                  </Link>
+                ) : (
+                  <span className="text-sm text-slate-500">Save the event before opening a vault link.</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setUiRoute("eventDetail")}
+                  className="w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Return to event workspace
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-slate-900">Select or create an event first</h2>
+            <p className="mt-2 max-w-2xl text-slate-600">
+              Event settings are scoped to a saved event. Select an event from the sidebar or create one before editing event details.
+            </p>
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                onClick={() => setUiRoute("wizard")}
+                className="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              >
+                Create Event
+              </button>
+              <button
+                type="button"
+                onClick={() => setUiRoute("overview")}
+                className="w-full sm:w-auto px-6 py-3 border border-slate-300 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-300 transition-colors"
+              >
+                Return to Overview
+              </button>
+            </div>
           </section>
         );
 
@@ -307,7 +438,7 @@ export function DIYPlannerDashboard() {
                   <div className="flex items-center gap-2 justify-end">
                     {selectedEvent.slug && (
                       <EventActions
-                        role={session?.user?.role as any}
+                        role={session?.user?.role as Role | undefined}
                         eventSlug={selectedEvent.slug}
                         eventId={selectedEvent.id}
                         eventName={selectedEvent.name}
@@ -324,12 +455,24 @@ export function DIYPlannerDashboard() {
                     >
                       AI Assist
                     </button>
-                    <button
-                      className="rounded-lg px-3 py-2 text-sm font-semibold border border-slate-200 hover:bg-slate-50"
-                      onClick={() => console.log("Share link")}
-                    >
-                      Share
-                    </button>
+                    {selectedEvent.slug ? (
+                      <Link
+                        href={`/diy-planner/vault/${selectedEvent.slug}`}
+                        className="rounded-lg px-3 py-2 text-sm font-semibold border border-slate-200 hover:bg-slate-50"
+                        title="Open the event vault to manage safe summary sharing."
+                      >
+                        Share
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        className="rounded-lg px-3 py-2 text-sm font-semibold border border-slate-200 text-slate-400 cursor-not-allowed"
+                        disabled
+                        title="Sharing is unavailable until this event has a saved vault link."
+                      >
+                        Share unavailable
+                      </button>
+                    )}
                   </div>
                   <div className="mt-4">
                     <div className="text-sm text-slate-500">Overall Progress</div>
@@ -399,10 +542,54 @@ export function DIYPlannerDashboard() {
       case "budget":
       case "guests":
       case "tasks":
-        return (
+        return selectedEvent ? (
+          <section className="space-y-6">
+            <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-wide text-slate-500">Planning workspace</p>
+                  <h2 className="text-xl font-semibold text-slate-900">{selectedEvent.name}</h2>
+                  <p className="mt-1 text-slate-600">
+                    {selectedEvent.location ?? "Location TBD"} · {new Date(selectedEvent.date).toLocaleDateString()}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUiRoute("eventDetail")}
+                  className="rounded-lg px-3 py-2 text-sm font-semibold border border-slate-200 hover:bg-slate-50"
+                >
+                  Event summary
+                </button>
+              </div>
+            </div>
+            <EventManagementSection
+              event={adaptEventToNewFormat(selectedEvent)}
+              initialTab={toEventManagementTab(uiRoute)}
+              onEventChange={handleEventChange}
+            />
+          </section>
+        ) : (
           <section className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
-            <h2 className="text-xl font-semibold capitalize">{uiRoute}</h2>
-            <p className="text-slate-600 mt-1">Content for {uiRoute} goes here.</p>
+            <h2 className="text-xl font-semibold text-slate-900">Choose an event to plan</h2>
+            <p className="text-slate-600 mt-1">
+              Select an event from the sidebar or create a new event to manage {uiRoute}.
+            </p>
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                onClick={() => setUiRoute("wizard")}
+                className="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              >
+                Create Event
+              </button>
+              <button
+                type="button"
+                onClick={() => setUiRoute("overview")}
+                className="w-full sm:w-auto px-6 py-3 border border-slate-300 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-300 transition-colors"
+              >
+                Return to Overview
+              </button>
+            </div>
           </section>
         );
 
