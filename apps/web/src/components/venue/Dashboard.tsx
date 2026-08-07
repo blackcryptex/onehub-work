@@ -87,6 +87,8 @@ export function VenueDashboard({
 }: VenueDashboardProps) {
   const [uiRoute, setUiRoute] = useState<UIRoute>("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [threadLinks, setThreadLinks] = useState<Record<string, string>>({});
+  const [threadErrors, setThreadErrors] = useState<Record<string, string>>({});
 
   const activeRequests = recentRequests.filter(
     (request) => request.status !== "DECLINED" && request.status !== "WITHDRAWN",
@@ -122,6 +124,27 @@ export function VenueDashboard({
   const formatDate = (date: Date) => new Date(date).toLocaleDateString();
   const formatMoney = (amountCents: number, currency: string) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amountCents / 100);
+
+  const openInternalThread = async (bookingRequestId: string) => {
+    setThreadErrors((current) => ({ ...current, [bookingRequestId]: "" }));
+    try {
+      const response = await fetch("/api/messages/threads/from-booking-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingRequestId }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.thread?.id) {
+        throw new Error(data.error || "Unable to open OneHub thread");
+      }
+      setThreadLinks((current) => ({ ...current, [bookingRequestId]: `/messages/${data.thread.id}` }));
+    } catch (error) {
+      setThreadErrors((current) => ({
+        ...current,
+        [bookingRequestId]: error instanceof Error ? error.message : "Unable to open OneHub thread",
+      }));
+    }
+  };
 
   const StatusPill = ({ status }: { status: string }) => (
     <span
@@ -417,10 +440,25 @@ export function VenueDashboard({
                           <a className="font-medium text-indigo-600 hover:underline" href={`mailto:${request.contactEmail}`}>
                             Email {request.contactName}
                           </a>
+                          <button
+                            className="font-medium text-indigo-600 hover:underline"
+                            type="button"
+                            onClick={() => openInternalThread(request.id)}
+                          >
+                            Open OneHub thread for {request.contactName}
+                          </button>
                           <button className="font-medium text-slate-700" type="button" onClick={() => setUiRoute("leads")}>
                             Review venue request
                           </button>
                         </div>
+                        {threadLinks[request.id] && (
+                          <a className="mt-2 inline-flex text-sm font-medium text-emerald-700 hover:underline" href={threadLinks[request.id]}>
+                            Go to OneHub thread
+                          </a>
+                        )}
+                        {threadErrors[request.id] && (
+                          <p className="mt-2 text-sm text-red-700">{threadErrors[request.id]}</p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -435,7 +473,10 @@ export function VenueDashboard({
                 <p className="mt-3 text-sm text-slate-600">
                   Need OneHub help with a venue hold, contract, or payment status? Contact support with the event and space name.
                 </p>
-                <a className="mt-3 inline-flex text-sm font-medium text-indigo-600 hover:underline" href="mailto:support@onehub.events">
+                <a className="mt-3 inline-flex text-sm font-medium text-indigo-600 hover:underline" href="/messages">
+                  Open message inbox
+                </a>
+                <a className="mt-3 block text-sm font-medium text-indigo-600 hover:underline" href="mailto:support@onehub.events">
                   support@onehub.events
                 </a>
               </Card>

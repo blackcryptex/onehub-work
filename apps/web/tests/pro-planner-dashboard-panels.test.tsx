@@ -149,6 +149,7 @@ describe("Pro Planner dashboard MVP panels", () => {
     renderDashboard();
 
     expect(screen.getByRole("link", { name: "Create Event" })).toHaveAttribute("href", "/events/new");
+    expect(screen.getByRole("link", { name: "Messages" })).toHaveAttribute("href", "/messages");
     expect(screen.getByRole("link", { name: "Smith Gala" })).toHaveAttribute("href", "/pro/planner/vault/smith-gala");
     expect(screen.getByRole("button", { name: "Event actions" })).toBeInTheDocument();
   });

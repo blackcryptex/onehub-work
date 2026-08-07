@@ -135,6 +135,8 @@ describe("Venue dashboard MVP tabs", () => {
     expect(screen.getByRole("heading", { name: "Venue messages & follow-up" })).toBeInTheDocument();
     expect(screen.getByText("4 unread notifications")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Email Avery Client" })).toHaveAttribute("href", "mailto:avery@example.com");
+    expect(screen.getByRole("button", { name: "Open OneHub thread for Avery Client" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open message inbox" })).toHaveAttribute("href", "/messages");
     expect(screen.getByRole("link", { name: "support@onehub.events" })).toHaveAttribute("href", "mailto:support@onehub.events");
     expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
   });

@@ -547,9 +547,6 @@ export function VendorDashboard({
                             Review request details
                           </button>
                         </div>
-                        <p className="mt-2 text-xs text-slate-500">
-                          Future OneHub in-app messaging starts here: this thread keeps vendor, planner, venue, and client communication inside OneHub as the workflow expands.
-                        </p>
                         {threadLinks[request.id] && (
                           <a className="mt-2 inline-flex text-sm font-medium text-emerald-700 hover:underline" href={threadLinks[request.id]}>
                             Go to OneHub thread
@@ -574,6 +571,12 @@ export function VendorDashboard({
                 </p>
                 <a
                   className="mt-3 inline-flex text-sm font-medium text-indigo-600 hover:underline"
+                  href="/messages"
+                >
+                  Open message inbox
+                </a>
+                <a
+                  className="mt-3 block text-sm font-medium text-indigo-600 hover:underline"
                   href="mailto:support@onehub.events"
                 >
                   support@onehub.events

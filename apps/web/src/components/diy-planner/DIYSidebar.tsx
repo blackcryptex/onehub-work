@@ -9,6 +9,7 @@ import {
   FileSignature,
   ScrollText,
   Wallet,
+  MessageSquare,
   Users,
   CheckSquare,
   Settings,
@@ -92,6 +93,12 @@ export default function DIYSidebar({
             onRoute("calendar");
             setIsMobileOpen(false);
           }}
+        />
+        <SidebarLink
+          href="/messages"
+          label="Messages"
+          Icon={MessageSquare}
+          onClick={() => setIsMobileOpen(false)}
         />
       </div>
 

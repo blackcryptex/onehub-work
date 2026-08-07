@@ -150,6 +150,7 @@ describe("DIY planner route continuity cleanup", () => {
 
     expect(screen.getByRole("link", { name: "Help" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Messages" })).toHaveAttribute("href", "/messages");
 
     fireEvent.click(screen.getByRole("link", { name: "Help" }));
 
