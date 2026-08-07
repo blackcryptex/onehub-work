@@ -30,6 +30,7 @@ import {
   MapPin,
   MoreHorizontal,
   Search,
+  Settings,
   ShieldCheck,
   Star,
   Store,
@@ -463,8 +464,16 @@ export default async function ProVaultDetailPage({
   const globalNavItems = [
     { label: "Home", href: "/pro/planner", icon: Home },
     { label: "Events", href: "/pro/planner/vault", icon: BriefcaseBusiness },
+    { label: "Bookings", href: "#workspace-requests-detail", icon: FileCheck },
     { label: "Calendar", href: "/calendar", icon: CalendarDays },
+    { label: "Contacts", href: "#context-contacts", icon: Users },
+    { label: "Vendors", href: "#workspace-sourcing", icon: Store },
+    { label: "Finances", href: "#workspace-payment-detail", icon: WalletCards },
+    { label: "Tasks", href: `/events/${eventSlug}/checklists`, icon: ListChecks },
+    { label: "Files", href: `/events/${eventSlug}/settings`, icon: FileText },
+    { label: "Reports", href: "#workspace-budget", icon: BarChart3 },
     { label: "Marketplace", href: "/marketplace", icon: Store },
+    { label: "Settings", href: `/events/${eventSlug}/settings`, icon: Settings },
     { label: "Help", href: "/help", icon: HelpCircle },
   ];
 

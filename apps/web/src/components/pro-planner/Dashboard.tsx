@@ -229,9 +229,10 @@ export function ProPlannerDashboard({ orgName, events, userId, userRole, orgOwne
         return (
           <section className="space-y-6">
             <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
-              <h2 className="text-2xl font-bold mb-2">Welcome, {orgName}!</h2>
+              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Agency command deck</p>
+              <h2 className="mt-1 text-2xl font-bold mb-2">Welcome, {orgName}!</h2>
               <p className="text-slate-600">
-                Manage your events and client projects from here.
+                Pick an event and open its command center for sourcing, proposals, contracts, payments, and execution.
               </p>
             </div>
 
@@ -295,19 +296,24 @@ export function ProPlannerDashboard({ orgName, events, userId, userRole, orgOwne
                             </div>
                           </div>
                           {canManage && (
-                            <EventActions
-                              role={typedRole}
-                              eventSlug={event.slug}
-                              eventId={event.id}
-                              eventName={event.name}
-                              canEdit={canManage}
-                              canDelete={canManage}
-                              onDelete={handleDeleteEvent}
-                              onDeleted={() => {
-                                // Event already removed from state in handleDeleteEvent
-                              }}
-                              size="sm"
-                            />
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                              <Button asChild size="sm">
+                                <Link href={vaultDetail(typedRole, event.slug) as Route}>Open Event Command Center</Link>
+                              </Button>
+                              <EventActions
+                                role={typedRole}
+                                eventSlug={event.slug}
+                                eventId={event.id}
+                                eventName={event.name}
+                                canEdit={canManage}
+                                canDelete={canManage}
+                                onDelete={handleDeleteEvent}
+                                onDeleted={() => {
+                                  // Event already removed from state in handleDeleteEvent
+                                }}
+                                size="sm"
+                              />
+                            </div>
                           )}
                         </div>
                       </Card>
