@@ -4,9 +4,13 @@ export type Status = 'draft' | 'sent' | 'pending' | 'accepted' | 'rejected' | 's
 export type RSVP = 'yes' | 'no' | 'maybe';
 
 export type Guest = { 
+  id?: string;
   name: string; 
   email?: string; 
+  phone?: string;
   rsvp?: RSVP;
+  meal?: string;
+  notes?: string;
 };
 
 export type VendorLink = {

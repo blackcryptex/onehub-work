@@ -172,10 +172,13 @@ export function adaptEventToNewFormat(legacyEvent: LegacyEventItem): DomainEvent
   const proposals = (legacyEvent.proposals ?? []).map((proposal) => mapLegacyProposal(legacyEvent.id, proposal));
   const contracts = (legacyEvent.contracts ?? []).map((contract) => mapLegacyContract(legacyEvent.id, contract));
   const guests = (legacyEvent.guests ?? []).map((guest, index): Guest => ({
-    id: guest.email ?? `${legacyEvent.id}-guest-${index}`,
+    id: guest.id ?? guest.email ?? `${legacyEvent.id}-guest-${index}`,
     name: guest.name,
     email: guest.email,
+    phone: guest.phone,
     rsvp: normalizeRSVP(guest.rsvp),
+    meal: guest.meal as Guest['meal'],
+    notes: guest.notes,
   }));
 const tasks = (legacyEvent.tasks ?? []).map((task): Task => ({
     id: task.id,
@@ -244,9 +247,13 @@ export function adaptEventToOldFormat(domainEvent: DomainEvent): LegacyEventItem
   }));
 
   const guests: LegacyGuest[] = (domainEvent.guests ?? []).map((guest) => ({
+    id: guest.id,
     name: guest.name,
     email: guest.email,
+    phone: guest.phone,
     rsvp: guest.rsvp,
+    meal: guest.meal,
+    notes: guest.notes,
   }));
 
   const tasks: LegacyTask[] = (domainEvent.tasks ?? []).map((task) => ({

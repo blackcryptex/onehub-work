@@ -68,7 +68,10 @@ type PrismaEventWithRelations = Awaited<
               firstName: true;
               lastName: true;
               email: true;
+              phone: true;
               status: true;
+              dietary: true;
+              notes: true;
             };
           };
         };
@@ -148,12 +151,25 @@ function mapMilestone(
   };
 }
 
-function mapGuest(guest: { firstName?: string | null; lastName?: string | null; email?: string | null; status: RSVPStatus }): Guest {
+function mapGuest(guest: {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  status: RSVPStatus;
+  dietary?: string | null;
+  notes?: string | null;
+}): Guest {
   const name = [guest.firstName, guest.lastName].filter(Boolean).join(" ").trim();
   return {
+    id: guest.id,
     name: name || guest.email || "Guest",
     email: guest.email ?? undefined,
+    phone: guest.phone ?? undefined,
     rsvp: mapRsvpStatus(guest.status),
+    meal: guest.dietary ?? undefined,
+    notes: guest.notes ?? undefined,
   };
 }
 
@@ -242,7 +258,16 @@ function mapEvent(event: PrismaEventWithRelations): EventItem {
   const proposals = event.proposals.map(mapProposal);
   const contracts = event.contracts.map(mapContract);
   const guestList = event.guestLists;
-  const guests = guestList?.guests.map((guest: { firstName?: string | null; lastName?: string | null; email?: string | null; status: RSVPStatus }) => mapGuest(guest)) ?? [];
+  const guests = guestList?.guests.map((guest: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    status: RSVPStatus;
+    dietary?: string | null;
+    notes?: string | null;
+  }) => mapGuest(guest)) ?? [];
   const vendors = event.shortlistItems.map(mapVendor);
 
   const budgetPlanned = event.budgetLines.reduce(
@@ -379,7 +404,10 @@ export async function GET() {
                 firstName: true,
                 lastName: true,
                 email: true,
+                phone: true,
                 status: true,
+                dietary: true,
+                notes: true,
               },
             },
           },
