@@ -15,7 +15,7 @@
 import { VendorHeader } from "./Header";
 import { VendorSidebar } from "./Sidebar";
 import { Card } from "@/components/ui";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   Store,
@@ -51,6 +51,23 @@ interface BookingRequest {
 interface VendorDashboardProps {
   orgName: string;
   orgSlug: string;
+  orgProfile?: {
+    about?: string | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
+    website?: string | null;
+    city?: string | null;
+    state?: string | null;
+  };
+  primaryListing?: {
+    id: string;
+    title: string;
+    description?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    website?: string | null;
+    priceTier?: number | null;
+  } | null;
   stats: {
     todaysLeads: number;
     upcomingEvents: number;
@@ -82,16 +99,35 @@ interface VendorDashboardProps {
 export function VendorDashboard({
   orgName,
   orgSlug,
+  orgProfile,
+  primaryListing,
   stats,
   recentRequests,
   paymentContracts = [],
 }: VendorDashboardProps) {
   const [uiRoute, setUiRoute] = useState<UIRoute>("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [settingsForm, setSettingsForm] = useState({
+    orgName,
+    about: orgProfile?.about ?? "",
+    contactEmail: orgProfile?.contactEmail ?? "",
+    contactPhone: orgProfile?.contactPhone ?? "",
+    website: orgProfile?.website ?? "",
+    city: orgProfile?.city ?? "",
+    state: orgProfile?.state ?? "",
+    listingId: primaryListing?.id ?? "",
+    listingTitle: primaryListing?.title ?? "",
+    listingDescription: primaryListing?.description ?? "",
+    listingEmail: primaryListing?.email ?? "",
+    listingPhone: primaryListing?.phone ?? "",
+    listingWebsite: primaryListing?.website ?? "",
+    priceTier: primaryListing?.priceTier?.toString() ?? "",
+  });
+  const [settingsSaveState, setSettingsSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [settingsError, setSettingsError] = useState<string | null>(null);
   const activeRequests = recentRequests.filter(
     (request) => request.status !== "DECLINED" && request.status !== "WITHDRAWN",
   );
-  const pendingRequests = recentRequests.filter((request) => request.status === "PENDING");
   const followUpRequests = recentRequests.filter((request) =>
     ["PENDING", "QUOTED"].includes(request.status),
   );
@@ -120,6 +156,36 @@ export function VendorDashboard({
   );
 
   const formatDate = (date: Date) => new Date(date).toLocaleDateString();
+
+  const updateSettingsField = (field: keyof typeof settingsForm, value: string) => {
+    setSettingsForm((current) => ({ ...current, [field]: value }));
+    setSettingsSaveState("idle");
+    setSettingsError(null);
+  };
+
+  const handleSettingsSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSettingsSaveState("saving");
+    setSettingsError(null);
+    try {
+      const response = await fetch("/api/vendor/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...settingsForm,
+          priceTier: settingsForm.priceTier ? Number(settingsForm.priceTier) : null,
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Unable to save vendor settings");
+      }
+      setSettingsSaveState("saved");
+    } catch (error) {
+      setSettingsSaveState("error");
+      setSettingsError(error instanceof Error ? error.message : "Unable to save vendor settings");
+    }
+  };
 
   const StatusPill = ({ status }: { status: string }) => (
     <span
@@ -493,41 +559,169 @@ export function VendorDashboard({
               </div>
             </Card>
 
-            <div className="grid gap-4 lg:grid-cols-3">
-              <Card className="p-6">
-                <Store className="h-5 w-5 text-indigo-600" />
-                <h3 className="mt-3 font-semibold text-slate-900">Provider profile</h3>
-                <dl className="mt-3 space-y-2 text-sm">
-                  <div>
-                    <dt className="text-slate-500">Organization</dt>
-                    <dd className="font-medium text-slate-900">{orgName}</dd>
+            <form onSubmit={handleSettingsSave} className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Card className="p-6">
+                  <Store className="h-5 w-5 text-indigo-600" />
+                  <h3 className="mt-3 font-semibold text-slate-900">Provider profile</h3>
+                  <p className="mt-1 text-sm text-slate-600">Update the business information clients and planners see.</p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <label className="text-sm font-medium text-slate-700">
+                      Business name
+                      <input
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        value={settingsForm.orgName}
+                        onChange={(event) => updateSettingsField("orgName", event.target.value)}
+                      />
+                    </label>
+                    <label className="text-sm font-medium text-slate-700">
+                      Contact email
+                      <input
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        type="email"
+                        value={settingsForm.contactEmail}
+                        onChange={(event) => updateSettingsField("contactEmail", event.target.value)}
+                      />
+                    </label>
+                    <label className="text-sm font-medium text-slate-700">
+                      Contact phone
+                      <input
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        value={settingsForm.contactPhone}
+                        onChange={(event) => updateSettingsField("contactPhone", event.target.value)}
+                      />
+                    </label>
+                    <label className="text-sm font-medium text-slate-700">
+                      Website
+                      <input
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        value={settingsForm.website}
+                        onChange={(event) => updateSettingsField("website", event.target.value)}
+                      />
+                    </label>
+                    <label className="text-sm font-medium text-slate-700">
+                      City
+                      <input
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        value={settingsForm.city}
+                        onChange={(event) => updateSettingsField("city", event.target.value)}
+                      />
+                    </label>
+                    <label className="text-sm font-medium text-slate-700">
+                      State
+                      <input
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        value={settingsForm.state}
+                        onChange={(event) => updateSettingsField("state", event.target.value)}
+                      />
+                    </label>
+                    <label className="sm:col-span-2 text-sm font-medium text-slate-700">
+                      About this business
+                      <textarea
+                        className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        value={settingsForm.about}
+                        onChange={(event) => updateSettingsField("about", event.target.value)}
+                      />
+                    </label>
                   </div>
-                  <div>
-                    <dt className="text-slate-500">Slug</dt>
-                    <dd className="font-medium text-slate-900">{orgSlug}</dd>
-                  </div>
-                </dl>
-                <Link
-                  className="mt-4 inline-flex text-sm font-medium text-indigo-600 hover:underline"
-                  href="/providers/onboarding?providerType=vendor"
-                >
-                  Review provider profile
-                </Link>
-              </Card>
+                </Card>
 
-              <Card className="p-6">
-                <Calendar className="h-5 w-5 text-purple-600" />
-                <h3 className="mt-3 font-semibold text-slate-900">Listings and availability</h3>
-                <p className="mt-3 text-sm text-slate-600">
-                  {activeRequests.length} active dashboard requests and {pendingRequests.length} pending lead responses are tied to your vendor listing workflow.
-                </p>
-                <Link
-                  className="mt-4 inline-flex text-sm font-medium text-indigo-600 hover:underline"
-                  href="/marketplace/manage"
+                <Card className="p-6">
+                  <Calendar className="h-5 w-5 text-purple-600" />
+                  <h3 className="mt-3 font-semibold text-slate-900">Listing snapshot</h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Edit the primary listing surfaced from this dashboard. Full listing tools remain available when needed.
+                  </p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <label className="sm:col-span-2 text-sm font-medium text-slate-700">
+                      Listing title
+                      <input
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        value={settingsForm.listingTitle}
+                        onChange={(event) => updateSettingsField("listingTitle", event.target.value)}
+                        disabled={!settingsForm.listingId}
+                      />
+                    </label>
+                    <label className="sm:col-span-2 text-sm font-medium text-slate-700">
+                      Listing description
+                      <textarea
+                        className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        value={settingsForm.listingDescription}
+                        onChange={(event) => updateSettingsField("listingDescription", event.target.value)}
+                        disabled={!settingsForm.listingId}
+                      />
+                    </label>
+                    <label className="text-sm font-medium text-slate-700">
+                      Listing email
+                      <input
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        type="email"
+                        value={settingsForm.listingEmail}
+                        onChange={(event) => updateSettingsField("listingEmail", event.target.value)}
+                        disabled={!settingsForm.listingId}
+                      />
+                    </label>
+                    <label className="text-sm font-medium text-slate-700">
+                      Listing phone
+                      <input
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        value={settingsForm.listingPhone}
+                        onChange={(event) => updateSettingsField("listingPhone", event.target.value)}
+                        disabled={!settingsForm.listingId}
+                      />
+                    </label>
+                    <label className="text-sm font-medium text-slate-700">
+                      Listing website
+                      <input
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        value={settingsForm.listingWebsite}
+                        onChange={(event) => updateSettingsField("listingWebsite", event.target.value)}
+                        disabled={!settingsForm.listingId}
+                      />
+                    </label>
+                    <label className="text-sm font-medium text-slate-700">
+                      Price tier
+                      <select
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        value={settingsForm.priceTier}
+                        onChange={(event) => updateSettingsField("priceTier", event.target.value)}
+                        disabled={!settingsForm.listingId}
+                      >
+                        <option value="">Not set</option>
+                        <option value="1">$</option>
+                        <option value="2">$$</option>
+                        <option value="3">$$$</option>
+                        <option value="4">$$$$</option>
+                        <option value="5">$$$$$</option>
+                      </select>
+                    </label>
+                  </div>
+                  {!settingsForm.listingId && (
+                    <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                      No primary listing exists yet. Use Manage listings to create the first vendor offer.
+                    </p>
+                  )}
+                </Card>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={settingsSaveState === "saving"}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
                 >
+                  {settingsSaveState === "saving" ? "Saving..." : "Save vendor settings"}
+                </button>
+                <Link className="text-sm font-medium text-indigo-600 hover:underline" href="/marketplace/manage">
                   Manage listings
                 </Link>
-              </Card>
+                <Link className="text-sm font-medium text-indigo-600 hover:underline" href="/app/billing/connect">
+                  Check payout readiness
+                </Link>
+                <span className="text-sm text-slate-500">Slug: {orgSlug}</span>
+                {settingsSaveState === "saved" && <span className="text-sm font-medium text-emerald-700">Vendor settings saved.</span>}
+                {settingsSaveState === "error" && <span className="text-sm font-medium text-red-700">{settingsError}</span>}
+              </div>
 
               <Card className="p-6">
                 <DollarSign className="h-5 w-5 text-emerald-600" />
@@ -535,14 +729,8 @@ export function VendorDashboard({
                 <p className="mt-3 text-sm text-slate-600">
                   {manualPaymentCount} manual milestone statuses are visible here; {heldFundsCount} currently show funds held.
                 </p>
-                <Link
-                  className="mt-4 inline-flex text-sm font-medium text-indigo-600 hover:underline"
-                  href="/app/billing/connect"
-                >
-                  Check payout readiness
-                </Link>
               </Card>
-            </div>
+            </form>
 
             <Card className="border-amber-200 bg-amber-50 p-6">
               <h3 className="font-semibold text-amber-950">Private pilot boundary</h3>

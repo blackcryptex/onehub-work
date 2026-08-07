@@ -1,6 +1,6 @@
 import * as React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
@@ -135,11 +135,34 @@ describe("Vendor dashboard MVP tabs", () => {
     expect(screen.queryByText(/placeholder/i)).not.toBeInTheDocument();
   });
 
-  it("renders settings as real provider readiness links with live payment boundary copy", () => {
+  it("renders settings as inline editable fields and persists dashboard changes", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ org: { name: "Scout Catering Co." }, listing: { title: "Premium catering" } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
     render(
       <VendorDashboard
         orgName="Scout Catering"
         orgSlug="scout-catering"
+        orgProfile={{
+          about: "Full-service hospitality team",
+          contactEmail: "team@scout.test",
+          contactPhone: "555-0100",
+          website: "https://scout.test",
+          city: "Atlanta",
+          state: "GA",
+        }}
+        primaryListing={{
+          id: "listing-1",
+          title: "Full-service catering",
+          description: "Dinner service and staffing",
+          email: "bookings@scout.test",
+          phone: "555-0101",
+          website: "https://scout.test/catering",
+          priceTier: 3,
+        }}
         stats={{ todaysLeads: 1, upcomingEvents: 2, unreadMessages: 3 }}
         recentRequests={recentRequests}
         paymentContracts={paymentContracts}
@@ -149,22 +172,25 @@ describe("Vendor dashboard MVP tabs", () => {
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
 
     expect(screen.getByRole("heading", { name: "Vendor settings & readiness" })).toBeInTheDocument();
-    expect(screen.getByText("Scout Catering")).toBeInTheDocument();
-    expect(screen.getByText("scout-catering")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Manage listings" })).toHaveAttribute(
-      "href",
-      "/marketplace/manage",
-    );
-    expect(screen.getByRole("link", { name: "Review provider profile" })).toHaveAttribute(
-      "href",
-      "/providers/onboarding?providerType=vendor",
-    );
-    expect(screen.getByRole("link", { name: "Check payout readiness" })).toHaveAttribute(
-      "href",
-      "/app/billing/connect",
-    );
+    fireEvent.change(screen.getByLabelText("Business name"), { target: { value: "Scout Catering Co." } });
+    fireEvent.change(screen.getByLabelText("Listing title"), { target: { value: "Premium catering" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save vendor settings" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      "/api/vendor/settings",
+      expect.objectContaining({
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: expect.stringContaining("Scout Catering Co."),
+      }),
+    ));
+    expect(fetchMock.mock.calls[0][1].body).toContain("Premium catering");
+    expect(await screen.findByText("Vendor settings saved." )).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Manage listings" })).toHaveAttribute("href", "/marketplace/manage");
     expect(screen.getByText(/Private pilot boundary/)).toBeInTheDocument();
     expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/placeholder/i)).not.toBeInTheDocument();
+
+    vi.unstubAllGlobals();
   });
 });
