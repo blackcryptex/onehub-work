@@ -125,6 +125,8 @@ export function VendorDashboard({
   });
   const [settingsSaveState, setSettingsSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [threadLinks, setThreadLinks] = useState<Record<string, string>>({});
+  const [threadErrors, setThreadErrors] = useState<Record<string, string>>({});
   const activeRequests = recentRequests.filter(
     (request) => request.status !== "DECLINED" && request.status !== "WITHDRAWN",
   );
@@ -184,6 +186,27 @@ export function VendorDashboard({
     } catch (error) {
       setSettingsSaveState("error");
       setSettingsError(error instanceof Error ? error.message : "Unable to save vendor settings");
+    }
+  };
+
+  const openInternalThread = async (bookingRequestId: string) => {
+    setThreadErrors((current) => ({ ...current, [bookingRequestId]: "" }));
+    try {
+      const response = await fetch("/api/messages/threads/from-booking-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingRequestId }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.thread?.id) {
+        throw new Error(data.error || "Unable to open OneHub thread");
+      }
+      setThreadLinks((current) => ({ ...current, [bookingRequestId]: `/messages/${data.thread.id}` }));
+    } catch (error) {
+      setThreadErrors((current) => ({
+        ...current,
+        [bookingRequestId]: error instanceof Error ? error.message : "Unable to open OneHub thread",
+      }));
     }
   };
 
@@ -510,6 +533,13 @@ export function VendorDashboard({
                             Email {request.contactName}
                           </a>
                           <button
+                            className="font-medium text-indigo-600 hover:underline"
+                            type="button"
+                            onClick={() => openInternalThread(request.id)}
+                          >
+                            Open OneHub thread for {request.contactName}
+                          </button>
+                          <button
                             className="font-medium text-slate-700"
                             type="button"
                             onClick={() => setUiRoute("leads")}
@@ -517,6 +547,17 @@ export function VendorDashboard({
                             Review request details
                           </button>
                         </div>
+                        <p className="mt-2 text-xs text-slate-500">
+                          Future OneHub in-app messaging starts here: this thread keeps vendor, planner, venue, and client communication inside OneHub as the workflow expands.
+                        </p>
+                        {threadLinks[request.id] && (
+                          <a className="mt-2 inline-flex text-sm font-medium text-emerald-700 hover:underline" href={threadLinks[request.id]}>
+                            Go to OneHub thread
+                          </a>
+                        )}
+                        {threadErrors[request.id] && (
+                          <p className="mt-2 text-sm text-red-700">{threadErrors[request.id]}</p>
+                        )}
                       </div>
                     ))}
                   </div>

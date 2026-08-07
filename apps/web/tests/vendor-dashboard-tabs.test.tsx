@@ -127,6 +127,8 @@ describe("Vendor dashboard MVP tabs", () => {
       "href",
       "mailto:avery@example.com",
     );
+    expect(screen.getByRole("button", { name: "Open OneHub thread for Avery Client" })).toBeInTheDocument();
+    expect(screen.getAllByText(/Future OneHub in-app messaging/).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "support@onehub.events" })).toHaveAttribute(
       "href",
       "mailto:support@onehub.events",
