@@ -344,6 +344,27 @@ describe("payment intent lifecycle guardrails", () => {
     );
   });
 
+  it("cancels the local payment intent when Stripe creation fails before checkout", async () => {
+    stripe.paymentIntents.create.mockRejectedValue(new Error("stripe unavailable"));
+
+    const response = await createIntentPOST(request({
+      contractId: "contract-1",
+      milestoneId: "milestone-1",
+      acceptance: { legalVersion: "payment-v1" },
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(502);
+    expect(body).toEqual({ error: "Stripe payment intent failed; checkout was not started" });
+    expect(prisma.paymentIntent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ status: "REQUIRES_PAYMENT" }),
+    });
+    expect(prisma.paymentIntent.update).toHaveBeenCalledWith({
+      where: { id: "pi-local-new" },
+      data: { status: "CANCELLED" },
+    });
+  });
+
   it("confirms a Stripe intent whose amount is the canonical buyer charge, not the gross local amount", async () => {
     prisma.paymentIntent.findUnique.mockResolvedValue(paymentIntent);
     stripe.paymentIntents.retrieve.mockResolvedValue({
