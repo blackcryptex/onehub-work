@@ -14,12 +14,10 @@ export function RSVPForm({ token, currentStatus }: { token: string; currentStatu
   const handleSubmit = async (s: "ACCEPTED" | "DECLINED") => {
     setLoading(true);
     try {
-      // TODO: Create /api/trpc endpoint handler for tRPC requests
-      // The tRPC router is defined but the API handler is missing
-      const res = await fetch("/api/trpc/guest.rsvp", {
+      const res = await fetch(`/api/rsvp/${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, status: s, dietary, notes }),
+        body: JSON.stringify({ status: s, dietary, notes }),
       });
       if (res.ok) {
         setStatus(s);
