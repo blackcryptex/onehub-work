@@ -31,6 +31,114 @@ const providerProfileSchema = z.object({
   notificationsJson: z.any().optional().nullable(),
 });
 
+type ProviderProfileData = z.infer<typeof providerProfileSchema>;
+
+function slugify(value: string, maxLength = 50) {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, maxLength);
+  return slug || "provider-profile";
+}
+
+function listingCategoryFor(providerType: ProviderProfileData["providerType"], providerCategory?: string | null) {
+  if (providerType === "venue") return "VENUE_SPACE";
+
+  const normalized = (providerCategory || "").toLowerCase();
+  if (normalized.includes("cater")) return "CATERING";
+  if (normalized.includes("flor") || normalized.includes("decor")) return "DECOR_FLORAL";
+  if (normalized.includes("entertain") || normalized.includes("music") || normalized.includes("dj")) return "ENTERTAINMENT";
+  if (normalized.includes("photo") || normalized.includes("video")) return "PHOTO_VIDEO";
+  if (normalized.includes("transport")) return "TRANSPORT";
+  if (normalized.includes("staff")) return "STAFFING";
+  if (normalized.includes("plan")) return "PLANNING_SERVICES";
+  if (normalized.includes("rental")) return "RENTALS";
+  return "OTHER";
+}
+
+function firstNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function listingDescription(data: ProviderProfileData) {
+  if (data.about?.trim()) return data.about.trim();
+
+  const service = Array.isArray(data.servicesJson) ? data.servicesJson[0] : null;
+  if (service && typeof service === "object") {
+    const description = (service as { description?: unknown }).description;
+    if (typeof description === "string" && description.trim()) return description.trim();
+  }
+
+  const space = Array.isArray(data.spacesJson) ? data.spacesJson[0] : null;
+  if (space && typeof space === "object") {
+    const notes = (space as { notes?: unknown }).notes;
+    if (typeof notes === "string" && notes.trim()) return notes.trim();
+  }
+
+  return null;
+}
+
+function listingCapacity(data: ProviderProfileData) {
+  const firstSpace = Array.isArray(data.spacesJson) ? data.spacesJson[0] : null;
+  if (!firstSpace || typeof firstSpace !== "object") return { minGuests: null, maxGuests: null };
+  return {
+    minGuests: firstNumber((firstSpace as { capacityMin?: unknown }).capacityMin),
+    maxGuests: firstNumber((firstSpace as { capacityMax?: unknown }).capacityMax),
+  };
+}
+
+function coverImageUrl(mediaJson: unknown) {
+  if (!mediaJson || typeof mediaJson !== "object") return null;
+  const media = mediaJson as { heroImageUrl?: unknown; logoUrl?: unknown; galleryUrls?: unknown };
+  if (typeof media.heroImageUrl === "string" && media.heroImageUrl.trim()) return media.heroImageUrl.trim();
+  if (Array.isArray(media.galleryUrls) && typeof media.galleryUrls[0] === "string") return media.galleryUrls[0];
+  if (typeof media.logoUrl === "string" && media.logoUrl.trim()) return media.logoUrl.trim();
+  return null;
+}
+
+async function syncPublishedListing(tx: any, org: { id: string; slug: string; name: string }, data: ProviderProfileData) {
+  const listingType = data.providerType === "vendor" ? "VENDOR" : "VENUE";
+  const title = data.businessName || org.name;
+  const capacity = listingCapacity(data);
+  const listingData = {
+    title,
+    type: listingType,
+    category: listingCategoryFor(data.providerType, data.providerCategory),
+    description: listingDescription(data),
+    website: data.website || null,
+    phone: data.contactPhone || null,
+    email: data.contactEmail || null,
+    city: data.city || null,
+    state: data.state || null,
+    country: data.country || "US",
+    postalCode: data.postalCode || null,
+    coverImageUrl: coverImageUrl(data.mediaJson),
+    minGuests: capacity.minGuests,
+    maxGuests: capacity.maxGuests,
+  };
+
+  const existingListing = await tx.listing.findFirst({
+    where: { orgId: org.id, type: listingType },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  if (existingListing) {
+    return tx.listing.update({
+      where: { id: existingListing.id },
+      data: listingData,
+    });
+  }
+
+  return tx.listing.create({
+    data: {
+      orgId: org.id,
+      slug: `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`,
+      ...listingData,
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -100,7 +208,7 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          return tx.organization.update({
+          const updatedOrg = await tx.organization.update({
             where: { id: existingOrg.id },
             data: {
               name: businessName || name,
@@ -125,6 +233,12 @@ export async function POST(request: NextRequest) {
               profileStatus,
             } as any, // Type assertion needed until TypeScript server picks up regenerated Prisma types
           });
+
+          if (!draft) {
+            await syncPublishedListing(tx, updatedOrg, data);
+          }
+
+          return updatedOrg;
         });
         return NextResponse.json({
           orgId: updatedOrg.id,
@@ -151,7 +265,7 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          return tx.organization.create({
+          const org = await tx.organization.create({
             data: {
               name: businessName || name,
               slug,
@@ -180,6 +294,12 @@ export async function POST(request: NextRequest) {
               settings: { create: {} },
             } as any, // Type assertion needed until TypeScript server picks up regenerated Prisma types
           });
+
+          if (!draft) {
+            await syncPublishedListing(tx, org, data);
+          }
+
+          return org;
         });
         return NextResponse.json({
           orgId: org.id,
