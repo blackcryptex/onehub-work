@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Task, Milestone } from '@/lib/types.event';
 
 type Filters = {
@@ -14,13 +14,16 @@ interface TaskListProps {
   tasks: Task[];
   milestones: Milestone[];
   filters: Filters;
+  teamMembers?: Array<{ id: string; label: string; staffRole?: string }>;
+  canAssignTasks?: boolean;
+  currentUserMode?: 'planner'|'assistant';
   onToggle: (id: string) => void;
   onEdit: (id: string, patch: Partial<Task>) => void;
   onFilterChange: (filters: Filters) => void;
   onJumpToMilestone: (milestoneId: string) => void;
 }
 
-export default function TaskList({ tasks, milestones, filters, onToggle, onEdit, onFilterChange, onJumpToMilestone }: TaskListProps) {
+export default function TaskList({ tasks, milestones, filters, teamMembers = [], canAssignTasks = false, currentUserMode = 'planner', onToggle, onEdit, onFilterChange, onJumpToMilestone }: TaskListProps) {
   const [showChecklist, setShowChecklist] = useState<Record<string, boolean>>({});
 
   // Get unique assignees for filter
@@ -50,7 +53,16 @@ export default function TaskList({ tasks, milestones, filters, onToggle, onEdit,
     return milestones.find(m => m.id === task.linkedId);
   }
 
+  function assignTask(taskId: string, assigneeId: string) {
+    const member = teamMembers.find(m => m.id === assigneeId);
+    onEdit(taskId, {
+      assigneeId: assigneeId || undefined,
+      assignee: member?.label,
+    });
+  }
+
   return (
+    <React.Fragment>
     <div className="space-y-4">
       {/* Filter Bar */}
       <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -142,7 +154,7 @@ export default function TaskList({ tasks, milestones, filters, onToggle, onEdit,
                       </div>
                       <div className="text-xs text-slate-500 mt-1 flex items-center gap-2">
                         <span>Due: {new Date(t.due).toLocaleDateString()}</span>
-                        {t.assignee && <span>• {t.assignee}</span>}
+                        <span>Assigned to: {t.assignee || 'Unassigned'}</span>
                         {t.priority && (
                           <span className={`px-1.5 py-0.5 rounded text-xs ${
                             t.priority === 'high' ? 'bg-red-100 text-red-700' :
@@ -168,6 +180,27 @@ export default function TaskList({ tasks, milestones, filters, onToggle, onEdit,
                   </button>
                 )}
               </div>
+
+              {canAssignTasks && teamMembers.length > 0 && (
+                <label className="ml-6 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                  <span>Assign assistant</span>
+                  <select
+                    aria-label={`Assign ${t.title}`}
+                    className="rounded border px-2 py-1"
+                    value={t.assigneeId || ''}
+                    onChange={event => assignTask(t.id, event.target.value)}
+                  >
+                    <option value="">Unassigned</option>
+                    {teamMembers.map(member => (
+                      <option key={member.id} value={member.id}>{member.label}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              {currentUserMode === 'assistant' && !canAssignTasks && (
+                <div className="ml-6 text-xs font-medium text-slate-600">My assigned task controls</div>
+              )}
 
               {t.checklist && t.checklist.length > 0 && (
                 <div className="ml-6">
@@ -204,6 +237,7 @@ export default function TaskList({ tasks, milestones, filters, onToggle, onEdit,
         )}
       </div>
     </div>
+    </React.Fragment>
   );
 }
 

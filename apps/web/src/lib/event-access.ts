@@ -41,7 +41,13 @@ export async function requireAuthorizedEventBySlug(
   }
 
   const authorized = hasEventAccess(user, event, access);
-  if (!authorized) {
+  const assignedTaskAccess = !authorized && access === "view"
+    ? await prisma.task.findFirst({
+        where: { eventId: event.id, assigneeId: user.id },
+        select: { id: true },
+      })
+    : null;
+  if (!authorized && !assignedTaskAccess) {
     notFound();
   }
 
