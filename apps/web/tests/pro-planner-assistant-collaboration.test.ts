@@ -28,6 +28,10 @@ const { auth, getCurrentUser, prisma, recordAudit } = vi.hoisted(() => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    checklistItem: {
+      findUniqueOrThrow: vi.fn(),
+      update: vi.fn(),
+    },
   },
 }));
 
@@ -41,6 +45,7 @@ vi.mock("@/server/lib/audit", () => ({ recordAudit }));
 
 import { inviteRouter } from "../src/server/routers/invite";
 import { taskRouter } from "../src/server/routers/task";
+import { checklistRouter } from "../src/server/routers/checklist";
 
 function inviteCaller() {
   return inviteRouter.createCaller({});
@@ -48,6 +53,10 @@ function inviteCaller() {
 
 function taskCaller() {
   return taskRouter.createCaller({});
+}
+
+function checklistCaller() {
+  return checklistRouter.createCaller({});
 }
 
 function plannerOrg(overrides: Record<string, unknown> = {}) {
@@ -220,6 +229,37 @@ describe("assistant task assignment collaboration", () => {
       data: { status: "DONE" },
       include: { assignee: { select: { id: true, email: true, name: true } } },
     });
+  });
+
+  it("allows assistants to persist assigned checklist item completion only", async () => {
+    getCurrentUser.mockResolvedValueOnce({ id: "assistant-1", role: "CLIENT" });
+    prisma.checklistItem.findUniqueOrThrow.mockResolvedValueOnce({
+      id: "checklist-item-1",
+      assigneeId: "assistant-1",
+      checklist: { event: event() },
+    });
+    prisma.checklistItem.update.mockResolvedValueOnce({ id: "checklist-item-1", done: true });
+
+    await expect(checklistCaller().toggleItem({ id: "checklist-item-1", done: true })).resolves.toEqual(
+      expect.objectContaining({ done: true }),
+    );
+
+    expect(prisma.checklistItem.update).toHaveBeenCalledWith({
+      where: { id: "checklist-item-1" },
+      data: { done: true },
+    });
+  });
+
+  it("blocks assistants from updating unassigned checklist items", async () => {
+    getCurrentUser.mockResolvedValueOnce({ id: "assistant-1", role: "CLIENT" });
+    prisma.checklistItem.findUniqueOrThrow.mockResolvedValueOnce({
+      id: "checklist-item-2",
+      assigneeId: "other-assistant",
+      checklist: { event: event() },
+    });
+
+    await expect(checklistCaller().toggleItem({ id: "checklist-item-2", done: true })).rejects.toThrow("Forbidden");
+    expect(prisma.checklistItem.update).not.toHaveBeenCalled();
   });
 
   it("blocks assistants from billing/admin/payment event management surfaces", async () => {

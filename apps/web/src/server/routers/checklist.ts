@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { db } from "@/server/db";
 import { router, publicProcedure } from "@/server/trpc";
+import { getCurrentUser } from "@/lib/auth-helpers";
+import { canEditEvent } from "@/lib/rbac";
 
 export const checklistRouter = router({
   createFromTemplate: publicProcedure.input(z.object({ eventId: z.string(), templateId: z.string().optional() })).mutation(async ({ input }) => {
@@ -14,5 +16,25 @@ export const checklistRouter = router({
   }),
   list: publicProcedure.input(z.object({ eventId: z.string() })).query(({ input }) => db.checklist.findMany({ where: { eventId: input.eventId }, include: { items: true } })),
   addItem: publicProcedure.input(z.object({ checklistId: z.string(), title: z.string(), description: z.string().optional() })).mutation(({ input }) => db.checklistItem.create({ data: { checklistId: input.checklistId, title: input.title, description: input.description } })),
-  toggleItem: publicProcedure.input(z.object({ id: z.string(), done: z.boolean() })).mutation(({ input }) => db.checklistItem.update({ where: { id: input.id }, data: { done: input.done } })),
+  toggleItem: publicProcedure.input(z.object({ id: z.string(), done: z.boolean() })).mutation(async ({ input }) => {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Unauthorized");
+
+    const item = await db.checklistItem.findUniqueOrThrow({
+      where: { id: input.id },
+      include: {
+        checklist: {
+          include: {
+            event: { include: { org: { include: { members: true } } } },
+          },
+        },
+      },
+    });
+
+    if (!canEditEvent(user, item.checklist.event) && item.assigneeId !== user.id) {
+      throw new Error("Forbidden");
+    }
+
+    return db.checklistItem.update({ where: { id: input.id }, data: { done: input.done } });
+  }),
 });

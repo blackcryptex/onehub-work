@@ -45,6 +45,8 @@ import { ShareEventButton } from "@/components/events/ShareEventButton";
 import { StakeholdersSectionClient } from "@/components/vault/StakeholdersSectionClient";
 import { AiSourceVendorsVenuesPanel } from "@/components/vault/AiSourceVendorsVenuesPanel";
 import { AddToShortlistButtonClient } from "@/components/shortlist/AddToShortlistButtonClient";
+import { AssistantCollaborationPanel } from "@/components/pro-planner/AssistantCollaborationPanel";
+import { AssistantTaskWorkspace } from "@/components/pro-planner/AssistantTaskWorkspace";
 import { getVaultBasePath, proposalDetail, contractDetail } from "@/lib/routes";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
@@ -73,7 +75,6 @@ export default async function ProVaultDetailPage({
     redirect("/app");
   }
 
-  const userId = user.id;
   const { event: authorizedEvent } = await requireAuthorizedEventBySlug(
     eventSlug,
     "manage",
@@ -90,8 +91,11 @@ export default async function ProVaultDetailPage({
           include: {
             owner: { select: { name: true, email: true } },
             members: {
-              where: { userId: userId },
-              include: { user: { select: { name: true, email: true } } },
+              include: { user: { select: { id: true, name: true, email: true } } },
+            },
+            invites: {
+              where: { accepted: false },
+              orderBy: { createdAt: "desc" },
             },
           },
         },
@@ -108,8 +112,12 @@ export default async function ProVaultDetailPage({
           select: { plannedCents: true, actualCents: true, category: true },
         },
         milestones: { orderBy: { dueAt: "asc" } },
+        tasks: {
+          include: { assignee: { select: { id: true, name: true, email: true } } },
+          orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+        },
         checklists: {
-          include: { items: { select: { id: true, done: true, title: true } } },
+          include: { items: { select: { id: true, done: true, title: true, assigneeId: true } } },
           orderBy: { title: "asc" },
         },
         guestLists: {
@@ -179,11 +187,14 @@ export default async function ProVaultDetailPage({
             include: {
               owner: { select: { name: true, email: true } },
               members: {
-                where: { userId: userId },
-                include: { user: { select: { name: true, email: true } } },
+                  include: { user: { select: { id: true, name: true, email: true } } },
+                },
+                invites: {
+                  where: { accepted: false },
+                  orderBy: { createdAt: "desc" },
+                },
               },
-            },
-          },
+              },
           stakeholders: {
             include: {
               user: { select: { id: true, name: true, email: true } },
@@ -197,9 +208,13 @@ export default async function ProVaultDetailPage({
             select: { plannedCents: true, actualCents: true, category: true },
           },
           milestones: { orderBy: { dueAt: "asc" } },
+          tasks: {
+            include: { assignee: { select: { id: true, name: true, email: true } } },
+            orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+          },
           checklists: {
             include: {
-              items: { select: { id: true, done: true, title: true } },
+              items: { select: { id: true, done: true, title: true, assigneeId: true } },
             },
             orderBy: { title: "asc" },
           },
@@ -253,6 +268,17 @@ export default async function ProVaultDetailPage({
 
   const canManage = canManageEvent(user, event);
   const canDelete = canDeleteEvent(user, event);
+  const assistantTeamMembers = event.org.members
+    .filter((member) => member.role === "MEMBER" && (member.staffRole === "ASSISTANT" || member.staffRole === "COORDINATOR"))
+    .map((member) => ({
+      id: member.userId,
+      label: member.user.name || member.user.email || "Assistant",
+      staffRole: member.staffRole ?? undefined,
+    }));
+  const assignedChecklistItems = event.checklists
+    .flatMap((checklist) => checklist.items)
+    .filter((item) => item.assigneeId === user.id)
+    .map((item) => ({ id: item.id, title: item.title, done: item.done }));
 
   const planned = event.budgetLines.reduce((a, l) => a + l.plannedCents, 0);
   const actual = event.budgetLines.reduce((a, l) => a + l.actualCents, 0);
@@ -864,6 +890,22 @@ export default async function ProVaultDetailPage({
                   );
                 })}
               </div>
+            </section>
+
+            <section id="workspace-assistant-collaboration" className="grid scroll-mt-24 gap-4 xl:grid-cols-2">
+              {canManage && (
+                <Card className="p-5">
+                  <AssistantCollaborationPanel orgId={event.orgId} />
+                </Card>
+              )}
+              <Card className="p-5">
+                <AssistantTaskWorkspace
+                  eventId={event.id}
+                  mode={canManage ? "planner" : "assistant"}
+                  teamMembers={assistantTeamMembers}
+                  checklistItems={canManage ? [] : assignedChecklistItems}
+                />
+              </Card>
             </section>
 
             <section id="workspace-sourcing" className="scroll-mt-24 space-y-4">
