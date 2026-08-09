@@ -90,9 +90,21 @@ describe("provider profile listing sync", () => {
     const response = await POST(request({ providerType: "vendor", draft: false, ...baseProfile }));
 
     expect(response.status).toBe(200);
+    expect(tx.listing.findFirst).toHaveBeenCalledWith({
+      where: {
+        orgId: "org-1",
+        type: "VENDOR",
+        OR: [
+          { title: "Atlas Catering Co" },
+          { slug: { startsWith: "atlas-catering-co" } },
+        ],
+      },
+      orderBy: { updatedAt: "desc" },
+    });
     expect(tx.listing.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         orgId: "org-1",
+        slug: expect.stringMatching(/^atlas-catering-co-[a-z0-9]{4}$/),
         title: "Atlas Catering Co",
         type: "VENDOR",
         category: "CATERING",
@@ -105,6 +117,51 @@ describe("provider profile listing sync", () => {
         email: "hello@atlascatering.test",
         phone: "555-0100",
         coverImageUrl: "https://cdn.test/hero.jpg",
+      }),
+    });
+  });
+
+  it("creates a new advertised listing for a published profile instead of reusing a seeded listing slug", async () => {
+    prisma.organization.findFirst.mockResolvedValueOnce({ id: "org-vendor-1", slug: "vendor-co", name: "Vendor Co." });
+    tx.organization.update.mockResolvedValueOnce({
+      id: "org-vendor-1",
+      slug: "vendor-co",
+      name: "Atlas Flow Vendor 20260809091630",
+      profileStatus: "PUBLISHED",
+    });
+    tx.listing.findFirst.mockResolvedValueOnce(null);
+
+    const response = await POST(request({
+      providerType: "vendor",
+      draft: false,
+      ...baseProfile,
+      businessName: "Atlas Flow Vendor 20260809091630",
+      city: "Chicago",
+      state: "IL",
+    }));
+
+    expect(response.status).toBe(200);
+    expect(tx.listing.update).not.toHaveBeenCalled();
+    expect(tx.listing.findFirst).toHaveBeenCalledWith({
+      where: {
+        orgId: "org-vendor-1",
+        type: "VENDOR",
+        OR: [
+          { title: "Atlas Flow Vendor 20260809091630" },
+          { slug: { startsWith: "atlas-flow-vendor-20260809091630" } },
+        ],
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+    expect(tx.listing.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        orgId: "org-vendor-1",
+        slug: expect.stringMatching(/^atlas-flow-vendor-20260809091630-[a-z0-9]{4}$/),
+        title: "Atlas Flow Vendor 20260809091630",
+        type: "VENDOR",
+        category: "CATERING",
+        city: "Chicago",
+        state: "IL",
       }),
     });
   });
@@ -131,6 +188,17 @@ describe("provider profile listing sync", () => {
 
     expect(response.status).toBe(200);
     expect(tx.listing.create).not.toHaveBeenCalled();
+    expect(tx.listing.findFirst).toHaveBeenCalledWith({
+      where: {
+        orgId: "org-venue-1",
+        type: "VENUE",
+        OR: [
+          { title: "Grand Hall Updated" },
+          { slug: { startsWith: "grand-hall-updated" } },
+        ],
+      },
+      orderBy: { updatedAt: "desc" },
+    });
     expect(tx.listing.update).toHaveBeenCalledWith({
       where: { id: "listing-venue-1" },
       data: expect.objectContaining({

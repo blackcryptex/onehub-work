@@ -100,6 +100,7 @@ function coverImageUrl(mediaJson: unknown) {
 async function syncPublishedListing(tx: any, org: { id: string; slug: string; name: string }, data: ProviderProfileData) {
   const listingType = data.providerType === "vendor" ? "VENDOR" : "VENUE";
   const title = data.businessName || org.name;
+  const listingSlugBase = slugify(title);
   const capacity = listingCapacity(data);
   const listingData = {
     title,
@@ -119,7 +120,14 @@ async function syncPublishedListing(tx: any, org: { id: string; slug: string; na
   };
 
   const existingListing = await tx.listing.findFirst({
-    where: { orgId: org.id, type: listingType },
+    where: {
+      orgId: org.id,
+      type: listingType,
+      OR: [
+        { title },
+        { slug: { startsWith: listingSlugBase } },
+      ],
+    },
     orderBy: { updatedAt: "desc" },
   });
 
@@ -133,7 +141,7 @@ async function syncPublishedListing(tx: any, org: { id: string; slug: string; na
   return tx.listing.create({
     data: {
       orgId: org.id,
-      slug: `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`,
+      slug: `${listingSlugBase}-${Math.random().toString(36).slice(2, 6)}`,
       ...listingData,
     },
   });
