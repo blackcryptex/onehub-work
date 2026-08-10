@@ -3,6 +3,7 @@ import { SystemStatus } from "@/components/layout/SystemStatus";
 import { QuickLinks } from "@/components/layout/QuickLinks";
 import { RoleBadge } from "@/components/layout/RoleBadge";
 import { Card, Button } from "@/components/ui";
+import { AssistantTaskWorkspace } from "@/components/pro-planner/AssistantTaskWorkspace";
 import { auth } from "@/lib/auth";
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
@@ -94,6 +95,14 @@ export default async function AppPage() {
     orderBy: { at: "desc" },
     include: { actor: { select: { name: true, email: true } } },
   });
+
+  const assignedChecklistItems = role === "CLIENT"
+    ? await prisma.checklistItem.findMany({
+      where: { assigneeId: userId },
+      orderBy: [{ dueAt: "asc" }, { order: "asc" }],
+      select: { id: true, title: true, done: true },
+    })
+    : [];
 
   let stats = null;
   if (role === "PRO_PLANNER" || admin) {
@@ -187,6 +196,16 @@ export default async function AppPage() {
         <GettingStartedCard />
         <QuickLinks />
       </div>
+
+      {role === "CLIENT" && (
+        <Card className="p-4">
+          <h2 className="mb-4 text-lg font-semibold">Assigned task workspace</h2>
+          <AssistantTaskWorkspace
+            mode="assistant"
+            checklistItems={assignedChecklistItems}
+          />
+        </Card>
+      )}
 
       {recentActivity.length > 0 && (
         <Card className="p-4">

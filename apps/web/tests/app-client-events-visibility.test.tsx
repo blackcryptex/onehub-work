@@ -14,6 +14,7 @@ const { auth, getCurrentUser, prisma, redirect } = vi.hoisted(() => ({
     organization: { findMany: vi.fn() },
     event: { findMany: vi.fn(), count: vi.fn() },
     activity: { findMany: vi.fn() },
+    checklistItem: { findMany: vi.fn() },
   },
 }));
 
@@ -60,6 +61,9 @@ describe("client event visibility on app dashboard", () => {
       },
     ]);
     prisma.activity.findMany.mockResolvedValue([]);
+    prisma.checklistItem.findMany.mockResolvedValue([
+      { id: "checklist-1", title: "Confirm rentals", done: false },
+    ]);
   });
 
   it("lists only events where the client is a stakeholder with summary share", async () => {
@@ -82,5 +86,22 @@ describe("client event visibility on app dashboard", () => {
     expect(html).toContain("Shared Gala");
     expect(html).toContain("/client/events/shared-gala");
     expect(html).not.toContain("/app/vault");
+  });
+
+  it("renders an assistant-accessible assigned task workspace with persisted checklist updates and no planner controls", async () => {
+    const page = await AppPage();
+    const html = renderToStaticMarkup(page);
+
+    expect(prisma.checklistItem.findMany).toHaveBeenCalledWith({
+      where: { assigneeId: "client-1" },
+      orderBy: [{ dueAt: "asc" }, { order: "asc" }],
+      select: { id: true, title: true, done: true },
+    });
+    expect(html).toContain("Assigned task workspace");
+    expect(html).toContain("Assistant task workspace");
+    expect(html).toContain("Confirm rentals");
+    expect(html).toContain("Toggle checklist Confirm rentals");
+    expect(html).not.toContain("Invite assistant");
+    expect(html).not.toContain("Assign assistant");
   });
 });
