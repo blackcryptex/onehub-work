@@ -57,6 +57,116 @@ const EVENT_MANAGEMENT_TABS: EventManagementTab[] = [
   "milestones",
 ];
 
+type DIYHelpTopic = {
+  id: string;
+  category: "Getting started" | "Event design" | "Vendors and venues" | "Budget and payments" | "Using OneHub" | "When you are stuck";
+  title: string;
+  summary: string;
+  steps: string[];
+  searchTerms: string[];
+  nextAction: string;
+};
+
+const DIY_HELP_TOPICS: DIYHelpTopic[] = [
+  {
+    id: "first-step",
+    category: "Getting started",
+    title: "What should I do first?",
+    summary: "Start by saving the event basics so OneHub can organize vendors, budget, guests, contracts, and tasks around one event.",
+    steps: [
+      "Click Create Event and enter the event type, date, location, guest count, style, and budget range.",
+      "Open the Event Vault after the event is saved to review the event summary and planning status.",
+      "Use the Tasks tab to turn the event into next actions instead of keeping everything in your head.",
+    ],
+    searchTerms: ["start", "first", "create", "new event", "setup", "event basics"],
+    nextAction: "Create the event, then open the Event Vault.",
+  },
+  {
+    id: "design-event",
+    category: "Event design",
+    title: "How do I design the event?",
+    summary: "Design starts with the guest experience: what people should feel, see, eat, hear, and remember.",
+    steps: [
+      "Write the event goal in plain language, such as elegant wedding, relaxed birthday, or polished company dinner.",
+      "Choose three design words for the mood, like modern, warm, formal, colorful, romantic, or family-friendly.",
+      "Match the design to practical choices: venue layout, food style, music, lighting, dress code, photos, and guest flow.",
+      "Use the Budget tab to keep design choices realistic before asking vendors for proposals.",
+    ],
+    searchTerms: ["design", "theme", "style", "mood", "layout", "decor", "vision", "experience"],
+    nextAction: "Open Budget before requesting design-heavy vendors.",
+  },
+  {
+    id: "vendor-questions",
+    category: "Vendors and venues",
+    title: "What should I ask vendors?",
+    summary: "Ask questions that prove fit, availability, price, scope, cancellation rules, and what is included before you compare proposals.",
+    steps: [
+      "Confirm the vendor is available for your date, time, location, guest count, and event type.",
+      "Ask what is included, what costs extra, what setup/breakdown needs exist, and who your day-of contact will be.",
+      "Ask for payment schedule, cancellation terms, insurance or license needs, and what they need from you to perform well.",
+      "Keep answers attached to the selected event so proposals, contracts, and messages stay organized.",
+    ],
+    searchTerms: ["vendor", "vendors", "questions", "ask", "quote", "proposal", "contract", "availability"],
+    nextAction: "Shortlist two or three vendors before choosing.",
+  },
+  {
+    id: "find-caterer",
+    category: "Vendors and venues",
+    title: "How do I find a caterer, DJ, photographer, or venue?",
+    summary: "Search by category, compare fit against your event details, then shortlist the best matches before sending requests.",
+    steps: [
+      "Open Vendors from your DIY sidebar or event workspace.",
+      "Pick the category you need, such as catering, DJ, photography, florist, rentals, transportation, or venue.",
+      "Compare location, style, guest count fit, budget range, availability, profile details, and response quality.",
+      "Shortlist the strongest options and request clear proposals tied to your event.",
+    ],
+    searchTerms: ["caterer", "catering", "dj", "photographer", "photo", "venue", "florist", "rentals", "find vendor", "book"],
+    nextAction: "Open Vendors and search by category.",
+  },
+  {
+    id: "proposal-contract",
+    category: "Budget and payments",
+    title: "Compare proposals before signing",
+    summary: "Do not pick only by price. Compare the full scope, dates, payment milestones, cancellation terms, and what each vendor promises to deliver.",
+    steps: [
+      "Open Proposals for the selected event and review each vendor's scope, price, and included services.",
+      "Check whether taxes, fees, travel, setup, staffing, rentals, overtime, and gratuity are included or separate.",
+      "Move to Contracts only when the proposal matches what you want and the terms are clear.",
+      "Use Payments and milestones to understand deposit timing before taking payment action.",
+    ],
+    searchTerms: ["proposal", "proposals", "contract", "sign", "compare", "milestone", "payment", "deposit", "budget"],
+    nextAction: "Open Proposals, then Contracts only after scope is clear.",
+  },
+  {
+    id: "navigate-onehub",
+    category: "Using OneHub",
+    title: "Where do I go to do each task?",
+    summary: "The sidebar is your map: Overview for status, Event Vault for the saved event, Vendors for provider search, Budget for money, Guests and Tasks for planning work.",
+    steps: [
+      "Use Overview when you need the big picture and next event status.",
+      "Use Event Vault when you need the event summary, sharing path, and saved event workspace.",
+      "Use Vendors, Proposals, Contracts, Budget, Guests, and Tasks for the selected event's actual planning work.",
+      "Use Messages when you need conversations in one place instead of scattered email or text threads.",
+    ],
+    searchTerms: ["navigate", "where", "dashboard", "vault", "messages", "tasks", "guests", "budget", "how to use"],
+    nextAction: "Pick the sidebar item that matches the task you are trying to finish.",
+  },
+  {
+    id: "stuck",
+    category: "When you are stuck",
+    title: "I am stuck — what should I do?",
+    summary: "Name the blocker, search Help for the task, open the related OneHub area, and contact support if the next step is still unclear.",
+    steps: [
+      "Write the blocker as one sentence, like I need a caterer, I do not understand this proposal, or I need to change my guest count.",
+      "Search Help using the task word, such as caterer, budget, contract, guest list, timeline, venue, or payment.",
+      "Open the related sidebar area and check the selected event first so support can see the right context.",
+      "If you still need help, email support with the event name, what you tried, and what decision you need help making.",
+    ],
+    searchTerms: ["stuck", "help", "support", "question", "problem", "blocked", "confused", "what next"],
+    nextAction: "Search the task, then contact support if the next step is still unclear.",
+  },
+];
+
 function toEventManagementTab(tab: string): EventManagementTab {
   return EVENT_MANAGEMENT_TABS.includes(tab as EventManagementTab) ? (tab as EventManagementTab) : "vendors";
 }
@@ -79,6 +189,8 @@ export function DIYPlannerDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedEventInitialTab, setSelectedEventInitialTab] = useState<EventManagementTab>("vendors");
+  const [helpSearch, setHelpSearch] = useState("");
+  const [helpCategory, setHelpCategory] = useState<DIYHelpTopic["category"] | "All">("All");
   const { success, error } = useToast();
   const { data: session } = useSession();
 
@@ -273,43 +385,110 @@ export function DIYPlannerDashboard() {
           </section>
         );
 
-      case "help":
+      case "help": {
+        const normalizedHelpSearch = helpSearch.trim().toLowerCase();
+        const categories: (DIYHelpTopic["category"] | "All")[] = [
+          "All",
+          "Getting started",
+          "Event design",
+          "Vendors and venues",
+          "Budget and payments",
+          "Using OneHub",
+          "When you are stuck",
+        ];
+        const visibleHelpTopics = DIY_HELP_TOPICS.filter((topic) => {
+          const matchesCategory = helpCategory === "All" || topic.category === helpCategory;
+          const searchable = [topic.title, topic.summary, topic.category, topic.nextAction, ...topic.steps, ...topic.searchTerms]
+            .join(" ")
+            .toLowerCase();
+          const matchesSearch = normalizedHelpSearch.length === 0 || searchable.includes(normalizedHelpSearch);
+          return matchesCategory && matchesSearch;
+        });
+
         return (
           <section className="space-y-6">
             <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
               <p className="text-sm font-medium uppercase tracking-wide text-slate-500">Help</p>
               <h2 className="text-xl font-semibold text-slate-900">DIY Planner Help</h2>
               <p className="mt-2 max-w-3xl text-slate-600">
-                Use this dashboard to build an event from first draft through vendor work, contracts, payments, and final milestones.
+                Search practical planning guidance and OneHub navigation steps for getting an event done, from first setup through design, vendors, proposals, contracts, payments, guests, and tasks.
+              </p>
+              <label htmlFor="diy-help-search" className="mt-5 block text-sm font-medium text-slate-700">
+                Search DIY help
+              </label>
+              <input
+                id="diy-help-search"
+                type="search"
+                value={helpSearch}
+                onChange={(event) => setHelpSearch(event.target.value)}
+                placeholder="Try caterer, design, budget, contract, guest list, venue, payment, or what next"
+                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              />
+              <div className="mt-4 flex flex-wrap gap-2" aria-label="DIY help categories">
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setHelpCategory(category)}
+                    className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                      helpCategory === category
+                        ? "bg-indigo-600 text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-5">
+              <h3 className="font-semibold text-amber-950">Quick guidance when you do not know what to do next</h3>
+              <p className="mt-2 text-sm text-amber-900">
+                If you are stuck, use Help to search the task, open the related OneHub area, or contact support with your event name and blocker.
               </p>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {[
-                ["Create event", "Start with Create Event to save the event basics, date, location, budget, and planning context."],
-                ["Event vault", "Open an event vault to review the event summary, planning status, contacts, and safe sharing links."],
-                ["Vendors, proposals, and contracts", "Use the planning tabs to compare vendors, review proposals, and keep contract work attached to the selected event."],
-                ["Guests and tasks", "Track guest lists, checklists, tasks, and deadlines from the selected event workspace."],
-                ["Payments and milestones", "Review budget, payment milestones, and held-funds status before taking any payment action."],
-                ["Support contact path", "If something blocks planning, email support with the event name and what you were trying to do."],
-              ].map(([title, description]) => (
-                <div key={title} className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-5">
-                  <h3 className="font-semibold text-slate-900">{title}</h3>
-                  <p className="mt-2 text-sm text-slate-600">{description}</p>
-                </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              {visibleHelpTopics.map((topic) => (
+                <article key={topic.id} className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">{topic.category}</p>
+                  <h3 className="mt-2 font-semibold text-slate-900">{topic.title}</h3>
+                  <p className="mt-2 text-sm text-slate-600">{topic.summary}</p>
+                  <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-slate-700">
+                    {topic.steps.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ol>
+                  <p className="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+                    Next action: {topic.nextAction}
+                  </p>
+                </article>
               ))}
             </div>
+
+            {visibleHelpTopics.length === 0 && (
+              <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
+                <h3 className="font-semibold text-slate-900">No exact help result yet</h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  Try a simpler task word like vendor, budget, contract, design, venue, caterer, guests, payment, or what next. If it is still unclear, contact support with your event name and the step you are trying to finish.
+                </p>
+              </div>
+            )}
+
             <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
               <h3 className="font-semibold text-slate-900">Need support?</h3>
               <p className="mt-2 text-sm text-slate-600">
                 Contact the OneHub support team at{" "}
                 <a href="mailto:support@onehub.events" className="font-medium text-indigo-600 hover:underline">
                   support@onehub.events
-                </a>
-                .
+                </a>{" "}
+                with your event name, what you searched for, and the exact step blocking you.
               </p>
             </div>
           </section>
         );
+      }
 
       case "settings":
         return selectedEvent ? (

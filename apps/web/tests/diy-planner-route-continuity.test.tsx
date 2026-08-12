@@ -155,14 +155,25 @@ describe("DIY planner route continuity cleanup", () => {
     fireEvent.click(screen.getByRole("link", { name: "Help" }));
 
     expect(await screen.findByRole("heading", { name: "DIY Planner Help" })).toBeInTheDocument();
-    expect(screen.getByText("Create event")).toBeInTheDocument();
-    expect(screen.getByText("Event vault")).toBeInTheDocument();
-    expect(screen.getByText("Vendors, proposals, and contracts")).toBeInTheDocument();
-    expect(screen.getByText("Payments and milestones")).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "Search DIY help" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Getting started" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Event design" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vendors and venues" })).toBeInTheDocument();
+    expect(screen.getByText("What should I do first?"));
+    expect(screen.getByText("How do I design the event?"));
+    expect(screen.getByText("What should I ask vendors?"));
+    expect(screen.getByText("Compare proposals before signing"));
+    expect(screen.getByText("If you are stuck, use Help to search the task, open the related OneHub area, or contact support with your event name and blocker."));
     expect(screen.getByRole("link", { name: "support@onehub.events" })).toHaveAttribute(
       "href",
       "mailto:support@onehub.events",
     );
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search DIY help" }), {
+      target: { value: "caterer" },
+    });
+    expect(screen.getByText("How do I find a caterer, DJ, photographer, or venue?"));
+    expect(screen.queryByText("How do I design the event?")).not.toBeInTheDocument();
     expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Content for .* goes here\./i)).not.toBeInTheDocument();
 
