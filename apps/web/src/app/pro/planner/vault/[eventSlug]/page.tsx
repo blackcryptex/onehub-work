@@ -648,7 +648,7 @@ export default async function ProVaultDetailPage({
     <div className="min-h-screen bg-slate-50 text-slate-950">
       <ImpersonationBanner />
       <Topbar role={user.role} />
-      <div className="grid min-h-[calc(100vh-4rem)] grid-cols-1 xl:grid-cols-[6.25rem_minmax(0,1fr)_22rem] 2xl:grid-cols-[6.75rem_minmax(0,1fr)_24rem]">
+      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1920px] grid-cols-1 xl:grid-cols-[5.5rem_minmax(0,1fr)_18rem] 2xl:grid-cols-[6rem_minmax(0,1fr)_20rem]">
         <aside className="hidden border-r border-slate-200 bg-white/95 px-2 py-5 xl:block">
           <nav aria-label="Global navigation" className="space-y-1">
             {globalNavItems.map((item) => {
@@ -754,35 +754,37 @@ export default async function ProVaultDetailPage({
               </div>
             </header>
 
-            <section className="rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
-                    Selected-event navigation
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Next real action: <span className="font-semibold text-slate-900">{nextCommerceAction}</span>
-                  </p>
+            <section className="rounded-2xl border border-indigo-100 bg-white p-5 shadow-sm">
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                      Selected-event navigation
+                    </p>
+                    <p className="mt-1 max-w-4xl text-sm text-slate-600">
+                      Next real action: <span className="font-semibold text-slate-900">{nextCommerceAction}</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <nav aria-label="Selected-event navigation" className="grid gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                   {eventWorkspaceTabs.map((tab) => (
                     <Link
                       key={tab.label}
                       href={tab.href as Route}
-                      className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                      className="flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-xs font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                     >
                       {tab.label}
                     </Link>
                   ))}
-                </div>
+                </nav>
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                 {commerceSpine.map((step, index) => {
                   const StepIcon = commerceIcons[step.label] || CheckCircle2;
                   return (
                     <article
                       key={step.label}
-                      className="min-h-[10rem] rounded-xl border border-slate-200 bg-slate-50/70 p-3 shadow-sm"
+                      className="min-h-[8.5rem] rounded-xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2">

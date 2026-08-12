@@ -51,4 +51,13 @@ describe("Pro Planner event command center visual alignment", () => {
       expect(eventCommandCenterSource).toContain(section);
     }
   });
+
+  it("uses balanced command-center proportions instead of cramped pills and uneven card rows", () => {
+    expect(eventCommandCenterSource).toContain("max-w-[1920px]");
+    expect(eventCommandCenterSource).toContain("xl:grid-cols-[5.5rem_minmax(0,1fr)_18rem]");
+    expect(eventCommandCenterSource).toContain("Selected-event navigation");
+    expect(eventCommandCenterSource).toContain("grid gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6");
+    expect(eventCommandCenterSource).toContain("min-h-[8.5rem]");
+    expect(eventCommandCenterSource).not.toContain("lg:grid-cols-4 2xl:grid-cols-7");
+  });
 });
