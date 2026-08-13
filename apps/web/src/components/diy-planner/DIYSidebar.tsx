@@ -9,6 +9,7 @@ import {
   FileSignature,
   ScrollText,
   Wallet,
+  MessageSquare,
   Users,
   CheckSquare,
   Settings,
@@ -31,6 +32,8 @@ type UIRoute =
   | "budget"
   | "guests"
   | "tasks"
+  | "settings"
+  | "help"
   | "wizard"
   | "eventDetail";
 
@@ -74,7 +77,7 @@ export default function DIYSidebar({
       <div className="space-y-1">
         <div className="px-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Dashboard</div>
         <SidebarLink
-          href="#"
+          href="/diy-planner"
           label="Overview"
           Icon={LayoutDashboard}
           onClick={() => {
@@ -83,7 +86,7 @@ export default function DIYSidebar({
           }}
         />
         <SidebarLink
-          href="#"
+          href="/diy-planner?view=calendar"
           label="Calendar"
           Icon={Calendar}
           onClick={() => {
@@ -91,11 +94,17 @@ export default function DIYSidebar({
             setIsMobileOpen(false);
           }}
         />
+        <SidebarLink
+          href="/messages"
+          label="Messages"
+          Icon={MessageSquare}
+          onClick={() => setIsMobileOpen(false)}
+        />
       </div>
 
       <SidebarSection title="Event Vault" defaultOpen>
         <SidebarLink
-          href="#"
+          href="/diy-planner?view=vault"
           label="My Events"
           Icon={FolderOpen}
           onClick={() => {
@@ -147,7 +156,7 @@ export default function DIYSidebar({
 
       <SidebarSection title="Planning" defaultOpen>
         <SidebarLink
-          href="#"
+          href="/diy-planner?view=vendors"
           label="Vendors"
           Icon={Store}
           onClick={() => {
@@ -156,7 +165,7 @@ export default function DIYSidebar({
           }}
         />
         <SidebarLink
-          href="#"
+          href="/diy-planner?view=proposals"
           label="Proposals"
           Icon={FileSignature}
           onClick={() => {
@@ -165,7 +174,7 @@ export default function DIYSidebar({
           }}
         />
         <SidebarLink
-          href="#"
+          href="/diy-planner?view=contracts"
           label="Contracts"
           Icon={ScrollText}
           onClick={() => {
@@ -174,7 +183,7 @@ export default function DIYSidebar({
           }}
         />
         <SidebarLink
-          href="#"
+          href="/diy-planner?view=budget"
           label="Budget"
           Icon={Wallet}
           onClick={() => {
@@ -183,7 +192,7 @@ export default function DIYSidebar({
           }}
         />
         <SidebarLink
-          href="#"
+          href="/diy-planner?view=guests"
           label="Guests"
           Icon={Users}
           onClick={() => {
@@ -192,7 +201,7 @@ export default function DIYSidebar({
           }}
         />
         <SidebarLink
-          href="#"
+          href="/diy-planner?view=tasks"
           label="Tasks"
           Icon={CheckSquare}
           onClick={() => {
@@ -204,18 +213,20 @@ export default function DIYSidebar({
 
       <SidebarSection title="Account" defaultOpen>
         <SidebarLink
-          href="#"
+          href="/diy-planner?view=settings"
           label="Settings"
           Icon={Settings}
           onClick={() => {
+            onRoute("settings");
             setIsMobileOpen(false);
           }}
         />
         <SidebarLink
-          href="#"
+          href="/diy-planner?view=help"
           label="Help"
           Icon={HelpCircle}
           onClick={() => {
+            onRoute("help");
             setIsMobileOpen(false);
           }}
         />
@@ -250,4 +261,3 @@ export default function DIYSidebar({
     </>
   );
 }
-

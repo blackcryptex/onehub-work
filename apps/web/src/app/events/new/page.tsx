@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button, Card, Input, Label } from "@/components/ui";
 import { useRouter } from "next/navigation";
-import { Calendar, Users, Target, Palette, MessageSquare, UserPlus, ChevronRight, ChevronLeft } from "lucide-react";
+import { Calendar, Users, Target, Palette, MessageSquare, ChevronRight, ChevronLeft } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { ClientIntakeStep } from "@/components/events/ClientIntakeStep";
@@ -104,8 +104,8 @@ export default function EventWizardPage() {
     };
   };
 
-  const handleCreateEvent = useCallback(async () => {
-    const validation = validateForm(formData);
+  const handleCreateEvent = useCallback(async (eventData = formData) => {
+    const validation = validateForm(eventData);
     if (!validation.isValid) {
       setErrors(validation.errors);
       setFormError("Please fix the highlighted fields before submitting.");
@@ -116,7 +116,7 @@ export default function EventWizardPage() {
     setFormError("");
 
     if (!session?.user) {
-      sessionStorage.setItem("pendingEvent", JSON.stringify(formData));
+      sessionStorage.setItem("pendingEvent", JSON.stringify(eventData));
       router.push("/signin?redirect=/events/new&createEvent=true");
       return;
     }
@@ -128,7 +128,7 @@ export default function EventWizardPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          ...formData,
+          ...eventData,
           clientIds: selectedClientIds,
           autoShareSummary,
         }),
@@ -221,9 +221,11 @@ export default function EventWizardPage() {
         const parsed = JSON.parse(pendingEvent);
         setFormData(parsed);
         sessionStorage.removeItem("pendingEvent");
-        // Auto-submit after restoring data
+        // Auto-submit after restoring data, using the parsed event data directly.
+        // State updates are asynchronous, so relying on the previous formData
+        // closure can validate empty fields and strand the user after sign-in.
         setTimeout(() => {
-          handleCreateEvent();
+          handleCreateEvent(parsed);
         }, 500);
       } catch (err) {
         console.error("Error parsing pending event:", err);

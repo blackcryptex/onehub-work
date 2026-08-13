@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { VendorDashboard } from "@/components/vendor/Dashboard";
 import { prisma } from "@/lib/prisma";
 import { canAccessDashboard } from "@/lib/rbac";
+import { ContractStatus } from "@prisma/client";
 
 export default async function VendorDashboardPage() {
   const user = await getCurrentUser();
@@ -20,6 +21,12 @@ export default async function VendorDashboardPage() {
     where: admin
       ? { type: "VENDOR" }
       : { ownerId: userId, type: "VENDOR" },
+    include: {
+      listings: {
+        orderBy: { updatedAt: "desc" },
+        take: 1,
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -34,6 +41,7 @@ export default async function VendorDashboardPage() {
     where: admin ? {} : { orgId: org.id },
     select: { id: true, orgId: true },
   });
+  const primaryListing = org.listings[0] ?? null;
 
   const listingIds = listings.map((l) => l.id);
 
@@ -98,22 +106,28 @@ export default async function VendorDashboardPage() {
   // Get recent booking requests (last 5)
   const recentRequests = allBookingRequests.slice(0, 5);
 
+  const contractStatuses = [
+    ContractStatus.ACCEPTED,
+    ContractStatus.IN_PAYMENT,
+    ContractStatus.ACTIVE,
+    ContractStatus.COMPLETED,
+  ];
+
   // Fetch contracts where this vendor is the seller
   // Admin sees all contracts, normal user sees only contracts for their org
-  // Note: ContractStatus enum values need Prisma migration - using type assertion for now
   const contracts = await prisma.contract.findMany({
     where: admin
-      ? ({
+      ? {
           status: {
-            in: ["ACCEPTED", "IN_PAYMENT", "ACTIVE", "COMPLETED"] as any,
+            in: contractStatuses,
           },
-        } as any)
+        }
       : {
           proposal: {
             orgId: org.id,
           },
           status: {
-            in: ["ACCEPTED", "IN_PAYMENT", "ACTIVE", "COMPLETED"] as any,
+            in: contractStatuses,
           },
         },
     include: {
@@ -161,6 +175,27 @@ export default async function VendorDashboardPage() {
     <VendorDashboard
       orgName={org.name}
       orgSlug={org.slug}
+      orgProfile={{
+        about: org.about,
+        contactEmail: org.contactEmail,
+        contactPhone: org.contactPhone,
+        website: org.website,
+        city: org.city,
+        state: org.state,
+      }}
+      primaryListing={
+        primaryListing
+          ? {
+              id: primaryListing.id,
+              title: primaryListing.title,
+              description: primaryListing.description,
+              email: primaryListing.email,
+              phone: primaryListing.phone,
+              website: primaryListing.website,
+              priceTier: primaryListing.priceTier,
+            }
+          : null
+      }
       stats={{
         todaysLeads,
         upcomingEvents,

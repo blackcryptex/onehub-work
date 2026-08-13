@@ -7,9 +7,11 @@ vi.mock("@/lib/auth-helpers", () => ({
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 
 import {
+  canViewContractResource,
   canDeleteEvent,
   canEditEvent,
   canViewEvent,
+  canViewProposalResource,
   isEventSharedWithUser,
 } from "../src/lib/rbac";
 
@@ -107,5 +109,28 @@ describe("event RBAC helper", () => {
     expect(canViewEvent(admin, plannerEvent)).toBe(true);
     expect(canEditEvent(admin, plannerEvent)).toBe(true);
     expect(canDeleteEvent(admin, plannerEvent)).toBe(true);
+  });
+
+  it("blocks unrelated authenticated users from proposal and contract resources", () => {
+    const outsider = user("outsider-1", "DIY_PLANNER");
+    const proposal = {
+      event: event(),
+      listing: { orgId: "seller-org", org: { ownerId: "seller-owner", members: [{ userId: "seller-member" }] } },
+    };
+
+    expect(canViewProposalResource(outsider, proposal)).toBe(false);
+    expect(canViewContractResource(outsider, { proposal })).toBe(false);
+  });
+
+  it("allows event managers, admins, and seller-side users to read proposal and contract resources", () => {
+    const proposal = {
+      event: event({ org: { ownerId: "buyer-owner", members: [{ userId: "event-manager" }] } }),
+      listing: { orgId: "seller-org", org: { ownerId: "seller-owner", members: [{ userId: "seller-member" }] } },
+    };
+
+    expect(canViewProposalResource(user("event-manager", "VENDOR"), proposal)).toBe(true);
+    expect(canViewProposalResource(user("admin-1", "ADMIN"), proposal)).toBe(true);
+    expect(canViewProposalResource(user("seller-member", "VENDOR"), proposal)).toBe(true);
+    expect(canViewContractResource(user("seller-owner", "VENUE"), { proposal })).toBe(true);
   });
 });

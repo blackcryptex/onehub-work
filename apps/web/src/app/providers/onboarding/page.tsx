@@ -1019,7 +1019,7 @@ export default function ProviderOnboardingPage() {
                 </h2>
                 <div className="space-y-4">
                   <p className="text-slate-600">
-                    Add URLs for your logo, hero image, and gallery photos. (File uploads coming soon)
+                    Add secure image URLs for your logo, hero image, and gallery photos. These URLs are saved to your provider profile and marketplace listing.
                   </p>
                   <div>
                     <Label>Logo URL</Label>

@@ -62,7 +62,8 @@ export function assertRole(user: RoleUserLike | null | undefined, roles: Role[])
  * Types for RBAC helpers - minimal interfaces matching what we actually access
  */
 interface OrgLike {
-  ownerId: string;
+  ownerId?: string;
+  owner?: { id?: string; email?: string | null; name?: string | null };
   members?: Array<{ userId: string; role?: string }>;
 }
 
@@ -101,12 +102,33 @@ interface ListingLike {
   org?: OrgLike;
 }
 
+interface ProposalResourceLike {
+  orgId?: string;
+  event?: EventLike | null;
+  listing?: ListingLike | null;
+  org?: OrgLike | null;
+}
+
+interface ContractResourceLike {
+  proposal?: ProposalResourceLike | null;
+}
+
+function getOrgOwnerId(org: OrgLike | null | undefined): string | undefined {
+  return org?.ownerId ?? org?.owner?.id;
+}
+
+function canViewOrgResource(user: AppUser | null | undefined, org: OrgLike | null | undefined): boolean {
+  if (!user || !org) return false;
+  if (getOrgOwnerId(org) === user.id) return true;
+  return Boolean(org.members?.some((member) => member.userId === user.id));
+}
+
 /**
  * Returns true if the user is the owner of the org.
  */
 export function isOrgOwner(user: AppUser | null | undefined, org: OrgLike | null | undefined): boolean {
   if (!user || !org) return false;
-  return org.ownerId === user.id;
+  return getOrgOwnerId(org) === user.id;
 }
 
 /**
@@ -252,6 +274,33 @@ export function canViewProposals(user: AppUser | null | undefined, event: EventL
   }
   
   return false;
+}
+
+/**
+ * Explicit resource-level read guard for proposal detail surfaces.
+ * Allows event-side viewers/managers and the seller org attached to the proposal/listing.
+ */
+export function canViewProposalResource(
+  user: AppUser | null | undefined,
+  proposal: ProposalResourceLike | null | undefined
+): boolean {
+  if (!user || !proposal) return false;
+  if (canManageEvent(user, proposal.event) || canViewEvent(user, proposal.event)) return true;
+  if (canViewOrgResource(user, proposal.listing?.org)) return true;
+  if (canViewOrgResource(user, proposal.org)) return true;
+  return false;
+}
+
+/**
+ * Explicit resource-level read guard for contract detail surfaces.
+ * Contracts inherit proposal visibility, including buyer/event-side and seller-side access.
+ */
+export function canViewContractResource(
+  user: AppUser | null | undefined,
+  contract: ContractResourceLike | null | undefined
+): boolean {
+  if (!user || !contract) return false;
+  return canViewProposalResource(user, contract.proposal);
 }
 
 /**

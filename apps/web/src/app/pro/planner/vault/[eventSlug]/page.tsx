@@ -30,6 +30,7 @@ import {
   MapPin,
   MoreHorizontal,
   Search,
+  Settings,
   ShieldCheck,
   Star,
   Store,
@@ -44,6 +45,8 @@ import { ShareEventButton } from "@/components/events/ShareEventButton";
 import { StakeholdersSectionClient } from "@/components/vault/StakeholdersSectionClient";
 import { AiSourceVendorsVenuesPanel } from "@/components/vault/AiSourceVendorsVenuesPanel";
 import { AddToShortlistButtonClient } from "@/components/shortlist/AddToShortlistButtonClient";
+import { AssistantCollaborationPanel } from "@/components/pro-planner/AssistantCollaborationPanel";
+import { AssistantTaskWorkspace } from "@/components/pro-planner/AssistantTaskWorkspace";
 import { getVaultBasePath, proposalDetail, contractDetail } from "@/lib/routes";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 
@@ -72,7 +75,6 @@ export default async function ProVaultDetailPage({
     redirect("/app");
   }
 
-  const userId = user.id;
   const { event: authorizedEvent } = await requireAuthorizedEventBySlug(
     eventSlug,
     "manage",
@@ -89,8 +91,11 @@ export default async function ProVaultDetailPage({
           include: {
             owner: { select: { name: true, email: true } },
             members: {
-              where: { userId: userId },
-              include: { user: { select: { name: true, email: true } } },
+              include: { user: { select: { id: true, name: true, email: true } } },
+            },
+            invites: {
+              where: { accepted: false },
+              orderBy: { createdAt: "desc" },
             },
           },
         },
@@ -107,8 +112,12 @@ export default async function ProVaultDetailPage({
           select: { plannedCents: true, actualCents: true, category: true },
         },
         milestones: { orderBy: { dueAt: "asc" } },
+        tasks: {
+          include: { assignee: { select: { id: true, name: true, email: true } } },
+          orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+        },
         checklists: {
-          include: { items: { select: { id: true, done: true, title: true } } },
+          include: { items: { select: { id: true, done: true, title: true, assigneeId: true } } },
           orderBy: { title: "asc" },
         },
         guestLists: {
@@ -178,11 +187,14 @@ export default async function ProVaultDetailPage({
             include: {
               owner: { select: { name: true, email: true } },
               members: {
-                where: { userId: userId },
-                include: { user: { select: { name: true, email: true } } },
+                  include: { user: { select: { id: true, name: true, email: true } } },
+                },
+                invites: {
+                  where: { accepted: false },
+                  orderBy: { createdAt: "desc" },
+                },
               },
-            },
-          },
+              },
           stakeholders: {
             include: {
               user: { select: { id: true, name: true, email: true } },
@@ -196,9 +208,13 @@ export default async function ProVaultDetailPage({
             select: { plannedCents: true, actualCents: true, category: true },
           },
           milestones: { orderBy: { dueAt: "asc" } },
+          tasks: {
+            include: { assignee: { select: { id: true, name: true, email: true } } },
+            orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+          },
           checklists: {
             include: {
-              items: { select: { id: true, done: true, title: true } },
+              items: { select: { id: true, done: true, title: true, assigneeId: true } },
             },
             orderBy: { title: "asc" },
           },
@@ -252,6 +268,17 @@ export default async function ProVaultDetailPage({
 
   const canManage = canManageEvent(user, event);
   const canDelete = canDeleteEvent(user, event);
+  const assistantTeamMembers = event.org.members
+    .filter((member) => member.role === "MEMBER" && (member.staffRole === "ASSISTANT" || member.staffRole === "COORDINATOR"))
+    .map((member) => ({
+      id: member.userId,
+      label: member.user.name || member.user.email || "Assistant",
+      staffRole: member.staffRole ?? undefined,
+    }));
+  const assignedChecklistItems = event.checklists
+    .flatMap((checklist) => checklist.items)
+    .filter((item) => item.assigneeId === user.id)
+    .map((item) => ({ id: item.id, title: item.title, done: item.done }));
 
   const planned = event.budgetLines.reduce((a, l) => a + l.plannedCents, 0);
   const actual = event.budgetLines.reduce((a, l) => a + l.actualCents, 0);
@@ -463,8 +490,16 @@ export default async function ProVaultDetailPage({
   const globalNavItems = [
     { label: "Home", href: "/pro/planner", icon: Home },
     { label: "Events", href: "/pro/planner/vault", icon: BriefcaseBusiness },
+    { label: "Bookings", href: "#workspace-requests-detail", icon: FileCheck },
     { label: "Calendar", href: "/calendar", icon: CalendarDays },
+    { label: "Contacts", href: "#context-contacts", icon: Users },
+    { label: "Vendors", href: "#workspace-sourcing", icon: Store },
+    { label: "Finances", href: "#workspace-payment-detail", icon: WalletCards },
+    { label: "Tasks", href: `/events/${eventSlug}/checklists`, icon: ListChecks },
+    { label: "Files", href: `/events/${eventSlug}/settings`, icon: FileText },
+    { label: "Reports", href: "#workspace-budget", icon: BarChart3 },
     { label: "Marketplace", href: "/marketplace", icon: Store },
+    { label: "Settings", href: `/events/${eventSlug}/settings`, icon: Settings },
     { label: "Help", href: "/help", icon: HelpCircle },
   ];
 
@@ -613,7 +648,7 @@ export default async function ProVaultDetailPage({
     <div className="min-h-screen bg-slate-50 text-slate-950">
       <ImpersonationBanner />
       <Topbar role={user.role} />
-      <div className="grid min-h-[calc(100vh-4rem)] grid-cols-1 xl:grid-cols-[6.25rem_minmax(0,1fr)_22rem] 2xl:grid-cols-[6.75rem_minmax(0,1fr)_24rem]">
+      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1920px] grid-cols-1 xl:grid-cols-[5.5rem_minmax(0,1fr)_18rem] 2xl:grid-cols-[6rem_minmax(0,1fr)_20rem]">
         <aside className="hidden border-r border-slate-200 bg-white/95 px-2 py-5 xl:block">
           <nav aria-label="Global navigation" className="space-y-1">
             {globalNavItems.map((item) => {
@@ -719,35 +754,37 @@ export default async function ProVaultDetailPage({
               </div>
             </header>
 
-            <section className="rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
-                    Selected-event navigation
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Next real action: <span className="font-semibold text-slate-900">{nextCommerceAction}</span>
-                  </p>
+            <section className="rounded-2xl border border-indigo-100 bg-white p-5 shadow-sm">
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                      Selected-event navigation
+                    </p>
+                    <p className="mt-1 max-w-4xl text-sm text-slate-600">
+                      Next real action: <span className="font-semibold text-slate-900">{nextCommerceAction}</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <nav aria-label="Selected-event navigation" className="grid gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                   {eventWorkspaceTabs.map((tab) => (
                     <Link
                       key={tab.label}
                       href={tab.href as Route}
-                      className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                      className="flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-xs font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                     >
                       {tab.label}
                     </Link>
                   ))}
-                </div>
+                </nav>
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                 {commerceSpine.map((step, index) => {
                   const StepIcon = commerceIcons[step.label] || CheckCircle2;
                   return (
                     <article
                       key={step.label}
-                      className="min-h-[10rem] rounded-xl border border-slate-200 bg-slate-50/70 p-3 shadow-sm"
+                      className="min-h-[8.5rem] rounded-xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2">
@@ -855,6 +892,22 @@ export default async function ProVaultDetailPage({
                   );
                 })}
               </div>
+            </section>
+
+            <section id="workspace-assistant-collaboration" className="grid scroll-mt-24 gap-4 xl:grid-cols-2">
+              {canManage && (
+                <Card className="p-5">
+                  <AssistantCollaborationPanel orgId={event.orgId} />
+                </Card>
+              )}
+              <Card className="p-5">
+                <AssistantTaskWorkspace
+                  eventId={event.id}
+                  mode={canManage ? "planner" : "assistant"}
+                  teamMembers={assistantTeamMembers}
+                  checklistItems={canManage ? [] : assignedChecklistItems}
+                />
+              </Card>
             </section>
 
             <section id="workspace-sourcing" className="scroll-mt-24 space-y-4">

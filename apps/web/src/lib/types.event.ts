@@ -84,6 +84,7 @@ export type Task = {
   title: string; 
   due: string; 
   done: boolean; 
+  assigneeId?: string;
   assignee?: string;
   priority?: 'low'|'med'|'high';
   linkedTo?: 'vendor'|'proposal'|'contract'|'guest'|'milestone'|null; 

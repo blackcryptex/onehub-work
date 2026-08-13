@@ -7,6 +7,7 @@ import {
   Calendar,
   DollarSign,
   Image as ImageIcon,
+  MessageSquare,
   Settings,
   X,
 } from "lucide-react";
@@ -66,6 +67,13 @@ export function ProPlannerSidebar({
             </button>
           );
         })}
+        <a
+          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition bg-white/0 hover:bg-white/10 text-slate-200"
+          href="/messages"
+        >
+          <MessageSquare className="h-4 w-4" />
+          Messages
+        </a>
       </div>
     </nav>
   );

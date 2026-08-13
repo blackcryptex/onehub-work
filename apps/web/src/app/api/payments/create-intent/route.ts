@@ -247,28 +247,41 @@ export async function POST(request: NextRequest) {
         ? `contract:${contract.id}:milestone:${targetMilestone.id}:amount:${amount}:redirects-never:v1`
         : `contract:${contract.id}:full:${amount}:redirects-never:v1`;
 
-    const stripeIntent = await stripe.paymentIntents.create(
-      {
-        amount: feeProfile.totalChargeAmountCents,
-        currency: contract.proposal.currency.toLowerCase(),
-        metadata: {
-          contractId: contract.id,
-          proposalId: contract.proposalId,
-          escrowAccountId: escrowAccount.id,
-          milestoneId: targetMilestone?.id || "",
-          payerId: userId,
-          payeeId: payeeUserId,
-          paymentIntentId: paymentIntent.id,
-          bookingClassification,
-          feeProfileJson: JSON.stringify(feeProfile),
+    let stripeIntent;
+    try {
+      stripeIntent = await stripe.paymentIntents.create(
+        {
+          amount: feeProfile.totalChargeAmountCents,
+          currency: contract.proposal.currency.toLowerCase(),
+          metadata: {
+            contractId: contract.id,
+            proposalId: contract.proposalId,
+            escrowAccountId: escrowAccount.id,
+            milestoneId: targetMilestone?.id || "",
+            payerId: userId,
+            payeeId: payeeUserId,
+            paymentIntentId: paymentIntent.id,
+            bookingClassification,
+            feeProfileJson: JSON.stringify(feeProfile),
+          },
+          automatic_payment_methods: {
+            enabled: true,
+            allow_redirects: "never",
+          },
         },
-        automatic_payment_methods: {
-          enabled: true,
-          allow_redirects: "never",
-        },
-      },
-      { idempotencyKey }
-    );
+        { idempotencyKey }
+      );
+    } catch (stripeError) {
+      await prisma.paymentIntent.update({
+        where: { id: paymentIntent.id },
+        data: { status: "CANCELLED" },
+      });
+      console.error("Stripe payment intent creation failed:", stripeError);
+      return NextResponse.json(
+        { error: "Stripe payment intent failed; checkout was not started" },
+        { status: 502 }
+      );
+    }
 
     await prisma.paymentIntent.update({
       where: { id: paymentIntent.id },

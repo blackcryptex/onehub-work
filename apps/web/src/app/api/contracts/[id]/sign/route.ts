@@ -6,6 +6,8 @@ import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } 
 import { resolveBookingClassification } from "@/lib/booking-classification";
 import { getLegalSurface } from "@/lib/legal-surface";
 
+const SIGNABLE_CONTRACT_STATES = new Set(["OUT_FOR_SIGNATURE", "PARTIALLY_SIGNED"]);
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -84,6 +86,13 @@ export async function POST(
 
     if (!contract) {
       return NextResponse.json({ error: "Contract not found" }, { status: 404 });
+    }
+
+    if (!SIGNABLE_CONTRACT_STATES.has(contract.status)) {
+      return NextResponse.json(
+        { error: "Contract is not ready for signature" },
+        { status: 400 }
+      );
     }
 
     const canManageBuyerSide = canManageEvent(user, contract.proposal.event);

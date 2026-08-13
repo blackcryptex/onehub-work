@@ -171,9 +171,9 @@ export async function POST(request: NextRequest) {
       where: whereClause,
       take: limitVerified,
       orderBy: [
+        { updatedAt: "desc" },
         { ratingAvg: "desc" },
         { ratingCount: "desc" },
-        { updatedAt: "desc" },
       ],
       select: {
         id: true,

@@ -7,15 +7,21 @@ import { isOrgAdminOrOwner } from "@/lib/rbac";
 import { recordAudit } from "@/server/lib/audit";
 import { randomUUID } from "crypto";
 
+const assistantInviteUrl = (token: string) => `/invites/accept/${token}`;
+
+async function requireOrgAdminOrOwner(orgId: string) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Unauthorized");
+  const org = await db.organization.findUnique({ where: { id: orgId }, include: { members: true } });
+  if (!org) throw new Error("Org not found");
+  const mem = org.members.find((m) => m.userId === user.id);
+  if (!isOrgAdminOrOwner(user, org, mem)) throw new Error("Forbidden");
+  return { user, org };
+}
+
 export const inviteRouter = router({
   createInvite: publicProcedure.input(z.object({ orgId: z.string(), email: z.string().email(), role: z.enum(["OWNER","ADMIN","MEMBER","VIEWER"]).default("MEMBER") })).mutation(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
-    const org = await db.organization.findUnique({ where: { id: input.orgId }, include: { members: true } });
-    if (!org) throw new Error("Org not found");
-    // Centralized permission check: see apps/web/src/lib/rbac.ts
-    const mem = org.members.find((m) => m.userId === user.id);
-    if (!isOrgAdminOrOwner(user, org, mem)) throw new Error("Forbidden");
+    const { user } = await requireOrgAdminOrOwner(input.orgId);
     const token = randomUUID();
     const invite = await db.invite.create({ data: { orgId: input.orgId, email: input.email, role: input.role, token, expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7) } });
     // Stub email
@@ -24,7 +30,29 @@ export const inviteRouter = router({
     await recordAudit({ actorId: user.id, orgId: input.orgId, action: "invite.create", target: invite.id, metadata: { email: input.email } });
     return invite;
   }),
-  getInvites: publicProcedure.input(z.object({ orgId: z.string() })).query(({ input }) => {
+  createAssistantInvite: publicProcedure.input(z.object({ orgId: z.string(), email: z.string().email() })).mutation(async ({ input }) => {
+    const { user } = await requireOrgAdminOrOwner(input.orgId);
+    const token = randomUUID();
+    const invite = await db.invite.create({
+      data: {
+        orgId: input.orgId,
+        email: input.email,
+        role: "MEMBER",
+        token,
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+      },
+    });
+    await recordAudit({
+      actorId: user.id,
+      orgId: input.orgId,
+      action: "invite.assistant.create",
+      target: invite.id,
+      metadata: { email: input.email, staffRole: "ASSISTANT" },
+    });
+    return { ...invite, inviteUrl: assistantInviteUrl(token) };
+  }),
+  getInvites: publicProcedure.input(z.object({ orgId: z.string() })).query(async ({ input }) => {
+    await requireOrgAdminOrOwner(input.orgId);
     return db.invite.findMany({ where: { orgId: input.orgId, accepted: false } });
   }),
   revokeInvite: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
@@ -44,10 +72,11 @@ export const inviteRouter = router({
     if (!userId) throw new Error("Unauthorized");
     const inv = await db.invite.findUnique({ where: { token: input.token } });
     if (!inv || inv.expiresAt < new Date() || inv.accepted) throw new Error("Invalid invite");
+    const limitedStaffRole = inv.role === "MEMBER" || inv.role === "VIEWER" ? "ASSISTANT" : undefined;
     await db.membership.upsert({
       where: { userId_orgId: { userId, orgId: inv.orgId } },
-      create: { userId, orgId: inv.orgId, role: inv.role },
-      update: { role: inv.role },
+      create: { userId, orgId: inv.orgId, role: inv.role, ...(limitedStaffRole ? { staffRole: limitedStaffRole } : {}) },
+      update: { role: inv.role, ...(limitedStaffRole ? { staffRole: limitedStaffRole } : {}) },
     });
     await db.invite.update({ where: { id: inv.id }, data: { accepted: true } });
     await recordAudit({ actorId: userId, orgId: inv.orgId, action: "member.add.byInvite", target: userId });
