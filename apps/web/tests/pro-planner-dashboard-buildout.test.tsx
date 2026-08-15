@@ -1,5 +1,5 @@
 import * as React from "react";
-import { describe, expect, it, vi, afterEach } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
@@ -57,6 +57,7 @@ const events = [
       {
         id: "task-1",
         title: "Confirm final floorplan with venue",
+        description: "Waiting on client: Maya Client",
         status: "TODO",
         priority: "HIGH",
         dueAt: new Date("2027-05-01T12:00:00.000Z"),
@@ -193,7 +194,9 @@ describe("ProPlannerDashboard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Clients" }));
     expect(screen.getByText("Client command center")).toBeInTheDocument();
-    expect(screen.getByText("Maya Client")).toBeInTheDocument();
+    expect(screen.getAllByText("Maya Client").length).toBeGreaterThan(0);
+    expect(screen.getByText("Create waiting-on-client task")).toBeInTheDocument();
+    expect(screen.getByText("Confirm final floorplan with venue")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Vendors" }));
     expect(screen.getByText("Vendor & venue relationship hub")).toBeInTheDocument();
@@ -261,6 +264,34 @@ describe("ProPlannerDashboard", () => {
     expect(await screen.findByText("new-assistant@example.com")).toBeInTheDocument();
     expect(global.fetch).toHaveBeenCalledWith(
       "/api/pro-planner/team/invites",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("creates waiting-on-client tasks through the guarded client command endpoint", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        task: {
+          id: "client-task-2",
+          title: "Approve final guest count",
+          description: "Waiting on client: Maya Client",
+          status: "TODO",
+          priority: "HIGH",
+          dueAt: new Date("2027-05-05T12:00:00.000Z"),
+          assignee: { id: "client-1", name: "Maya Client", email: "maya@example.com" },
+        },
+      }),
+    } as Response);
+
+    renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: "Clients" }));
+    fireEvent.change(screen.getByLabelText("Client task title"), { target: { value: "Approve final guest count" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add client task" }));
+
+    expect(await screen.findByText("Approve final guest count")).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/pro-planner/clients/tasks",
       expect.objectContaining({ method: "POST" }),
     );
   });

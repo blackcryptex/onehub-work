@@ -43,6 +43,7 @@ export default async function ProPlannerPage() {
           select: {
             id: true,
             title: true,
+            description: true,
             status: true,
             priority: true,
             dueAt: true,
