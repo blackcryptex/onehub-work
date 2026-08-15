@@ -40,8 +40,43 @@ export default async function ProPlannerPage() {
         org: { select: { name: true, slug: true, ownerId: true } },
         createdBy: { select: { id: true, name: true } },
         tasks: {
-          select: { id: true, title: true, status: true, priority: true, dueAt: true },
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            priority: true,
+            dueAt: true,
+            assignee: { select: { id: true, name: true, email: true } },
+          },
           orderBy: [{ dueAt: "asc" }, { updatedAt: "desc" }],
+        },
+        milestones: {
+          select: { id: true, title: true, dueAt: true, done: true, order: true },
+          orderBy: [{ dueAt: "asc" }, { order: "asc" }],
+        },
+        stakeholders: {
+          select: {
+            id: true,
+            role: true,
+            user: { select: { id: true, name: true, email: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        media: {
+          select: { id: true, url: true, caption: true, createdAt: true },
+          orderBy: { createdAt: "desc" },
+          take: 12,
+        },
+        threads: {
+          select: {
+            id: true,
+            subject: true,
+            createdAt: true,
+            participants: { select: { email: true, roleHint: true } },
+            messages: { select: { id: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 1 },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 8,
         },
         bookingRequests: {
           select: {

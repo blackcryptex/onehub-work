@@ -9,10 +9,16 @@ import {
   Image as ImageIcon,
   Settings,
   X,
+  Users,
+  HeartHandshake,
+  Store,
+  ClipboardList,
+  FileText,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type UIRoute = "overview" | "services" | "availability" | "payments" | "portfolio" | "settings";
+type UIRoute = "overview" | "team" | "clients" | "vendors" | "timeline" | "contracts" | "payments" | "files" | "services" | "availability" | "portfolio" | "reports" | "settings";
 
 type Props = {
   currentRoute: UIRoute;
@@ -32,11 +38,18 @@ export function ProPlannerSidebar({
   const setIsMobileOpen = setMobileOpen !== undefined ? setMobileOpen : setInternalMobileOpen;
 
   const navItems = [
-    { route: "overview" as UIRoute, label: "Overview", icon: LayoutDashboard },
+    { route: "overview" as UIRoute, label: "Command", icon: LayoutDashboard },
+    { route: "team" as UIRoute, label: "Team", icon: Users },
+    { route: "clients" as UIRoute, label: "Clients", icon: HeartHandshake },
+    { route: "vendors" as UIRoute, label: "Vendors", icon: Store },
+    { route: "timeline" as UIRoute, label: "Timeline", icon: ClipboardList },
+    { route: "contracts" as UIRoute, label: "Contracts", icon: FileText },
+    { route: "payments" as UIRoute, label: "Payments", icon: DollarSign },
+    { route: "files" as UIRoute, label: "Files", icon: ImageIcon },
     { route: "services" as UIRoute, label: "Services", icon: Briefcase },
     { route: "availability" as UIRoute, label: "Availability", icon: Calendar },
-    { route: "payments" as UIRoute, label: "Payments", icon: DollarSign },
     { route: "portfolio" as UIRoute, label: "Portfolio", icon: ImageIcon },
+    { route: "reports" as UIRoute, label: "Reports", icon: BarChart3 },
     { route: "settings" as UIRoute, label: "Settings", icon: Settings },
   ];
 
