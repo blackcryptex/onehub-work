@@ -32,7 +32,7 @@ export default async function ProPlannerPage() {
     where.createdById = user.id;
   }
 
-  const [events, listings, notifications] = await Promise.all([
+  const [events, listings, notifications, members, invites] = await Promise.all([
     prisma.event.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -131,10 +131,28 @@ export default async function ProPlannerPage() {
       orderBy: { createdAt: "desc" },
       take: 12,
     }),
+    prisma.membership.findMany({
+      where: { orgId: org.id },
+      select: {
+        id: true,
+        role: true,
+        staffRole: true,
+        createdAt: true,
+        user: { select: { id: true, name: true, email: true } },
+        team: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.invite.findMany({
+      where: { orgId: org.id, accepted: false, expiresAt: { gt: new Date() } },
+      select: { id: true, email: true, role: true, expiresAt: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   return (
     <ProPlannerDashboard
+      orgId={org.id}
       orgName={org.name}
       events={events}
       userId={user.id}
@@ -142,6 +160,8 @@ export default async function ProPlannerPage() {
       orgOwnerId={org.ownerId}
       listings={listings}
       notifications={notifications}
+      members={members}
+      invites={invites}
     />
   );
 }

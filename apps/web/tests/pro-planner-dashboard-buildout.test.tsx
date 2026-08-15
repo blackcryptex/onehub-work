@@ -1,5 +1,5 @@
 import * as React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
@@ -37,7 +37,7 @@ vi.mock("@/components/ui", async () => {
   return {
     Card: ({ children, className, id }: { children?: React.ReactNode; className?: string; id?: string }) =>
       React.createElement("div", { className, id }, children),
-    Button: ({ children, asChild: _asChild, ...props }: { children?: React.ReactNode; asChild?: boolean }) =>
+    Button: ({ children, asChild: _asChild, ...props }: { children?: React.ReactNode; asChild?: boolean; [key: string]: unknown }) =>
       React.createElement("button", props, children),
   };
 });
@@ -120,11 +120,33 @@ const notifications = [
   },
 ];
 
+const members = [
+  {
+    id: "member-1",
+    role: "OWNER",
+    staffRole: "LEAD_PLANNER",
+    createdAt: new Date("2027-01-01T12:00:00.000Z"),
+    user: { id: "planner-1", name: "Pro Planner", email: "planner@example.com" },
+    team: null,
+  },
+];
+
+const invites = [
+  {
+    id: "invite-1",
+    email: "pending@example.com",
+    role: "MEMBER",
+    expiresAt: new Date("2027-04-09T12:00:00.000Z"),
+    createdAt: new Date("2027-04-02T12:00:00.000Z"),
+  },
+];
+
 const forbiddenPanelCopy = new RegExp(["coming", "soon"].join(" ") + "|" + "place" + "holder" + "|" + ["Content", "for"].join(" "), "i");
 
 function renderDashboard() {
   return render(
     <ProPlannerDashboard
+      orgId="org-1"
       orgName="Atlas Events"
       events={events}
       userId="planner-1"
@@ -132,9 +154,15 @@ function renderDashboard() {
       orgOwnerId="planner-1"
       listings={listings}
       notifications={notifications}
+      members={members}
+      invites={invites}
     />,
   );
 }
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("ProPlannerDashboard", () => {
   it("shows a real top-level command deck for today's work, follow-ups, money alerts, tasks, and setup", () => {
@@ -161,6 +189,7 @@ describe("ProPlannerDashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Team" }));
     expect(screen.getByText("Team & assistant operations")).toBeInTheDocument();
     expect(screen.getByText("Jordan Assistant")).toBeInTheDocument();
+    expect(screen.getByText("pending@example.com")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Clients" }));
     expect(screen.getByText("Client command center")).toBeInTheDocument();
@@ -207,5 +236,32 @@ describe("ProPlannerDashboard", () => {
     expect(screen.getByText("Messages and follow-ups")).toBeInTheDocument();
     expect(screen.getByText("Planner organization setup")).toBeInTheDocument();
     expect(container).not.toHaveTextContent(forbiddenPanelCopy);
+  });
+
+  it("creates assistant invites through the guarded team invite endpoint", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        invite: {
+          id: "invite-2",
+          email: "new-assistant@example.com",
+          role: "MEMBER",
+          expiresAt: new Date("2027-04-10T12:00:00.000Z"),
+          createdAt: new Date("2027-04-03T12:00:00.000Z"),
+          acceptPath: "/signup?invite=test-token",
+        },
+      }),
+    } as Response);
+
+    renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: "Team" }));
+    fireEvent.change(screen.getByLabelText("Invite assistant or co-planner"), { target: { value: "new-assistant@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create invite" }));
+
+    expect(await screen.findByText("new-assistant@example.com")).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/pro-planner/team/invites",
+      expect.objectContaining({ method: "POST" }),
+    );
   });
 });
