@@ -80,7 +80,7 @@ type PlannerProposal = {
   status: string;
   totalCents: number;
   contract?: { id: string; status: string } | null;
-  milestones?: { id: string; status: string; amountCents: number; dueDate: Date | string | null }[];
+  milestones?: { id: string; title?: string; status: string; amountCents: number; dueDate: Date | string | null }[];
   listing?: { id: string; title: string; type: string } | null;
 };
 
@@ -89,7 +89,10 @@ type PlannerContract = {
   title: string;
   description?: string | null;
   status: string;
-  paymentIntents?: { id: string; status: string; fundedAt: Date | string | null; amountCents: number }[];
+  buyerId?: string | null;
+  sellerId?: string | null;
+  signatures?: { id: string; signedAt: Date | string | null; signerEmail: string; signerName: string }[];
+  paymentIntents?: { id: string; status: string; fundedAt: Date | string | null; amountCents: number; currency?: string; milestone?: { id: string; title: string; status: string; dueDate: Date | string | null } | null }[];
 };
 
 type PlannerEvent = {
@@ -203,7 +206,17 @@ function isOpenRequest(status: string) {
 }
 
 function isMoneyAttentionStatus(status: string) {
-  return ["DRAFT", "SENT", "APPROVED", "OUT_FOR_SIGNATURE", "REQUIRES_PAYMENT", "PENDING"].includes(status.toUpperCase());
+  return ["DRAFT", "SENT", "APPROVED", "OUT_FOR_SIGNATURE", "PARTIALLY_SIGNED", "REQUIRES_PAYMENT", "PROCESSING", "PENDING", "FAILED"].includes(status.toUpperCase());
+}
+
+function isPaymentAtRiskStatus(status: string) {
+  return ["REQUIRES_PAYMENT", "PROCESSING", "FAILED"].includes(status.toUpperCase());
+}
+
+function signatureProgress(contract: PlannerContract) {
+  const signed = (contract.signatures ?? []).filter((signature) => Boolean(signature.signedAt)).length;
+  const expected = Math.max(2, contract.signatures?.length ?? 0);
+  return { signed, expected };
 }
 
 function daysUntil(value: Date | string | null | undefined) {
@@ -327,6 +340,49 @@ export function ProPlannerDashboard({
           })),
       ])
       .slice(0, 6);
+    const contractQueue = localEvents.flatMap((event) => (event.contracts ?? []).map((contract) => {
+      const progress = signatureProgress(contract);
+      const amountCents = contract.paymentIntents?.reduce((sum, intent) => sum + intent.amountCents, 0) ?? 0;
+      const unpaidCents = contract.paymentIntents?.filter((intent) => intent.status.toUpperCase() !== "SUCCEEDED").reduce((sum, intent) => sum + intent.amountCents, 0) ?? 0;
+      const failedPayments = contract.paymentIntents?.filter((intent) => intent.status.toUpperCase() === "FAILED").length ?? 0;
+      return {
+        id: contract.id,
+        event,
+        title: contract.title,
+        status: contract.status,
+        amountCents,
+        unpaidCents,
+        signedCount: progress.signed,
+        expectedSignatures: progress.expected,
+        failedPayments,
+        href: `/contracts/${contract.id}`,
+      };
+    })).filter((contract) => isMoneyAttentionStatus(contract.status) || contract.unpaidCents > 0 || contract.failedPayments > 0).slice(0, 12);
+    const paymentRiskQueue = localEvents.flatMap((event) => (event.contracts ?? []).flatMap((contract) => (contract.paymentIntents ?? [])
+      .filter((intent) => isPaymentAtRiskStatus(intent.status))
+      .map((intent) => ({
+        id: intent.id,
+        event,
+        contract,
+        title: intent.milestone?.title || contract.title,
+        status: intent.status,
+        amountCents: intent.amountCents,
+        fundedAt: intent.fundedAt,
+        dueAt: intent.milestone?.dueDate ?? null,
+        href: `/contracts/${contract.id}`,
+      })))).slice(0, 12);
+    const proposalPaymentPlanQueue = localEvents.flatMap((event) => (event.proposals ?? [])
+      .filter((proposal) => isMoneyAttentionStatus(proposal.status) || (proposal.milestones ?? []).some((milestone) => isMoneyAttentionStatus(milestone.status)))
+      .map((proposal) => ({
+        id: proposal.id,
+        event,
+        title: proposal.title,
+        status: proposal.status,
+        amountCents: proposal.totalCents,
+        openMilestones: (proposal.milestones ?? []).filter((milestone) => isMoneyAttentionStatus(milestone.status)),
+        href: `/pro/planner/vault/${event.slug}#workspace-proposals-detail`,
+      }))).slice(0, 12);
+    const moneyAtRiskCents = paymentRiskQueue.reduce((sum, item) => sum + item.amountCents, 0) + contractQueue.reduce((sum, item) => sum + item.unpaidCents, 0);
     const unreadNotifications = notifications.filter((notification) => !notification.read);
     const eventDates = sortedEvents.filter((event) => new Date(event.startAt).getTime() >= Date.now()).slice(0, 4);
     const teamMembers = [
@@ -419,6 +475,7 @@ export function ProPlannerDashboard({
     const reportMetrics = {
       pipelineCents: localEvents.flatMap((event) => event.proposals ?? []).reduce((sum, proposal) => sum + proposal.totalCents, 0),
       openContracts: localEvents.flatMap((event) => event.contracts ?? []).filter((contract) => isMoneyAttentionStatus(contract.status)).length,
+      moneyAtRiskCents,
       vendorTouches: vendorRelationships.length,
       taskLoad: openTasks.length,
     };
@@ -430,6 +487,10 @@ export function ProPlannerDashboard({
       openTasks,
       followUps,
       moneyAlerts,
+      contractQueue,
+      paymentRiskQueue,
+      proposalPaymentPlanQueue,
+      moneyAtRiskCents,
       unreadNotifications,
       publishedListings: listings.length,
       teamMembers,
@@ -1071,11 +1132,16 @@ export function ProPlannerDashboard({
         return (
           <Panel title="Contracts command center" icon={FileText}>
             <p className="text-sm text-slate-600">Signature, proposal, contract, and readiness state across all planner events.</p>
+            <div className="grid gap-3 md:grid-cols-3">
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Contracts needing action</p><p className="mt-2 text-2xl font-semibold">{dashboard.contractQueue.length}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Payment risks</p><p className="mt-2 text-2xl font-semibold">{dashboard.paymentRiskQueue.length}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Money at risk</p><p className="mt-2 text-2xl font-semibold">{formatMoney(dashboard.moneyAtRiskCents)}</p></Card>
+            </div>
             <div className="space-y-3">
-              {dashboard.moneyAlerts.length > 0 ? dashboard.moneyAlerts.map((item) => (
+              {dashboard.contractQueue.length > 0 ? dashboard.contractQueue.map((item) => (
                 <Link key={`contract-${item.id}`} href={item.href as Route} className="block rounded-xl border border-emerald-100 bg-emerald-50 p-4 hover:border-emerald-200">
                   <p className="font-semibold text-slate-900">{item.title}</p>
-                  <p className="mt-1 text-sm text-slate-700">{item.event.name} / {item.status} / {formatMoney(item.amountCents)}</p>
+                  <p className="mt-1 text-sm text-slate-700">{item.event.name} / {item.status} / signatures {item.signedCount} of {item.expectedSignatures} / unpaid {formatMoney(item.unpaidCents)}</p>
                 </Link>
               )) : (
                 <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No contracts or proposals currently need signature/payment readiness attention.</p>
@@ -1140,14 +1206,30 @@ export function ProPlannerDashboard({
         return (
           <Panel title="Payments & contracts" icon={CreditCard}>
             <p className="text-sm text-slate-600">Private-pilot money state: proposals, contracts, deposits, and held-fund readiness. No live-payment activation is added here.</p>
+            <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-700">Money-at-risk visibility</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-900">{formatMoney(dashboard.moneyAtRiskCents)}</p>
+              <p className="mt-1 text-sm text-red-900">Calculated from unpaid, failed, and processing payment records only. No charge, refund, payout, or release action is exposed.</p>
+            </div>
             <div className="space-y-3">
-              {dashboard.moneyAlerts.length > 0 ? dashboard.moneyAlerts.map((item) => (
-                <Link key={item.id} href={item.href as Route} className="block rounded-xl border border-emerald-100 bg-emerald-50 p-4 hover:border-emerald-200">
+              {dashboard.paymentRiskQueue.length > 0 ? dashboard.paymentRiskQueue.map((item) => (
+                <Link key={item.id} href={item.href as Route} className="block rounded-xl border border-red-100 bg-red-50 p-4 hover:border-red-200">
                   <p className="font-semibold text-slate-900">{item.title}</p>
-                  <p className="mt-1 text-sm text-slate-700">{item.event.name} / {item.status} / {formatMoney(item.amountCents)}</p>
+                  <p className="mt-1 text-sm text-red-900">{item.event.name} / {item.contract.title} / {item.status} / {formatMoney(item.amountCents)}{item.dueAt ? ` / due ${formatDate(item.dueAt)}` : ""}</p>
                 </Link>
               )) : (
-                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No proposal, contract, or payment state currently needs action.</p>
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No payment records currently show unpaid, processing, or failed risk.</p>
+              )}
+            </div>
+            <div className="space-y-3">
+              <h3 className="font-semibold text-slate-900">Proposal payment plans</h3>
+              {dashboard.proposalPaymentPlanQueue.length > 0 ? dashboard.proposalPaymentPlanQueue.map((proposal) => (
+                <Link key={proposal.id} href={proposal.href as Route} className="block rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-emerald-200">
+                  <p className="font-semibold text-slate-900">{proposal.title}</p>
+                  <p className="mt-1 text-sm text-slate-700">{proposal.event.name} / {proposal.status} / {formatMoney(proposal.amountCents)} / {proposal.openMilestones.length} open milestone{proposal.openMilestones.length === 1 ? "" : "s"}</p>
+                </Link>
+              )) : (
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No proposal payment plans currently need planner attention.</p>
               )}
             </div>
           </Panel>
@@ -1169,7 +1251,7 @@ export function ProPlannerDashboard({
             <p className="text-sm text-slate-600">Agency workload, pipeline, contract risk, and vendor movement calculated from real OneHub records.</p>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Revenue pipeline</p><p className="mt-2 text-2xl font-semibold">{formatMoney(dashboard.reportMetrics.pipelineCents)}</p></Card>
-              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Open contracts</p><p className="mt-2 text-2xl font-semibold">{dashboard.reportMetrics.openContracts}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Open contracts</p><p className="mt-2 text-2xl font-semibold">{dashboard.reportMetrics.openContracts}</p><p className="mt-1 text-xs text-slate-500">Money at risk {formatMoney(dashboard.reportMetrics.moneyAtRiskCents)}</p></Card>
               <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Vendor touches</p><p className="mt-2 text-2xl font-semibold">{dashboard.reportMetrics.vendorTouches}</p></Card>
               <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Open task load</p><p className="mt-2 text-2xl font-semibold">{dashboard.reportMetrics.taskLoad}</p></Card>
             </div>

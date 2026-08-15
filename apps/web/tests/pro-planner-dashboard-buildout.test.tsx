@@ -81,7 +81,7 @@ const events = [
         totalCents: 250000,
         listing: { id: "listing-vendor-1", title: "Avery Florals", type: "VENDOR" },
         contract: null,
-        milestones: [{ id: "milestone-1", status: "PENDING", amountCents: 125000, dueDate: null }],
+        milestones: [{ id: "milestone-1", title: "Deposit due", status: "PENDING", amountCents: 125000, dueDate: new Date("2027-04-15T12:00:00.000Z") }],
       },
     ],
     contracts: [
@@ -89,7 +89,13 @@ const events = [
         id: "contract-1",
         title: "Venue agreement",
         status: "OUT_FOR_SIGNATURE",
-        paymentIntents: [{ id: "intent-1", status: "REQUIRES_PAYMENT", fundedAt: null, amountCents: 100000 }],
+        buyerId: "client-1",
+        sellerId: "vendor-1",
+        signatures: [
+          { id: "signature-1", signerName: "Maya Client", signerEmail: "maya@example.com", signedAt: null },
+          { id: "signature-2", signerName: "Avery Vendor", signerEmail: "avery@example.com", signedAt: new Date("2027-04-01T12:00:00.000Z") },
+        ],
+        paymentIntents: [{ id: "intent-1", status: "REQUIRES_PAYMENT", fundedAt: null, amountCents: 100000, currency: "USD", milestone: { id: "milestone-1", title: "Deposit due", status: "PENDING", dueDate: new Date("2027-04-15T12:00:00.000Z") } }],
       },
     ],
     milestones: [{ id: "event-milestone-1", title: "Final walkthrough", dueAt: new Date("2027-05-20T12:00:00.000Z"), done: false, order: 1 }],
@@ -226,6 +232,8 @@ describe("ProPlannerDashboard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Contracts" }));
     expect(screen.getByText("Contracts command center")).toBeInTheDocument();
+    expect(screen.getByText("Money at risk")).toBeInTheDocument();
+    expect(screen.getByText(/signatures 1 of 2/)).toBeInTheDocument();
     expect(screen.getByText(/does not approve contracts/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Files" }));
@@ -242,6 +250,8 @@ describe("ProPlannerDashboard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Payments" }));
     expect(screen.getByText("Payments & contracts")).toBeInTheDocument();
+    expect(screen.getByText("Money-at-risk visibility")).toBeInTheDocument();
+    expect(screen.getByText("Proposal payment plans")).toBeInTheDocument();
     expect(screen.getByText(/No live-payment activation is added here/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Portfolio" }));
