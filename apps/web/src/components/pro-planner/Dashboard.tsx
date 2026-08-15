@@ -58,6 +58,7 @@ type UIRoute =
 type PlannerTask = {
   id: string;
   title: string;
+  description?: string | null;
   status: string;
   priority: string;
   dueAt: Date | string | null;
@@ -75,6 +76,7 @@ type PlannerBookingRequest = {
 type PlannerProposal = {
   id: string;
   title: string;
+  description?: string | null;
   status: string;
   totalCents: number;
   contract?: { id: string; status: string } | null;
@@ -85,6 +87,7 @@ type PlannerProposal = {
 type PlannerContract = {
   id: string;
   title: string;
+  description?: string | null;
   status: string;
   paymentIntents?: { id: string; status: string; fundedAt: Date | string | null; amountCents: number }[];
 };
@@ -221,6 +224,12 @@ export function ProPlannerDashboard({
   const [pendingInvites, setPendingInvites] = useState<PlannerInvite[]>(invites);
   const [inviteStatus, setInviteStatus] = useState<string | null>(null);
   const [inviteBusy, setInviteBusy] = useState(false);
+  const [clientTaskTitle, setClientTaskTitle] = useState("");
+  const [clientTaskEventId, setClientTaskEventId] = useState(events[0]?.id ?? "");
+  const [clientTaskUserId, setClientTaskUserId] = useState("");
+  const [clientTaskDueDate, setClientTaskDueDate] = useState("");
+  const [clientTaskStatus, setClientTaskStatus] = useState<string | null>(null);
+  const [clientTaskBusy, setClientTaskBusy] = useState(false);
 
   const canManageEvent = (event: PlannerEvent): boolean => {
     if (userRole === "ADMIN") return true;
@@ -316,12 +325,19 @@ export function ProPlannerDashboard({
           })),
       ]),
     ].filter((member, index, all) => all.findIndex((candidate) => candidate.id === member.id && candidate.role === member.role && candidate.event?.id === member.event?.id) === index);
-    const clients = localEvents.flatMap((event) => [
-      ...((event.stakeholders ?? [])
+    const clients = localEvents.flatMap((event) =>
+      (event.stakeholders ?? [])
         .filter((stakeholder) => stakeholder.role.toUpperCase().includes("CLIENT"))
-        .map((stakeholder) => ({ id: stakeholder.id, event, name: contactName(stakeholder.user), role: stakeholder.role }))),
-      { id: `creator-${event.id}`, event, name: event.createdBy.name || "Event creator", role: "Primary contact" },
-    ]);
+        .map((stakeholder) => ({ id: stakeholder.id, userId: stakeholder.user.id, event, name: contactName(stakeholder.user), role: stakeholder.role })),
+    );
+    const waitingOnClientTasks = openTasks
+      .filter((task) => {
+        const description = (task.description ?? "").toLowerCase();
+        const assigneeId = task.assignee?.id;
+        const isClientAssignee = task.event.stakeholders?.some((stakeholder) => stakeholder.role.toUpperCase().includes("CLIENT") && stakeholder.user.id === assigneeId);
+        return description.includes("waiting on client") || isClientAssignee;
+      })
+      .slice(0, 8);
     const vendorRelationships = localEvents.flatMap((event) => [
       ...(event.bookingRequests ?? []).map((request) => ({
         id: `request-${request.id}`,
@@ -375,6 +391,7 @@ export function ProPlannerDashboard({
       publishedListings: listings.length,
       teamMembers,
       clients,
+      waitingOnClientTasks,
       vendorRelationships,
       timelineRisks,
       fileSignals,
@@ -443,6 +460,45 @@ export function ProPlannerDashboard({
       setInviteStatus(error instanceof Error ? error.message : "Could not create assistant invite");
     } finally {
       setInviteBusy(false);
+    }
+  };
+
+  const createClientTask = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setClientTaskStatus(null);
+    const eventId = clientTaskEventId || localEvents[0]?.id;
+    const title = clientTaskTitle.trim();
+    if (!eventId || !title) return;
+    setClientTaskBusy(true);
+    try {
+      const response = await fetch("/api/pro-planner/clients/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          eventId,
+          title,
+          clientUserId: clientTaskUserId || undefined,
+          dueAt: clientTaskDueDate ? new Date(`${clientTaskDueDate}T12:00:00.000Z`).toISOString() : undefined,
+          priority: "HIGH",
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Could not create client follow-up task");
+      }
+      setLocalEvents((current) => current.map((plannerEvent) => {
+        if (plannerEvent.id !== eventId) return plannerEvent;
+        const task = payload.task as PlannerTask;
+        return { ...plannerEvent, tasks: [task, ...(plannerEvent.tasks ?? [])] };
+      }));
+      setClientTaskTitle("");
+      setClientTaskDueDate("");
+      setClientTaskStatus("Client follow-up task created and added to the event task queue.");
+    } catch (error) {
+      setClientTaskStatus(error instanceof Error ? error.message : "Could not create client follow-up task");
+    } finally {
+      setClientTaskBusy(false);
     }
   };
 
@@ -733,6 +789,47 @@ export function ProPlannerDashboard({
         return (
           <Panel title="Client command center" icon={HeartHandshake}>
             <p className="text-sm text-slate-600">Client contacts, waiting-on-client work, approvals, and event communication context.</p>
+            <form onSubmit={createClientTask} className="rounded-xl border border-rose-100 bg-rose-50 p-4">
+              <h3 className="font-semibold text-slate-900">Create waiting-on-client task</h3>
+              <p className="mt-1 text-xs text-slate-600">Turn a client decision, approval, document, or response into a real event task.</p>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <label className="text-sm font-medium text-slate-800">
+                  Event
+                  <select value={clientTaskEventId} onChange={(event) => { setClientTaskEventId(event.target.value); setClientTaskUserId(""); }} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
+                    {localEvents.map((plannerEvent) => <option key={plannerEvent.id} value={plannerEvent.id}>{plannerEvent.name}</option>)}
+                  </select>
+                </label>
+                <label className="text-sm font-medium text-slate-800">
+                  Client contact
+                  <select value={clientTaskUserId} onChange={(event) => setClientTaskUserId(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
+                    <option value="">Unassigned client follow-up</option>
+                    {dashboard.clients.filter((client) => client.event.id === clientTaskEventId).map((client) => (
+                      <option key={`${client.event.id}-${client.userId}`} value={client.userId}>{client.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm font-medium text-slate-800 md:col-span-2">
+                  What is needed from the client?
+                  <input
+                    value={clientTaskTitle}
+                    onChange={(event) => setClientTaskTitle(event.target.value)}
+                    aria-label="Client task title"
+                    className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                  />
+                </label>
+                <label className="text-sm font-medium text-slate-800">
+                  Due date
+                  <input
+                    type="date"
+                    value={clientTaskDueDate}
+                    onChange={(event) => setClientTaskDueDate(event.target.value)}
+                    className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                  />
+                </label>
+              </div>
+              <Button type="submit" className="mt-3" disabled={clientTaskBusy || !clientTaskEventId || !clientTaskTitle.trim()}>{clientTaskBusy ? "Creating..." : "Add client task"}</Button>
+              {clientTaskStatus && <p className="mt-2 text-sm text-slate-700">{clientTaskStatus}</p>}
+            </form>
             <div className="grid gap-3 md:grid-cols-2">
               {dashboard.clients.length > 0 ? dashboard.clients.map((client) => (
                 <Link key={`${client.event.id}-${client.id}`} href={`/pro/planner/vault/${client.event.slug}` as Route} className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
@@ -745,13 +842,18 @@ export function ProPlannerDashboard({
             </div>
             <div className="space-y-3">
               <h3 className="font-semibold text-slate-900">Waiting on client</h3>
-              {dashboard.unreadNotifications.length > 0 ? dashboard.unreadNotifications.slice(0, 4).map((notification) => (
+              {dashboard.waitingOnClientTasks.length > 0 ? dashboard.waitingOnClientTasks.map((task) => (
+                <Link key={task.id} href={`/pro/planner/vault/${task.event.slug}#event-workspace` as Route} className="block rounded-xl border border-rose-100 bg-rose-50 p-3 hover:border-rose-200">
+                  <p className="text-sm font-semibold text-slate-900">{task.title}</p>
+                  <p className="mt-1 text-xs text-rose-900">{task.event.name} / due {formatDate(task.dueAt)}{task.assignee ? ` / ${contactName(task.assignee)}` : ""}</p>
+                </Link>
+              )) : dashboard.unreadNotifications.length > 0 ? dashboard.unreadNotifications.slice(0, 4).map((notification) => (
                 <Link key={notification.id} href={(notification.link || "/notifications") as Route} className="block rounded-xl border border-slate-200 bg-slate-50 p-3 hover:border-indigo-200">
                   <p className="text-sm font-semibold text-slate-900">{notification.title}</p>
                   {notification.body && <p className="mt-1 text-xs text-slate-600">{notification.body}</p>}
                 </Link>
               )) : (
-                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No unread client/action notifications are loaded.</p>
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No waiting-on-client tasks or unread client/action notifications are loaded.</p>
               )}
             </div>
           </Panel>
