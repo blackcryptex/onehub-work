@@ -19,27 +19,40 @@ import type { Route } from "next";
 import type { Role } from "@onehub/types/src/roles";
 import {
   AlertTriangle,
+  BarChart3,
   Bell,
   Briefcase,
   Calendar,
   CheckCircle2,
+  ClipboardList,
   Clock,
   CreditCard,
+  FileText,
   Folder,
+  HeartHandshake,
   Image as ImageIcon,
   ListChecks,
   MessageSquare,
   Settings,
   ShieldCheck,
+  Store,
+  Users,
 } from "lucide-react";
 import { EventActions } from "@/components/events/EventActions";
 
 type UIRoute =
   | "overview"
+  | "team"
+  | "clients"
+  | "vendors"
+  | "timeline"
+  | "contracts"
+  | "payments"
+  | "files"
   | "services"
   | "availability"
-  | "payments"
   | "portfolio"
+  | "reports"
   | "settings";
 
 type PlannerTask = {
@@ -48,6 +61,7 @@ type PlannerTask = {
   status: string;
   priority: string;
   dueAt: Date | string | null;
+  assignee?: { id: string; name: string | null; email: string | null } | null;
 };
 
 type PlannerBookingRequest = {
@@ -94,6 +108,10 @@ type PlannerEvent = {
   bookingRequests?: PlannerBookingRequest[];
   proposals?: PlannerProposal[];
   contracts?: PlannerContract[];
+  milestones?: { id: string; title: string; dueAt: Date | string; done: boolean; order: number }[];
+  stakeholders?: { id: string; role: string; user: { id: string; name: string | null; email: string | null } }[];
+  media?: { id: string; url: string; caption: string | null; createdAt: Date | string }[];
+  threads?: { id: string; subject: string; createdAt: Date | string; participants?: { email: string; roleHint: string | null }[]; messages?: { id: string; createdAt: Date | string }[] }[];
 };
 
 type PlannerListing = {
@@ -150,6 +168,17 @@ function isOpenRequest(status: string) {
 
 function isMoneyAttentionStatus(status: string) {
   return ["DRAFT", "SENT", "APPROVED", "OUT_FOR_SIGNATURE", "REQUIRES_PAYMENT", "PENDING"].includes(status.toUpperCase());
+}
+
+function daysUntil(value: Date | string | null | undefined) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return Math.ceil((date.getTime() - Date.now()) / 86_400_000);
+}
+
+function contactName(user: { name: string | null; email?: string | null }) {
+  return user.name || user.email || "Unnamed contact";
 }
 
 export function ProPlannerDashboard({
@@ -238,6 +267,67 @@ export function ProPlannerDashboard({
       .slice(0, 6);
     const unreadNotifications = notifications.filter((notification) => !notification.read);
     const eventDates = sortedEvents.filter((event) => new Date(event.startAt).getTime() >= Date.now()).slice(0, 4);
+    const teamMembers = localEvents
+      .flatMap((event) => [
+        { id: event.createdBy.id, name: event.createdBy.name, email: null as string | null, role: "Lead planner", event },
+        ...(event.tasks ?? [])
+          .filter((task) => task.assignee)
+          .map((task) => ({
+            id: task.assignee!.id,
+            name: task.assignee!.name,
+            email: task.assignee!.email,
+            role: `Task owner: ${task.title}`,
+            event,
+          })),
+      ])
+      .filter((member, index, all) => all.findIndex((candidate) => candidate.id === member.id && candidate.event.id === member.event.id) === index);
+    const clients = localEvents.flatMap((event) => [
+      ...((event.stakeholders ?? [])
+        .filter((stakeholder) => stakeholder.role.toUpperCase().includes("CLIENT"))
+        .map((stakeholder) => ({ id: stakeholder.id, event, name: contactName(stakeholder.user), role: stakeholder.role }))),
+      { id: `creator-${event.id}`, event, name: event.createdBy.name || "Event creator", role: "Primary contact" },
+    ]);
+    const vendorRelationships = localEvents.flatMap((event) => [
+      ...(event.bookingRequests ?? []).map((request) => ({
+        id: `request-${request.id}`,
+        event,
+        name: request.listing?.title ?? request.contactName,
+        status: request.status,
+        detail: request.listing ? `${request.listing.type} / ${request.listing.category}` : request.contactName,
+        href: `/pro/planner/vault/${event.slug}#workspace-requests-detail`,
+      })),
+      ...(event.proposals ?? []).map((proposal) => ({
+        id: `proposal-vendor-${proposal.id}`,
+        event,
+        name: proposal.listing?.title ?? proposal.title,
+        status: proposal.status,
+        detail: `${proposal.title} / ${formatMoney(proposal.totalCents)}`,
+        href: `/pro/planner/vault/${event.slug}#workspace-proposals-detail`,
+      })),
+    ]).slice(0, 10);
+    const timelineRisks = localEvents.flatMap((event) => [
+      ...(event.tasks ?? [])
+        .filter((task) => isOpenTask(task.status))
+        .map((task) => ({ id: `task-risk-${task.id}`, event, title: task.title, detail: `Task due ${formatDate(task.dueAt)}`, href: `/pro/planner/vault/${event.slug}#event-workspace` })),
+      ...(event.milestones ?? [])
+        .filter((milestone) => !milestone.done)
+        .map((milestone) => ({ id: `milestone-risk-${milestone.id}`, event, title: milestone.title, detail: `Milestone due ${formatDate(milestone.dueAt)}`, href: `/pro/planner/vault/${event.slug}#event-workspace` })),
+      ...(daysUntil(event.startAt) !== null && daysUntil(event.startAt)! <= 30
+        ? [{ id: `event-week-${event.id}`, event, title: "Event day readiness", detail: `${daysUntil(event.startAt)} days until event`, href: `/pro/planner/vault/${event.slug}` }]
+        : []),
+    ]).slice(0, 10);
+    const fileSignals = localEvents.flatMap((event) => [
+      ...(event.media ?? []).map((media) => ({ id: media.id, event, title: media.caption || "Event file/media", detail: media.url, href: `/pro/planner/vault/${event.slug}#event-workspace` })),
+      ...(event.threads ?? [])
+        .filter((thread) => thread.subject.toLowerCase().includes("file") || thread.subject.toLowerCase().includes("document"))
+        .map((thread) => ({ id: `thread-file-${thread.id}`, event, title: thread.subject, detail: `${thread.participants?.length ?? 0} participants`, href: `/messages/${thread.id}` })),
+    ]).slice(0, 10);
+    const reportMetrics = {
+      pipelineCents: localEvents.flatMap((event) => event.proposals ?? []).reduce((sum, proposal) => sum + proposal.totalCents, 0),
+      openContracts: localEvents.flatMap((event) => event.contracts ?? []).filter((contract) => isMoneyAttentionStatus(contract.status)).length,
+      vendorTouches: vendorRelationships.length,
+      taskLoad: openTasks.length,
+    };
 
     return {
       activeEvents,
@@ -248,6 +338,12 @@ export function ProPlannerDashboard({
       moneyAlerts,
       unreadNotifications,
       publishedListings: listings.length,
+      teamMembers,
+      clients,
+      vendorRelationships,
+      timelineRisks,
+      fileSignals,
+      reportMetrics,
     };
   }, [listings.length, localEvents, notifications]);
 
@@ -520,6 +616,120 @@ export function ProPlannerDashboard({
     switch (uiRoute) {
       case "overview":
         return <Overview />;
+      case "team":
+        return (
+          <Panel title="Team & assistant operations" icon={Users}>
+            <p className="text-sm text-slate-600">Agency roster, task owners, and assistant-safe operating boundaries across active events.</p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {dashboard.teamMembers.length > 0 ? dashboard.teamMembers.map((member) => (
+                <Link key={`${member.event.id}-${member.id}-${member.role}`} href={`/pro/planner/vault/${member.event.slug}#event-workspace` as Route} className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
+                  <p className="font-semibold text-slate-900">{contactName(member)}</p>
+                  <p className="mt-1 text-sm text-slate-600">{member.event.name} / {member.role}</p>
+                </Link>
+              )) : (
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No assistant or task owner records are loaded yet. Invite coordinators and assign event tasks before delegating planner work.</p>
+              )}
+            </div>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              Assistant safety: coordinators can own tasks and event prep, but contract, payment, dispute, and payout controls stay restricted until explicit permissions exist.
+            </div>
+            <Button asChild><Link href={"/professional-planner/setup" as Route}>Review agency setup</Link></Button>
+          </Panel>
+        );
+      case "clients":
+        return (
+          <Panel title="Client command center" icon={HeartHandshake}>
+            <p className="text-sm text-slate-600">Client contacts, waiting-on-client work, approvals, and event communication context.</p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {dashboard.clients.length > 0 ? dashboard.clients.map((client) => (
+                <Link key={`${client.event.id}-${client.id}`} href={`/pro/planner/vault/${client.event.slug}` as Route} className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
+                  <p className="font-semibold text-slate-900">{client.name}</p>
+                  <p className="mt-1 text-sm text-slate-600">{client.event.name} / {client.role.replace(/_/g, " ")}</p>
+                </Link>
+              )) : (
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No client stakeholder records are loaded. Add client access from the event command center to track approvals and decisions.</p>
+              )}
+            </div>
+            <div className="space-y-3">
+              <h3 className="font-semibold text-slate-900">Waiting on client</h3>
+              {dashboard.unreadNotifications.length > 0 ? dashboard.unreadNotifications.slice(0, 4).map((notification) => (
+                <Link key={notification.id} href={(notification.link || "/notifications") as Route} className="block rounded-xl border border-slate-200 bg-slate-50 p-3 hover:border-indigo-200">
+                  <p className="text-sm font-semibold text-slate-900">{notification.title}</p>
+                  {notification.body && <p className="mt-1 text-xs text-slate-600">{notification.body}</p>}
+                </Link>
+              )) : (
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No unread client/action notifications are loaded.</p>
+              )}
+            </div>
+          </Panel>
+        );
+      case "vendors":
+        return (
+          <Panel title="Vendor & venue relationship hub" icon={Store}>
+            <p className="text-sm text-slate-600">Shortlist, booking request, proposal, and relationship movement across events.</p>
+            <div className="space-y-3">
+              {dashboard.vendorRelationships.length > 0 ? dashboard.vendorRelationships.map((vendor) => (
+                <Link key={vendor.id} href={vendor.href as Route} className="block rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
+                  <p className="font-semibold text-slate-900">{vendor.name}</p>
+                  <p className="mt-1 text-sm text-slate-600">{vendor.event.name} / {vendor.status.replace(/_/g, " ")} / {vendor.detail}</p>
+                </Link>
+              )) : (
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No vendor or venue requests are loaded. Source providers from an event command center to build the relationship queue.</p>
+              )}
+            </div>
+            <Button asChild><Link href={"/explore/vendors" as Route}>Explore vendors and venues</Link></Button>
+          </Panel>
+        );
+      case "timeline":
+        return (
+          <Panel title="Timeline, milestones & readiness" icon={ClipboardList}>
+            <p className="text-sm text-slate-600">Critical dates, near-term tasks, milestone risk, and event-day readiness across active events.</p>
+            <div className="space-y-3">
+              {dashboard.timelineRisks.length > 0 ? dashboard.timelineRisks.map((risk) => (
+                <Link key={risk.id} href={risk.href as Route} className="block rounded-xl border border-amber-100 bg-amber-50 p-4 hover:border-amber-200">
+                  <p className="font-semibold text-slate-900">{risk.title}</p>
+                  <p className="mt-1 text-sm text-amber-900">{risk.event.name} / {risk.detail}</p>
+                </Link>
+              )) : (
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No near-term timeline risks are loaded. Upcoming tasks, milestones, and event-day readiness warnings will appear here.</p>
+              )}
+            </div>
+            <Button asChild><Link href={"/calendar" as Route}>Open calendar</Link></Button>
+          </Panel>
+        );
+      case "contracts":
+        return (
+          <Panel title="Contracts command center" icon={FileText}>
+            <p className="text-sm text-slate-600">Signature, proposal, contract, and readiness state across all planner events.</p>
+            <div className="space-y-3">
+              {dashboard.moneyAlerts.length > 0 ? dashboard.moneyAlerts.map((item) => (
+                <Link key={`contract-${item.id}`} href={item.href as Route} className="block rounded-xl border border-emerald-100 bg-emerald-50 p-4 hover:border-emerald-200">
+                  <p className="font-semibold text-slate-900">{item.title}</p>
+                  <p className="mt-1 text-sm text-slate-700">{item.event.name} / {item.status} / {formatMoney(item.amountCents)}</p>
+                </Link>
+              )) : (
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No contracts or proposals currently need signature/payment readiness attention.</p>
+              )}
+            </div>
+            <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">Trust rule: this panel surfaces status only. It does not approve contracts, release funds, change Stripe, or bypass admin oversight.</p>
+          </Panel>
+        );
+      case "files":
+        return (
+          <Panel title="Files & documents" icon={ImageIcon}>
+            <p className="text-sm text-slate-600">Event media, document-thread signals, floorplans, proposal files, and vendor documents when attached to event records.</p>
+            <div className="space-y-3">
+              {dashboard.fileSignals.length > 0 ? dashboard.fileSignals.map((file) => (
+                <Link key={file.id} href={file.href as Route} className="block rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
+                  <p className="font-semibold text-slate-900">{file.title}</p>
+                  <p className="mt-1 text-sm text-slate-600">{file.event.name} / {file.detail}</p>
+                </Link>
+              )) : (
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No event file or document signals are loaded. Uploads, media, and document-thread activity will appear here once attached to events.</p>
+              )}
+            </div>
+          </Panel>
+        );
       case "services":
         return (
           <Panel title="Services & packages" icon={Briefcase}>
@@ -581,6 +791,19 @@ export function ProPlannerDashboard({
               <p className="mt-1 text-sm text-slate-600">Use the profile workflow to keep photos, service area, proof, and contact details current.</p>
             </div>
             <Button asChild><Link href={"/providers/onboarding?providerType=planner" as Route}>Update profile</Link></Button>
+          </Panel>
+        );
+      case "reports":
+        return (
+          <Panel title="Reports & business intelligence" icon={BarChart3}>
+            <p className="text-sm text-slate-600">Agency workload, pipeline, contract risk, and vendor movement calculated from real OneHub records.</p>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Revenue pipeline</p><p className="mt-2 text-2xl font-semibold">{formatMoney(dashboard.reportMetrics.pipelineCents)}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Open contracts</p><p className="mt-2 text-2xl font-semibold">{dashboard.reportMetrics.openContracts}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Vendor touches</p><p className="mt-2 text-2xl font-semibold">{dashboard.reportMetrics.vendorTouches}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Open task load</p><p className="mt-2 text-2xl font-semibold">{dashboard.reportMetrics.taskLoad}</p></Card>
+            </div>
+            <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">Reports are scoped to this planner organization and computed from events, proposals, contracts, booking requests, and tasks.</p>
           </Panel>
         );
       case "settings":

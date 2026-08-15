@@ -12,10 +12,17 @@ vi.mock("../src/components/pro-planner/Sidebar", () => ({
   ProPlannerSidebar: ({ onRoute }: { onRoute: (route: string) => void }) => (
     <nav aria-label="Pro planner sections">
       <button onClick={() => onRoute("overview")}>Overview</button>
+      <button onClick={() => onRoute("team")}>Team</button>
+      <button onClick={() => onRoute("clients")}>Clients</button>
+      <button onClick={() => onRoute("vendors")}>Vendors</button>
+      <button onClick={() => onRoute("timeline")}>Timeline</button>
+      <button onClick={() => onRoute("contracts")}>Contracts</button>
+      <button onClick={() => onRoute("payments")}>Payments</button>
+      <button onClick={() => onRoute("files")}>Files</button>
       <button onClick={() => onRoute("services")}>Services</button>
       <button onClick={() => onRoute("availability")}>Availability</button>
-      <button onClick={() => onRoute("payments")}>Payments</button>
       <button onClick={() => onRoute("portfolio")}>Portfolio</button>
+      <button onClick={() => onRoute("reports")}>Reports</button>
       <button onClick={() => onRoute("settings")}>Settings</button>
     </nav>
   ),
@@ -53,6 +60,7 @@ const events = [
         status: "TODO",
         priority: "HIGH",
         dueAt: new Date("2027-05-01T12:00:00.000Z"),
+        assignee: { id: "assistant-1", name: "Jordan Assistant", email: "jordan@example.com" },
       },
     ],
     bookingRequests: [
@@ -83,6 +91,10 @@ const events = [
         paymentIntents: [{ id: "intent-1", status: "REQUIRES_PAYMENT", fundedAt: null, amountCents: 100000 }],
       },
     ],
+    milestones: [{ id: "event-milestone-1", title: "Final walkthrough", dueAt: new Date("2027-05-20T12:00:00.000Z"), done: false, order: 1 }],
+    stakeholders: [{ id: "stakeholder-1", role: "CLIENT", user: { id: "client-1", name: "Maya Client", email: "maya@example.com" } }],
+    media: [{ id: "media-1", url: "https://example.com/floorplan.pdf", caption: "Floorplan packet", createdAt: new Date("2027-04-02T12:00:00.000Z") }],
+    threads: [{ id: "thread-1", subject: "Document review", createdAt: new Date("2027-04-03T12:00:00.000Z"), participants: [{ email: "maya@example.com", roleHint: "client" }], messages: [{ id: "message-1", createdAt: new Date("2027-04-03T12:00:00.000Z") }] }],
   },
 ];
 
@@ -146,6 +158,30 @@ describe("ProPlannerDashboard", () => {
   it("builds out every top-level section with real panels", () => {
     const { container } = renderDashboard();
 
+    fireEvent.click(screen.getByRole("button", { name: "Team" }));
+    expect(screen.getByText("Team & assistant operations")).toBeInTheDocument();
+    expect(screen.getByText("Jordan Assistant")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clients" }));
+    expect(screen.getByText("Client command center")).toBeInTheDocument();
+    expect(screen.getByText("Maya Client")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Vendors" }));
+    expect(screen.getByText("Vendor & venue relationship hub")).toBeInTheDocument();
+    expect(screen.getAllByText("Avery Florals").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Timeline" }));
+    expect(screen.getByText("Timeline, milestones & readiness")).toBeInTheDocument();
+    expect(screen.getByText("Final walkthrough")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Contracts" }));
+    expect(screen.getByText("Contracts command center")).toBeInTheDocument();
+    expect(screen.getByText(/does not approve contracts/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Files" }));
+    expect(screen.getByText("Files & documents")).toBeInTheDocument();
+    expect(screen.getByText("Floorplan packet")).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: "Services" }));
     expect(screen.getByText("Services & packages")).toBeInTheDocument();
     expect(screen.getByText("Full-service planning")).toBeInTheDocument();
@@ -161,6 +197,10 @@ describe("ProPlannerDashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Portfolio" }));
     expect(screen.getByText("Portfolio & branding")).toBeInTheDocument();
     expect(screen.getByText(/published profile\/listing record/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reports" }));
+    expect(screen.getByText("Reports & business intelligence")).toBeInTheDocument();
+    expect(screen.getByText("Revenue pipeline")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
