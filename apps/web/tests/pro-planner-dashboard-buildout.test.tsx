@@ -1,6 +1,6 @@
 import * as React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
@@ -70,7 +70,7 @@ const events = [
         status: "PENDING",
         createdAt: new Date("2027-04-01T12:00:00.000Z"),
         contactName: "Avery Vendor",
-        listing: { title: "Avery Florals", type: "VENDOR", category: "FLORIST" },
+        listing: { id: "listing-vendor-1", title: "Avery Florals", type: "VENDOR", category: "FLORIST" },
       },
     ],
     proposals: [
@@ -79,7 +79,7 @@ const events = [
         title: "Floral design proposal",
         status: "SENT",
         totalCents: 250000,
-        listing: { title: "Avery Florals", type: "VENDOR" },
+        listing: { id: "listing-vendor-1", title: "Avery Florals", type: "VENDOR" },
         contract: null,
         milestones: [{ id: "milestone-1", status: "PENDING", amountCents: 125000, dueDate: null }],
       },
@@ -142,6 +142,19 @@ const invites = [
   },
 ];
 
+const vendorRelationships = [
+  {
+    id: "relationship-1",
+    status: "PREFERRED",
+    notes: "Reliable floral partner for luxury weddings.",
+    reliability: 5,
+    lastContactAt: new Date("2027-04-01T12:00:00.000Z"),
+    nextFollowUpAt: new Date("2027-04-15T12:00:00.000Z"),
+    updatedAt: new Date("2027-04-02T12:00:00.000Z"),
+    listing: { id: "listing-vendor-1", title: "Avery Florals", type: "VENDOR", category: "FLORIST", city: "Atlanta", state: "GA" },
+  },
+];
+
 const forbiddenPanelCopy = new RegExp(["coming", "soon"].join(" ") + "|" + "place" + "holder" + "|" + ["Content", "for"].join(" "), "i");
 
 function renderDashboard() {
@@ -157,6 +170,7 @@ function renderDashboard() {
       notifications={notifications}
       members={members}
       invites={invites}
+      vendorRelationships={vendorRelationships}
     />,
   );
 }
@@ -200,7 +214,9 @@ describe("ProPlannerDashboard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Vendors" }));
     expect(screen.getByText("Vendor & venue relationship hub")).toBeInTheDocument();
+    expect(screen.getByText("Save vendor relationship note")).toBeInTheDocument();
     expect(screen.getAllByText("Avery Florals").length).toBeGreaterThan(0);
+    expect(screen.getByText("Reliable floral partner for luxury weddings.")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Timeline" }));
     expect(screen.getByText("Timeline, milestones & readiness")).toBeInTheDocument();
@@ -294,5 +310,39 @@ describe("ProPlannerDashboard", () => {
       "/api/pro-planner/clients/tasks",
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  it("saves vendor relationship notes through the guarded vendor relationship endpoint", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        relationship: {
+          id: "relationship-2",
+          status: "WATCHLIST",
+          notes: "Slow response on quote revisions.",
+          reliability: null,
+          lastContactAt: new Date("2027-04-04T12:00:00.000Z"),
+          nextFollowUpAt: new Date("2027-04-20T12:00:00.000Z"),
+          updatedAt: new Date("2027-04-04T12:00:00.000Z"),
+          listing: { id: "listing-vendor-1", title: "Avery Florals", type: "VENDOR", category: "FLORIST", city: "Atlanta", state: "GA" },
+        },
+      }),
+    } as Response);
+
+    renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: "Vendors" }));
+    const vendorControls = screen.getAllByRole("combobox");
+    fireEvent.change(vendorControls[0], { target: { value: "listing-vendor-1" } });
+    fireEvent.change(vendorControls[1], { target: { value: "WATCHLIST" } });
+    fireEvent.change(screen.getByLabelText("Vendor relationship note"), { target: { value: "Slow response on quote revisions." } });
+    const saveButton = screen.getByRole("button", { name: "Save relationship" });
+    await waitFor(() => expect(saveButton).not.toBeDisabled());
+    fireEvent.click(saveButton);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
+      "/api/pro-planner/vendors/relationships",
+      expect.objectContaining({ method: "POST" }),
+    ));
+    expect(await screen.findByText("Slow response on quote revisions.")).toBeInTheDocument();
   });
 });

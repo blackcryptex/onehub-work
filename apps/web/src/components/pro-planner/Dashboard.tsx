@@ -70,7 +70,7 @@ type PlannerBookingRequest = {
   status: string;
   createdAt: Date | string;
   contactName: string;
-  listing?: { title: string; type: string; category: string } | null;
+  listing?: { id: string; title: string; type: string; category: string } | null;
 };
 
 type PlannerProposal = {
@@ -81,7 +81,7 @@ type PlannerProposal = {
   totalCents: number;
   contract?: { id: string; status: string } | null;
   milestones?: { id: string; status: string; amountCents: number; dueDate: Date | string | null }[];
-  listing?: { title: string; type: string } | null;
+  listing?: { id: string; title: string; type: string } | null;
 };
 
 type PlannerContract = {
@@ -126,6 +126,17 @@ type PlannerListing = {
   state: string | null;
 };
 
+type PlannerVendorRelationship = {
+  id: string;
+  status: string;
+  notes: string | null;
+  reliability: number | null;
+  lastContactAt: Date | string | null;
+  nextFollowUpAt: Date | string | null;
+  updatedAt: Date | string;
+  listing: { id: string; title: string; type: string; category: string; city: string | null; state: string | null };
+};
+
 type PlannerNotification = {
   id: string;
   title: string;
@@ -164,6 +175,7 @@ interface ProPlannerDashboardProps {
   notifications?: PlannerNotification[];
   members?: PlannerMember[];
   invites?: PlannerInvite[];
+  vendorRelationships?: PlannerVendorRelationship[];
 }
 
 function formatDate(value: Date | string | null | undefined) {
@@ -216,6 +228,7 @@ export function ProPlannerDashboard({
   notifications = [],
   members = [],
   invites = [],
+  vendorRelationships = [],
 }: ProPlannerDashboardProps) {
   const [uiRoute, setUiRoute] = useState<UIRoute>("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -230,6 +243,13 @@ export function ProPlannerDashboard({
   const [clientTaskDueDate, setClientTaskDueDate] = useState("");
   const [clientTaskStatus, setClientTaskStatus] = useState<string | null>(null);
   const [clientTaskBusy, setClientTaskBusy] = useState(false);
+  const [localVendorRelationships, setLocalVendorRelationships] = useState<PlannerVendorRelationship[]>(vendorRelationships);
+  const [vendorRelationshipListingId, setVendorRelationshipListingId] = useState("");
+  const [vendorRelationshipStatus, setVendorRelationshipStatus] = useState("PREFERRED");
+  const [vendorRelationshipNotes, setVendorRelationshipNotes] = useState("");
+  const [vendorRelationshipFollowUp, setVendorRelationshipFollowUp] = useState("");
+  const [vendorRelationshipMessage, setVendorRelationshipMessage] = useState<string | null>(null);
+  const [vendorRelationshipBusy, setVendorRelationshipBusy] = useState(false);
 
   const canManageEvent = (event: PlannerEvent): boolean => {
     if (userRole === "ADMIN") return true;
@@ -338,10 +358,11 @@ export function ProPlannerDashboard({
         return description.includes("waiting on client") || isClientAssignee;
       })
       .slice(0, 8);
-    const vendorRelationships = localEvents.flatMap((event) => [
+    const derivedVendorRelationships = localEvents.flatMap((event) => [
       ...(event.bookingRequests ?? []).map((request) => ({
         id: `request-${request.id}`,
         event,
+        listingId: request.listing?.id ?? null,
         name: request.listing?.title ?? request.contactName,
         status: request.status,
         detail: request.listing ? `${request.listing.type} / ${request.listing.category}` : request.contactName,
@@ -350,12 +371,29 @@ export function ProPlannerDashboard({
       ...(event.proposals ?? []).map((proposal) => ({
         id: `proposal-vendor-${proposal.id}`,
         event,
+        listingId: proposal.listing?.id ?? null,
         name: proposal.listing?.title ?? proposal.title,
         status: proposal.status,
         detail: `${proposal.title} / ${formatMoney(proposal.totalCents)}`,
         href: `/pro/planner/vault/${event.slug}#workspace-proposals-detail`,
       })),
-    ]).slice(0, 10);
+    ]);
+    const persistedVendorRelationships = localVendorRelationships.map((relationship) => ({
+      id: `relationship-${relationship.id}`,
+      event: null as PlannerEvent | null,
+      listingId: relationship.listing.id,
+      name: relationship.listing.title,
+      status: relationship.status,
+      detail: `${relationship.listing.type} / ${relationship.listing.category}${relationship.reliability ? ` / reliability ${relationship.reliability}/5` : ""}${relationship.nextFollowUpAt ? ` / follow up ${formatDate(relationship.nextFollowUpAt)}` : ""}`,
+      href: "/explore/vendors",
+      notes: relationship.notes,
+    }));
+    const vendorRelationshipOptions = derivedVendorRelationships
+      .filter((relationship) => relationship.listingId)
+      .filter((relationship, index, all) => all.findIndex((candidate) => candidate.listingId === relationship.listingId) === index);
+    const vendorRelationshipQueue = [...persistedVendorRelationships, ...derivedVendorRelationships]
+      .filter((relationship, index, all) => all.findIndex((candidate) => candidate.listingId ? candidate.listingId === relationship.listingId && candidate.status === relationship.status : candidate.id === relationship.id) === index)
+      .slice(0, 10);
     const timelineRisks = localEvents.flatMap((event) => [
       ...(event.tasks ?? [])
         .filter((task) => isOpenTask(task.status))
@@ -392,12 +430,13 @@ export function ProPlannerDashboard({
       teamMembers,
       clients,
       waitingOnClientTasks,
-      vendorRelationships,
+      vendorRelationships: vendorRelationshipQueue,
+      vendorRelationshipOptions,
       timelineRisks,
       fileSignals,
       reportMetrics,
     };
-  }, [listings.length, localEvents, members, notifications]);
+  }, [listings.length, localEvents, localVendorRelationships, members, notifications, vendorRelationships.length]);
 
   const setupItems = [
     {
@@ -499,6 +538,38 @@ export function ProPlannerDashboard({
       setClientTaskStatus(error instanceof Error ? error.message : "Could not create client follow-up task");
     } finally {
       setClientTaskBusy(false);
+    }
+  };
+
+  const saveVendorRelationship = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setVendorRelationshipMessage(null);
+    if (!vendorRelationshipListingId) return;
+    setVendorRelationshipBusy(true);
+    try {
+      const response = await fetch("/api/pro-planner/vendors/relationships", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          listingId: vendorRelationshipListingId,
+          status: vendorRelationshipStatus,
+          notes: vendorRelationshipNotes || undefined,
+          nextFollowUpAt: vendorRelationshipFollowUp ? new Date(`${vendorRelationshipFollowUp}T12:00:00.000Z`).toISOString() : undefined,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Could not save vendor relationship");
+      }
+      setLocalVendorRelationships((current) => [payload.relationship, ...current.filter((relationship) => relationship.listing.id !== payload.relationship.listing.id)]);
+      setVendorRelationshipNotes("");
+      setVendorRelationshipFollowUp("");
+      setVendorRelationshipMessage("Vendor relationship saved with status, note, and follow-up state.");
+    } catch (error) {
+      setVendorRelationshipMessage(error instanceof Error ? error.message : "Could not save vendor relationship");
+    } finally {
+      setVendorRelationshipBusy(false);
     }
   };
 
@@ -861,12 +932,45 @@ export function ProPlannerDashboard({
       case "vendors":
         return (
           <Panel title="Vendor & venue relationship hub" icon={Store}>
-            <p className="text-sm text-slate-600">Shortlist, booking request, proposal, and relationship movement across events.</p>
+            <p className="text-sm text-slate-600">Shortlist, booking request, proposal, preferred status, caution notes, and relationship movement across events.</p>
+            <form onSubmit={saveVendorRelationship} className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+              <h3 className="font-semibold text-slate-900">Save vendor relationship note</h3>
+              <p className="mt-1 text-xs text-slate-600">Mark a vendor or venue as preferred, active, watchlist, or do-not-use for this planner organization.</p>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <label className="text-sm font-medium text-slate-800">
+                  Vendor or venue
+                  <select value={vendorRelationshipListingId} onChange={(event) => setVendorRelationshipListingId(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
+                    <option value="">Select from active requests/proposals</option>
+                    {dashboard.vendorRelationshipOptions.map((vendor) => <option key={vendor.listingId ?? vendor.id} value={vendor.listingId ?? ""}>{vendor.name}</option>)}
+                  </select>
+                </label>
+                <label className="text-sm font-medium text-slate-800">
+                  Relationship status
+                  <select value={vendorRelationshipStatus} onChange={(event) => setVendorRelationshipStatus(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
+                    <option value="PREFERRED">Preferred</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="WATCHLIST">Watchlist / caution</option>
+                    <option value="DO_NOT_USE">Do not use</option>
+                  </select>
+                </label>
+                <label className="text-sm font-medium text-slate-800">
+                  Next follow-up
+                  <input type="date" value={vendorRelationshipFollowUp} onChange={(event) => setVendorRelationshipFollowUp(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" />
+                </label>
+                <label className="text-sm font-medium text-slate-800 md:col-span-2">
+                  Relationship note
+                  <textarea value={vendorRelationshipNotes} onChange={(event) => setVendorRelationshipNotes(event.target.value)} aria-label="Vendor relationship note" className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                </label>
+              </div>
+              <Button type="submit" className="mt-3" disabled={vendorRelationshipBusy || !vendorRelationshipListingId}>{vendorRelationshipBusy ? "Saving..." : "Save relationship"}</Button>
+              {vendorRelationshipMessage && <p className="mt-2 text-sm text-slate-700">{vendorRelationshipMessage}</p>}
+            </form>
             <div className="space-y-3">
               {dashboard.vendorRelationships.length > 0 ? dashboard.vendorRelationships.map((vendor) => (
                 <Link key={vendor.id} href={vendor.href as Route} className="block rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
                   <p className="font-semibold text-slate-900">{vendor.name}</p>
-                  <p className="mt-1 text-sm text-slate-600">{vendor.event.name} / {vendor.status.replace(/_/g, " ")} / {vendor.detail}</p>
+                  <p className="mt-1 text-sm text-slate-600">{vendor.event ? `${vendor.event.name} / ` : "Relationship record / "}{vendor.status.replace(/_/g, " ")} / {vendor.detail}</p>
+                  {"notes" in vendor && vendor.notes && <p className="mt-2 text-xs text-slate-500">{vendor.notes}</p>}
                 </Link>
               )) : (
                 <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No vendor or venue requests are loaded. Source providers from an event command center to build the relationship queue.</p>
