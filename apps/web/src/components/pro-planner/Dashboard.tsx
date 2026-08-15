@@ -250,6 +250,11 @@ export function ProPlannerDashboard({
   const [vendorRelationshipFollowUp, setVendorRelationshipFollowUp] = useState("");
   const [vendorRelationshipMessage, setVendorRelationshipMessage] = useState<string | null>(null);
   const [vendorRelationshipBusy, setVendorRelationshipBusy] = useState(false);
+  const [timelineMilestoneEventId, setTimelineMilestoneEventId] = useState(events[0]?.id ?? "");
+  const [timelineMilestoneTitle, setTimelineMilestoneTitle] = useState("");
+  const [timelineMilestoneDueDate, setTimelineMilestoneDueDate] = useState("");
+  const [timelineMilestoneStatus, setTimelineMilestoneStatus] = useState<string | null>(null);
+  const [timelineMilestoneBusy, setTimelineMilestoneBusy] = useState(false);
 
   const canManageEvent = (event: PlannerEvent): boolean => {
     if (userRole === "ADMIN") return true;
@@ -570,6 +575,40 @@ export function ProPlannerDashboard({
       setVendorRelationshipMessage(error instanceof Error ? error.message : "Could not save vendor relationship");
     } finally {
       setVendorRelationshipBusy(false);
+    }
+  };
+
+  const createTimelineMilestone = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setTimelineMilestoneStatus(null);
+    if (!timelineMilestoneTitle.trim() || !timelineMilestoneEventId || !timelineMilestoneDueDate) return;
+    setTimelineMilestoneBusy(true);
+    try {
+      const response = await fetch("/api/pro-planner/timeline/milestones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          eventId: timelineMilestoneEventId,
+          title: timelineMilestoneTitle.trim(),
+          dueAt: new Date(`${timelineMilestoneDueDate}T12:00:00.000Z`).toISOString(),
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Could not create timeline milestone");
+      }
+      setLocalEvents((current) => current.map((event) => event.id === timelineMilestoneEventId ? {
+        ...event,
+        milestones: [...(event.milestones ?? []), payload.milestone].sort((left, right) => new Date(left.dueAt).getTime() - new Date(right.dueAt).getTime()),
+      } : event));
+      setTimelineMilestoneTitle("");
+      setTimelineMilestoneDueDate("");
+      setTimelineMilestoneStatus("Timeline milestone added to event readiness.");
+    } catch (error) {
+      setTimelineMilestoneStatus(error instanceof Error ? error.message : "Could not create timeline milestone");
+    } finally {
+      setTimelineMilestoneBusy(false);
     }
   };
 
@@ -982,7 +1021,39 @@ export function ProPlannerDashboard({
       case "timeline":
         return (
           <Panel title="Timeline, milestones & readiness" icon={ClipboardList}>
-            <p className="text-sm text-slate-600">Critical dates, near-term tasks, milestone risk, and event-day readiness across active events.</p>
+            <p className="text-sm text-slate-600">Critical dates, near-term tasks, milestone risk, run-of-show prep, and event-day readiness across active events.</p>
+            <form onSubmit={createTimelineMilestone} className="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
+              <h3 className="font-semibold text-slate-900">Add timeline milestone</h3>
+              <p className="mt-1 text-xs text-slate-600">Create real milestone records for walkthroughs, client approvals, vendor locks, rehearsals, and day-of readiness gates.</p>
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
+                <label className="text-sm font-medium text-slate-800">
+                  Event
+                  <select value={timelineMilestoneEventId} onChange={(event) => setTimelineMilestoneEventId(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
+                    {localEvents.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}
+                  </select>
+                </label>
+                <label className="text-sm font-medium text-slate-800">
+                  Milestone title
+                  <input value={timelineMilestoneTitle} onChange={(event) => setTimelineMilestoneTitle(event.target.value)} aria-label="Timeline milestone title" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" />
+                </label>
+                <label className="text-sm font-medium text-slate-800">
+                  Due date
+                  <input type="date" value={timelineMilestoneDueDate} onChange={(event) => setTimelineMilestoneDueDate(event.target.value)} aria-label="Timeline milestone due date" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" />
+                </label>
+              </div>
+              <Button type="submit" className="mt-3" disabled={timelineMilestoneBusy || !timelineMilestoneTitle.trim() || !timelineMilestoneEventId || !timelineMilestoneDueDate}>{timelineMilestoneBusy ? "Adding..." : "Add milestone"}</Button>
+              {timelineMilestoneStatus && <p className="mt-2 text-sm text-slate-700">{timelineMilestoneStatus}</p>}
+            </form>
+            <div className="grid gap-3 md:grid-cols-2">
+              {dashboard.nextEvents.map((event) => (
+                <div key={`readiness-${event.id}`} className="rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="font-semibold text-slate-900">{event.name}</p>
+                  <p className="mt-1 text-sm text-slate-600">Event date {formatDate(event.startAt)} / {(event.milestones ?? []).filter((milestone) => !milestone.done).length} open milestones / {(event.tasks ?? []).filter((task) => isOpenTask(task.status)).length} open tasks</p>
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Run-of-show readiness</p>
+                  <p className="mt-1 text-sm text-slate-600">{daysUntil(event.startAt) !== null && daysUntil(event.startAt)! <= 14 ? "Immediate run-of-show review required." : "Readiness is tracked from open tasks, milestones, and event date."}</p>
+                </div>
+              ))}
+            </div>
             <div className="space-y-3">
               {dashboard.timelineRisks.length > 0 ? dashboard.timelineRisks.map((risk) => (
                 <Link key={risk.id} href={risk.href as Route} className="block rounded-xl border border-amber-100 bg-amber-50 p-4 hover:border-amber-200">

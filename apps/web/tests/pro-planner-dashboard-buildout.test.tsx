@@ -220,7 +220,9 @@ describe("ProPlannerDashboard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Timeline" }));
     expect(screen.getByText("Timeline, milestones & readiness")).toBeInTheDocument();
+    expect(screen.getByText("Add timeline milestone")).toBeInTheDocument();
     expect(screen.getByText("Final walkthrough")).toBeInTheDocument();
+    expect(screen.getByText("Run-of-show readiness")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Contracts" }));
     expect(screen.getByText("Contracts command center")).toBeInTheDocument();
@@ -310,6 +312,36 @@ describe("ProPlannerDashboard", () => {
       "/api/pro-planner/clients/tasks",
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+
+  it("creates timeline milestones through the guarded timeline endpoint", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        milestone: {
+          id: "milestone-2",
+          title: "Publish final run of show",
+          dueAt: new Date("2027-06-01T12:00:00.000Z"),
+          done: false,
+          order: 0,
+        },
+      }),
+    } as Response);
+
+    renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: "Timeline" }));
+    fireEvent.change(screen.getByLabelText("Timeline milestone title"), { target: { value: "Publish final run of show" } });
+    fireEvent.change(screen.getByLabelText("Timeline milestone due date"), { target: { value: "2027-06-01" } });
+    const addButton = screen.getByRole("button", { name: "Add milestone" });
+    await waitFor(() => expect(addButton).not.toBeDisabled());
+    fireEvent.click(addButton);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
+      "/api/pro-planner/timeline/milestones",
+      expect.objectContaining({ method: "POST" }),
+    ));
+    expect(await screen.findByText("Publish final run of show")).toBeInTheDocument();
   });
 
   it("saves vendor relationship notes through the guarded vendor relationship endpoint", async () => {
