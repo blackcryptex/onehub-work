@@ -117,6 +117,7 @@ model Organization {
   refundRequests    RefundRequest[]
   teams             Team[]
   threads           Thread[]
+  vendorRelationships VendorRelationship[]
 }
 
 model Team {
@@ -518,6 +519,7 @@ model Listing {
   reviews         Review[]
   shortlistItems  ShortlistItem[]
   threads         Thread[]
+  vendorRelationships VendorRelationship[]
 }
 
 model ListingTag {
@@ -583,6 +585,26 @@ model BookingRequest {
   org          Organization  @relation(fields: [orgId], references: [id])
 
   @@index([listingId, createdAt])
+}
+
+model VendorRelationship {
+  id             String                   @id @default(cuid())
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  orgId          String
+  listingId      String
+  status         VendorRelationshipStatus @default(ACTIVE)
+  ownerUserId    String?
+  lastContactAt  DateTime?
+  nextFollowUpAt DateTime?
+  reliability    Int?
+  notes          String?
+  org            Organization             @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  listing        Listing                  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, listingId])
+  @@index([orgId, status, nextFollowUpAt])
+  @@index([listingId])
 }
 
 model Review {
@@ -1280,6 +1302,13 @@ enum AvailabilityStatus {
   HOLD
   BOOKED
   UNAVAILABLE
+}
+
+enum VendorRelationshipStatus {
+  ACTIVE
+  PREFERRED
+  WATCHLIST
+  DO_NOT_USE
 }
 
 enum BookingStatus {

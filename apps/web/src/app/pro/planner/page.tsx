@@ -32,7 +32,7 @@ export default async function ProPlannerPage() {
     where.createdById = user.id;
   }
 
-  const [events, listings, notifications, members, invites] = await Promise.all([
+  const [events, listings, notifications, members, invites, vendorRelationships] = await Promise.all([
     prisma.event.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -85,7 +85,7 @@ export default async function ProPlannerPage() {
             status: true,
             createdAt: true,
             contactName: true,
-            listing: { select: { title: true, type: true, category: true } },
+            listing: { select: { id: true, title: true, type: true, category: true } },
           },
           orderBy: { createdAt: "desc" },
         },
@@ -95,7 +95,7 @@ export default async function ProPlannerPage() {
             title: true,
             status: true,
             totalCents: true,
-            listing: { select: { title: true, type: true } },
+            listing: { select: { id: true, title: true, type: true } },
             contract: { select: { id: true, status: true } },
             milestones: { select: { id: true, status: true, amountCents: true, dueDate: true } },
           },
@@ -149,6 +149,20 @@ export default async function ProPlannerPage() {
       select: { id: true, email: true, role: true, expiresAt: true, createdAt: true },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.vendorRelationship.findMany({
+      where: { orgId: org.id },
+      select: {
+        id: true,
+        status: true,
+        notes: true,
+        reliability: true,
+        lastContactAt: true,
+        nextFollowUpAt: true,
+        updatedAt: true,
+        listing: { select: { id: true, title: true, type: true, category: true, city: true, state: true } },
+      },
+      orderBy: [{ nextFollowUpAt: "asc" }, { updatedAt: "desc" }],
+    }),
   ]);
 
   return (
@@ -163,6 +177,7 @@ export default async function ProPlannerPage() {
       notifications={notifications}
       members={members}
       invites={invites}
+      vendorRelationships={vendorRelationships}
     />
   );
 }
