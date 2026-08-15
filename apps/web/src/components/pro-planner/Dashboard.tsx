@@ -13,7 +13,7 @@
 import { ProPlannerHeader } from "./Header";
 import { ProPlannerSidebar } from "./Sidebar";
 import { Card, Button } from "@/components/ui";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import type { Role } from "@onehub/types/src/roles";
@@ -132,7 +132,26 @@ type PlannerNotification = {
   createdAt: Date | string;
 };
 
+type PlannerMember = {
+  id: string;
+  role: string;
+  staffRole: string | null;
+  createdAt: Date | string;
+  user: { id: string; name: string | null; email: string | null };
+  team: { id: string; name: string } | null;
+};
+
+type PlannerInvite = {
+  id: string;
+  email: string;
+  role: string;
+  expiresAt: Date | string;
+  createdAt: Date | string;
+  acceptPath?: string;
+};
+
 interface ProPlannerDashboardProps {
+  orgId: string;
   orgName: string;
   events: PlannerEvent[];
   userId: string;
@@ -140,6 +159,8 @@ interface ProPlannerDashboardProps {
   orgOwnerId: string;
   listings?: PlannerListing[];
   notifications?: PlannerNotification[];
+  members?: PlannerMember[];
+  invites?: PlannerInvite[];
 }
 
 function formatDate(value: Date | string | null | undefined) {
@@ -182,6 +203,7 @@ function contactName(user: { name: string | null; email?: string | null }) {
 }
 
 export function ProPlannerDashboard({
+  orgId,
   orgName,
   events,
   userId,
@@ -189,10 +211,16 @@ export function ProPlannerDashboard({
   orgOwnerId,
   listings = [],
   notifications = [],
+  members = [],
+  invites = [],
 }: ProPlannerDashboardProps) {
   const [uiRoute, setUiRoute] = useState<UIRoute>("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [localEvents, setLocalEvents] = useState<PlannerEvent[]>(events);
+  const [assistantEmail, setAssistantEmail] = useState("");
+  const [pendingInvites, setPendingInvites] = useState<PlannerInvite[]>(invites);
+  const [inviteStatus, setInviteStatus] = useState<string | null>(null);
+  const [inviteBusy, setInviteBusy] = useState(false);
 
   const canManageEvent = (event: PlannerEvent): boolean => {
     if (userRole === "ADMIN") return true;
@@ -267,8 +295,15 @@ export function ProPlannerDashboard({
       .slice(0, 6);
     const unreadNotifications = notifications.filter((notification) => !notification.read);
     const eventDates = sortedEvents.filter((event) => new Date(event.startAt).getTime() >= Date.now()).slice(0, 4);
-    const teamMembers = localEvents
-      .flatMap((event) => [
+    const teamMembers = [
+      ...members.map((member) => ({
+        id: member.user.id,
+        name: member.user.name,
+        email: member.user.email,
+        role: `${member.role}${member.staffRole ? ` / ${member.staffRole}` : ""}`,
+        event: null as PlannerEvent | null,
+      })),
+      ...localEvents.flatMap((event) => [
         { id: event.createdBy.id, name: event.createdBy.name, email: null as string | null, role: "Lead planner", event },
         ...(event.tasks ?? [])
           .filter((task) => task.assignee)
@@ -279,8 +314,8 @@ export function ProPlannerDashboard({
             role: `Task owner: ${task.title}`,
             event,
           })),
-      ])
-      .filter((member, index, all) => all.findIndex((candidate) => candidate.id === member.id && candidate.event.id === member.event.id) === index);
+      ]),
+    ].filter((member, index, all) => all.findIndex((candidate) => candidate.id === member.id && candidate.role === member.role && candidate.event?.id === member.event?.id) === index);
     const clients = localEvents.flatMap((event) => [
       ...((event.stakeholders ?? [])
         .filter((stakeholder) => stakeholder.role.toUpperCase().includes("CLIENT"))
@@ -345,7 +380,7 @@ export function ProPlannerDashboard({
       fileSignals,
       reportMetrics,
     };
-  }, [listings.length, localEvents, notifications]);
+  }, [listings.length, localEvents, members, notifications]);
 
   const setupItems = [
     {
@@ -383,6 +418,32 @@ export function ProPlannerDashboard({
     }
 
     setLocalEvents((prev) => prev.filter((event) => event.id !== eventId));
+  };
+
+  const createAssistantInvite = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setInviteStatus(null);
+    const email = assistantEmail.trim();
+    if (!email) return;
+    setInviteBusy(true);
+    try {
+      const response = await fetch("/api/pro-planner/team/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId, email, role: "MEMBER" }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Could not create assistant invite");
+      }
+      setPendingInvites((current) => [payload.invite, ...current]);
+      setAssistantEmail("");
+      setInviteStatus("Assistant invite created. Share the generated invite path from the pending invite list; email delivery is not automatic yet.");
+    } catch (error) {
+      setInviteStatus(error instanceof Error ? error.message : "Could not create assistant invite");
+    } finally {
+      setInviteBusy(false);
+    }
   };
 
   const EventList = ({ compact = false }: { compact?: boolean }) => (
@@ -620,14 +681,46 @@ export function ProPlannerDashboard({
         return (
           <Panel title="Team & assistant operations" icon={Users}>
             <p className="text-sm text-slate-600">Agency roster, task owners, and assistant-safe operating boundaries across active events.</p>
+            <form onSubmit={createAssistantInvite} className="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
+              <label htmlFor="assistant-email" className="text-sm font-semibold text-slate-900">Invite assistant or co-planner</label>
+              <p id="assistant-invite-help" className="mt-1 text-xs text-slate-600">Enter the assistant’s email address to create a guarded organization invite.</p>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <input
+                  id="assistant-email"
+                  type="email"
+                  value={assistantEmail}
+                  onChange={(event) => setAssistantEmail(event.target.value)}
+                  aria-describedby="assistant-invite-help"
+                  className="min-h-10 flex-1 rounded-lg border border-slate-300 px-3 text-sm"
+                />
+                <Button type="submit" disabled={inviteBusy || !assistantEmail.trim()}>{inviteBusy ? "Creating..." : "Create invite"}</Button>
+              </div>
+              {inviteStatus && <p className="mt-2 text-sm text-slate-700">{inviteStatus}</p>}
+            </form>
             <div className="grid gap-3 md:grid-cols-2">
-              {dashboard.teamMembers.length > 0 ? dashboard.teamMembers.map((member) => (
-                <Link key={`${member.event.id}-${member.id}-${member.role}`} href={`/pro/planner/vault/${member.event.slug}#event-workspace` as Route} className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
-                  <p className="font-semibold text-slate-900">{contactName(member)}</p>
-                  <p className="mt-1 text-sm text-slate-600">{member.event.name} / {member.role}</p>
-                </Link>
-              )) : (
+              {dashboard.teamMembers.length > 0 ? dashboard.teamMembers.map((member) => {
+                const href = member.event ? `/pro/planner/vault/${member.event.slug}#event-workspace` : "/professional-planner/setup";
+                const context = member.event ? member.event.name : orgName;
+                return (
+                  <Link key={`${member.event?.id ?? "org"}-${member.id}-${member.role}`} href={href as Route} className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
+                    <p className="font-semibold text-slate-900">{contactName(member)}</p>
+                    <p className="mt-1 text-sm text-slate-600">{context} / {member.role}</p>
+                  </Link>
+                );
+              }) : (
                 <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No assistant or task owner records are loaded yet. Invite coordinators and assign event tasks before delegating planner work.</p>
+              )}
+            </div>
+            <div className="space-y-3">
+              <h3 className="font-semibold text-slate-900">Pending assistant invites</h3>
+              {pendingInvites.length > 0 ? pendingInvites.map((invite) => (
+                <div key={invite.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="font-semibold text-slate-900">{invite.email}</p>
+                  <p className="mt-1 text-sm text-slate-600">{invite.role} / expires {formatDate(invite.expiresAt)}</p>
+                  {invite.acceptPath && <p className="mt-1 break-all text-xs text-slate-500">Invite path: {invite.acceptPath}</p>}
+                </div>
+              )) : (
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No pending assistant invites. New invites appear here after they are created.</p>
               )}
             </div>
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
