@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-08-15T09:53:50.045995+00:00",
+  "scope": "Disable duplicate OneHub Vercel project auto-deployments only",
+  "approved_by": "Marlon via Telegram: Approved",
+  "canonical_preserved": {
+    "name": "onehub-work-web-8kph",
+    "id": "prj_aQEUQ9ENx0cN1cjNPRMm9mMRQ4s6",
+    "mutated": false,
+    "owns_canonical_domains": [
+      "www.1hubevents.com",
+      "1hubevents.com"
+    ]
+  },
+  "duplicates_disabled": {
+    "onehub-work-web": {
+      "id": "prj_f8OM2tsmXK2872GYBvuzcs85xq51",
+      "patch_http": 200,
+      "previewDeploymentsDisabled": true,
+      "commandForIgnoringBuildStep": "echo 'OneHub duplicate Vercel project disabled; canonical project is onehub-work-web-8kph' && exit 0",
+      "verified_after_patch": true,
+      "rollback_link_preserved": true
+    },
+    "onehub-work-web-xh3l": {
+      "id": "prj_qPe7P1YFsZWAGyl3sLfu3pZY3VEw",
+      "patch_http": 200,
+      "previewDeploymentsDisabled": true,
+      "commandForIgnoringBuildStep": "echo 'OneHub duplicate Vercel project disabled; canonical project is onehub-work-web-8kph' && exit 0",
+      "verified_after_patch": true,
+      "rollback_link_preserved": true
+    }
+  },
+  "canonical_runtime_verified": {
+    "health_url": "https://www.1hubevents.com/api/health",
+    "health_status": "ok",
+    "database": "ok",
+    "stripe": "ok",
+    "providers_url": "https://www.1hubevents.com/api/auth/providers",
+    "provider_keys": [
+      "credentials",
+      "google"
+    ]
+  },
+  "not_touched": [
+    "domains",
+    "environment variable values",
+    "billing",
+    "project deletion",
+    "canonical project settings",
+    "new deployments"
+  ],
+  "secrets_redacted": true
+}
