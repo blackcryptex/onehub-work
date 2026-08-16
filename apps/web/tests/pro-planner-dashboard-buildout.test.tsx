@@ -297,6 +297,13 @@ describe("ProPlannerDashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reports" }));
     expect(screen.getByText("Reports & business intelligence")).toBeInTheDocument();
     expect(screen.getByText("Revenue pipeline")).toBeInTheDocument();
+    expect(screen.getByText("Booked revenue")).toBeInTheDocument();
+    expect(screen.getByText("Outstanding payments")).toBeInTheDocument();
+    expect(screen.getByText("Event workload by month")).toBeInTheDocument();
+    expect(screen.getByText("Vendor response performance")).toBeInTheDocument();
+    expect(screen.getByText("Package performance")).toBeInTheDocument();
+    expect(screen.getByText("Inquiry-to-booking conversion")).toBeInTheDocument();
+    expect(screen.getByText(/computed from real OneHub records/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
