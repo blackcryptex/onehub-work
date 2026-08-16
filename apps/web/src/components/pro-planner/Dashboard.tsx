@@ -95,6 +95,21 @@ type PlannerContract = {
   paymentIntents?: { id: string; status: string; fundedAt: Date | string | null; amountCents: number; currency?: string; milestone?: { id: string; title: string; status: string; dueDate: Date | string | null } | null }[];
 };
 
+type PlannerThreadMessage = {
+  id: string;
+  createdAt: Date | string;
+  bodyMd?: string | null;
+  attachments?: unknown;
+};
+
+type PlannerThread = {
+  id: string;
+  subject: string;
+  createdAt: Date | string;
+  participants?: { email: string; roleHint: string | null }[];
+  messages?: PlannerThreadMessage[];
+};
+
 type PlannerEvent = {
   id: string;
   name: string;
@@ -117,7 +132,7 @@ type PlannerEvent = {
   milestones?: { id: string; title: string; dueAt: Date | string; done: boolean; order: number }[];
   stakeholders?: { id: string; role: string; user: { id: string; name: string | null; email: string | null } }[];
   media?: { id: string; url: string; caption: string | null; createdAt: Date | string }[];
-  threads?: { id: string; subject: string; createdAt: Date | string; participants?: { email: string; roleHint: string | null }[]; messages?: { id: string; createdAt: Date | string }[] }[];
+  threads?: PlannerThread[];
 };
 
 type PlannerListing = {
@@ -237,6 +252,21 @@ function contactName(user: { name: string | null; email?: string | null }) {
   return user.name || user.email || "Unnamed contact";
 }
 
+function documentKind(value: string) {
+  const text = value.toLowerCase();
+  if (text.includes("contract") || text.includes("agreement") || text.includes("signature")) return "contract";
+  if (text.includes("proposal") || text.includes("quote") || text.includes("payment")) return "proposal";
+  if (text.includes("floor") || text.includes("layout") || text.includes("seating") || text.includes("diagram")) return "floorplan";
+  if (text.includes("vendor") || text.includes("venue") || text.includes("certificate") || text.includes("insurance") || text.includes("coi") || text.includes("rider") || text.includes("menu")) return "vendor";
+  return "general";
+}
+
+function isInternalThread(thread: PlannerThread) {
+  const text = `${thread.subject} ${(thread.messages ?? []).map((message) => message.bodyMd ?? "").join(" ")}`.toLowerCase();
+  const internalParticipant = (thread.participants ?? []).some((participant) => (participant.roleHint ?? "").toLowerCase().includes("internal"));
+  return internalParticipant || text.includes("internal") || text.includes("planner-only") || text.includes("private note");
+}
+
 export function ProPlannerDashboard({
   orgId,
   orgName,
@@ -283,6 +313,10 @@ export function ProPlannerDashboard({
   const [timelineMilestoneDueDate, setTimelineMilestoneDueDate] = useState("");
   const [timelineMilestoneStatus, setTimelineMilestoneStatus] = useState<string | null>(null);
   const [timelineMilestoneBusy, setTimelineMilestoneBusy] = useState(false);
+  const [internalNoteEventId, setInternalNoteEventId] = useState(events[0]?.id ?? "");
+  const [internalNoteBody, setInternalNoteBody] = useState("");
+  const [internalNoteStatus, setInternalNoteStatus] = useState<string | null>(null);
+  const [internalNoteBusy, setInternalNoteBusy] = useState(false);
 
   const canManageEvent = (event: PlannerEvent): boolean => {
     if (userRole === "ADMIN") return true;
@@ -482,11 +516,46 @@ export function ProPlannerDashboard({
         : []),
     ]).slice(0, 10);
     const fileSignals = localEvents.flatMap((event) => [
-      ...(event.media ?? []).map((media) => ({ id: media.id, event, title: media.caption || "Event file/media", detail: media.url, href: `/pro/planner/vault/${event.slug}#event-workspace` })),
+      ...(event.media ?? []).map((media) => ({ id: media.id, event, title: media.caption || "Event file/media", detail: media.url, href: `/pro/planner/vault/${event.slug}#event-workspace`, kind: documentKind(media.caption || media.url) })),
       ...(event.threads ?? [])
         .filter((thread) => thread.subject.toLowerCase().includes("file") || thread.subject.toLowerCase().includes("document"))
-        .map((thread) => ({ id: `thread-file-${thread.id}`, event, title: thread.subject, detail: `${thread.participants?.length ?? 0} participants`, href: `/messages/${thread.id}` })),
+        .map((thread) => ({ id: `thread-file-${thread.id}`, event, title: thread.subject, detail: `${thread.participants?.length ?? 0} participants`, href: `/messages/${thread.id}`, kind: documentKind(thread.subject) })),
     ]).slice(0, 10);
+    const documentBuckets = [
+      {
+        label: "Contract & proposal docs",
+        items: fileSignals.filter((file) => file.kind === "contract" || file.kind === "proposal"),
+        empty: "Contract packets, signed agreements, proposals, and payment exhibits will appear when attached to event records or message threads.",
+      },
+      {
+        label: "Floorplans & layouts",
+        items: fileSignals.filter((file) => file.kind === "floorplan" || file.kind === "layout"),
+        empty: "Floorplans, layouts, seating diagrams, and room specs will appear here with event context.",
+      },
+      {
+        label: "Vendor documents",
+        items: fileSignals.filter((file) => file.kind === "vendor"),
+        empty: "Vendor certificates, menus, rider docs, COIs, and proof files will appear here without leaking across events.",
+      },
+    ];
+    const communicationThreads = localEvents.flatMap((event) => (event.threads ?? []).map((thread) => {
+      const latestMessage = thread.messages?.[0];
+      const internal = isInternalThread(thread);
+      return {
+        ...thread,
+        event,
+        latestBody: latestMessage?.bodyMd ?? "No messages yet",
+        latestAt: latestMessage?.createdAt ?? thread.createdAt,
+        internal,
+        href: `/messages/${thread.id}`,
+      };
+    })).sort((left, right) => new Date(right.latestAt).getTime() - new Date(left.latestAt).getTime()).slice(0, 10);
+    const messageTemplates = [
+      { label: "Client approval reminder", detail: "Ask for a yes/no decision, deadline, and event impact before work stalls." },
+      { label: "Vendor document request", detail: "Request COI, floorplan, menu, rider, or delivery document with upload/link instructions." },
+      { label: "Week-of status check", detail: "Send a clear readiness check across client, vendor, venue, and assistant owners." },
+    ];
+    const followUpReminders = [...waitingOnClientTasks.slice(0, 3).map((task) => ({ id: `client-reminder-${task.id}`, title: task.title, detail: `${task.event.name} / client response needed` })), ...vendorRelationshipQueue.slice(0, 3).map((vendor) => ({ id: `vendor-reminder-${vendor.id}`, title: vendor.name, detail: vendor.detail }))].slice(0, 5);
     const serviceReadiness = localListings.map((listing) => {
       const openRequests = (listing.bookingRequests ?? []).filter((request) => isOpenRequest(request.status));
       const upcomingSlots = (listing.availSlots ?? []).filter((slot) => new Date(slot.endAt).getTime() >= Date.now());
@@ -544,6 +613,10 @@ export function ProPlannerDashboard({
       vendorRelationshipOptions,
       timelineRisks,
       fileSignals,
+      documentBuckets,
+      communicationThreads,
+      messageTemplates,
+      followUpReminders,
       reportMetrics,
     };
   }, [localEvents, localListings, localVendorRelationships, members, notifications, vendorRelationships.length]);
@@ -749,6 +822,35 @@ export function ProPlannerDashboard({
       setAvailabilityMessage(error instanceof Error ? error.message : "Could not add availability slot");
     } finally {
       setAvailabilityBusy(false);
+    }
+  };
+
+  const saveInternalNote = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setInternalNoteStatus(null);
+    const note = internalNoteBody.trim();
+    const eventId = internalNoteEventId || localEvents[0]?.id;
+    if (!eventId || !note) return;
+    setInternalNoteBusy(true);
+    try {
+      const response = await fetch("/api/pro-planner/files/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId, eventId, bodyMd: `Internal note: ${note}` }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not save internal note");
+      const thread = payload.thread as PlannerThread;
+      setLocalEvents((current) => current.map((plannerEvent) => plannerEvent.id === eventId ? {
+        ...plannerEvent,
+        threads: [thread, ...(plannerEvent.threads ?? []).filter((existing) => existing.id !== thread.id)],
+      } : plannerEvent));
+      setInternalNoteBody("");
+      setInternalNoteStatus("Internal planner note saved to the event communication hub.");
+    } catch (error) {
+      setInternalNoteStatus(error instanceof Error ? error.message : "Could not save internal planner note");
+    } finally {
+      setInternalNoteBusy(false);
     }
   };
 
@@ -1232,16 +1334,69 @@ export function ProPlannerDashboard({
       case "files":
         return (
           <Panel title="Files & documents" icon={ImageIcon}>
-            <p className="text-sm text-slate-600">Event media, document-thread signals, floorplans, proposal files, and vendor documents when attached to event records.</p>
-            <div className="space-y-3">
-              {dashboard.fileSignals.length > 0 ? dashboard.fileSignals.map((file) => (
-                <Link key={file.id} href={file.href as Route} className="block rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
-                  <p className="font-semibold text-slate-900">{file.title}</p>
-                  <p className="mt-1 text-sm text-slate-600">{file.event.name} / {file.detail}</p>
-                </Link>
-              )) : (
-                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No event file or document signals are loaded. Uploads, media, and document-thread activity will appear here once attached to events.</p>
-              )}
+            <p className="text-sm text-slate-600">Event file library, document review threads, internal planner notes, client-safe communication, templates, and follow-up reminders.</p>
+            <div className="grid gap-3 md:grid-cols-4">
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Document command center</p><p className="mt-2 text-2xl font-semibold">{dashboard.fileSignals.length}</p><p className="mt-1 text-xs text-slate-500">event-scoped docs loaded</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Open threads</p><p className="mt-2 text-2xl font-semibold">{dashboard.communicationThreads.length}</p><p className="mt-1 text-xs text-slate-500">event conversations</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Planner-only notes</p><p className="mt-2 text-2xl font-semibold">{dashboard.communicationThreads.filter((thread) => thread.internal).length}</p><p className="mt-1 text-xs text-slate-500">not client/vendor visible</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Reminder queue</p><p className="mt-2 text-2xl font-semibold">{dashboard.followUpReminders.length}</p><p className="mt-1 text-xs text-slate-500">client/vendor follow-ups</p></Card>
+            </div>
+            <form onSubmit={saveInternalNote} className="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
+              <h3 className="font-semibold text-slate-900">Internal planner notes</h3>
+              <p className="mt-1 text-xs text-slate-600">Internal notes stay planner-only in the Pro Planner hub and do not become client/vendor messages.</p>
+              <div className="mt-3 grid gap-3 md:grid-cols-[minmax(180px,0.35fr)_minmax(0,1fr)]">
+                <label className="text-sm font-medium text-slate-800">Event<select value={internalNoteEventId} onChange={(event) => setInternalNoteEventId(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">{localEvents.map((plannerEvent) => <option key={plannerEvent.id} value={plannerEvent.id}>{plannerEvent.name}</option>)}</select></label>
+                <label className="text-sm font-medium text-slate-800">Internal planner note<input value={internalNoteBody} onChange={(event) => setInternalNoteBody(event.target.value)} aria-label="Internal planner note" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" /></label>
+              </div>
+              <Button type="submit" className="mt-3" disabled={internalNoteBusy || !internalNoteEventId || !internalNoteBody.trim()}>{internalNoteBusy ? "Saving..." : "Save internal note"}</Button>
+              {internalNoteStatus && <p className="mt-2 text-sm text-slate-700">{internalNoteStatus}</p>}
+            </form>
+            <div className="grid gap-4 xl:grid-cols-3">
+              {dashboard.documentBuckets.map((bucket) => (
+                <Card key={bucket.label} className="p-4">
+                  <h3 className="font-semibold text-slate-900">{bucket.label}</h3>
+                  <div className="mt-3 space-y-2">
+                    {bucket.items.length > 0 ? bucket.items.map((file) => (
+                      <Link key={`${bucket.label}-${file.id}`} href={file.href as Route} className="block rounded-lg border border-slate-200 bg-slate-50 p-3 hover:border-indigo-200">
+                        <p className="text-sm font-semibold text-slate-900">{file.title}</p>
+                        <p className="mt-1 text-xs text-slate-600">{file.event.name} / {file.detail}</p>
+                      </Link>
+                    )) : <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">{bucket.empty}</p>}
+                  </div>
+                </Card>
+              ))}
+            </div>
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+              <Card className="p-4">
+                <h3 className="font-semibold text-slate-900">Communication hub</h3>
+                <p className="mt-1 text-sm text-slate-600">Event-specific threads with visibility labels so internal planner notes stay separate from client/vendor communication.</p>
+                <div className="mt-3 space-y-3">
+                  {dashboard.communicationThreads.length > 0 ? dashboard.communicationThreads.map((thread) => (
+                    <Link key={thread.id} href={thread.href as Route} className={`block rounded-xl border p-4 hover:border-indigo-200 ${thread.internal ? "border-amber-200 bg-amber-50" : "border-slate-200 bg-slate-50"}`}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-semibold text-slate-900">{thread.subject}</p>
+                        <span className={`rounded-full px-2 py-1 text-xs font-semibold ${thread.internal ? "bg-amber-100 text-amber-900" : "bg-emerald-100 text-emerald-800"}`}>{thread.internal ? "Internal planner-only" : "Client/vendor visible"}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-slate-600">{thread.event.name} / {thread.participants?.length ?? 0} participant{(thread.participants?.length ?? 0) === 1 ? "" : "s"}</p>
+                      <p className="mt-1 text-xs text-slate-500">{thread.latestBody}</p>
+                    </Link>
+                  )) : <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No event threads are loaded. Message threads created from requests, proposals, clients, and planner notes will appear here.</p>}
+                </div>
+              </Card>
+              <div className="space-y-4">
+                <Card className="p-4">
+                  <h3 className="font-semibold text-slate-900">Message templates</h3>
+                  <div className="mt-3 space-y-2">
+                    {dashboard.messageTemplates.map((template) => <div key={template.label} className="rounded-lg border border-slate-200 bg-slate-50 p-3"><p className="text-sm font-semibold text-slate-900">{template.label}</p><p className="mt-1 text-xs text-slate-600">{template.detail}</p></div>)}
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <h3 className="font-semibold text-slate-900">Follow-up reminders</h3>
+                  <div className="mt-3 space-y-2">
+                    {dashboard.followUpReminders.length > 0 ? dashboard.followUpReminders.map((reminder) => <div key={reminder.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3"><p className="text-sm font-semibold text-slate-900">{reminder.title}</p><p className="mt-1 text-xs text-slate-600">{reminder.detail}</p></div>) : <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">No client/vendor follow-up reminders are loaded.</p>}
+                  </div>
+                </Card>
+              </div>
             </div>
           </Panel>
         );

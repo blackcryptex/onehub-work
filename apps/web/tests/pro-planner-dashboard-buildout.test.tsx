@@ -101,7 +101,22 @@ const events = [
     milestones: [{ id: "event-milestone-1", title: "Final walkthrough", dueAt: new Date("2027-05-20T12:00:00.000Z"), done: false, order: 1 }],
     stakeholders: [{ id: "stakeholder-1", role: "CLIENT", user: { id: "client-1", name: "Maya Client", email: "maya@example.com" } }],
     media: [{ id: "media-1", url: "https://example.com/floorplan.pdf", caption: "Floorplan packet", createdAt: new Date("2027-04-02T12:00:00.000Z") }],
-    threads: [{ id: "thread-1", subject: "Document review", createdAt: new Date("2027-04-03T12:00:00.000Z"), participants: [{ email: "maya@example.com", roleHint: "client" }], messages: [{ id: "message-1", createdAt: new Date("2027-04-03T12:00:00.000Z") }] }],
+    threads: [
+      {
+        id: "thread-1",
+        subject: "Document review",
+        createdAt: new Date("2027-04-03T12:00:00.000Z"),
+        participants: [{ email: "maya@example.com", roleHint: "client" }],
+        messages: [{ id: "message-1", createdAt: new Date("2027-04-03T12:00:00.000Z"), bodyMd: "Client-visible floorplan comments", attachments: ["https://example.com/floorplan.pdf"] }],
+      },
+      {
+        id: "thread-2",
+        subject: "Internal planner notes",
+        createdAt: new Date("2027-04-04T12:00:00.000Z"),
+        participants: [{ email: "planner@example.com", roleHint: "internal" }],
+        messages: [{ id: "message-2", createdAt: new Date("2027-04-04T12:00:00.000Z"), bodyMd: "Internal note: confirm vendor insurance before client sees packet", attachments: [] }],
+      },
+    ],
   },
 ];
 
@@ -245,7 +260,17 @@ describe("ProPlannerDashboard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Files" }));
     expect(screen.getByText("Files & documents")).toBeInTheDocument();
+    expect(screen.getByText("Document command center")).toBeInTheDocument();
     expect(screen.getByText("Floorplan packet")).toBeInTheDocument();
+    expect(screen.getByText("Contract & proposal docs")).toBeInTheDocument();
+    expect(screen.getByText("Floorplans & layouts")).toBeInTheDocument();
+    expect(screen.getByText("Vendor documents")).toBeInTheDocument();
+    expect(screen.getByText("Communication hub")).toBeInTheDocument();
+    expect(screen.getByText("Document review")).toBeInTheDocument();
+    expect(screen.getAllByText("Internal planner notes").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Internal notes stay planner-only/)).toBeInTheDocument();
+    expect(screen.getByText("Message templates")).toBeInTheDocument();
+    expect(screen.getByText("Follow-up reminders")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Services" }));
     expect(screen.getByText("Services & packages")).toBeInTheDocument();
@@ -395,6 +420,34 @@ describe("ProPlannerDashboard", () => {
       expect.objectContaining({ method: "POST" }),
     ));
     expect(await screen.findByText("Tentative private client weekend")).toBeInTheDocument();
+  });
+
+  it("saves internal planner notes through the guarded files communication endpoint", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        thread: {
+          id: "thread-3",
+          subject: "Internal planner notes",
+          createdAt: new Date("2027-04-05T12:00:00.000Z"),
+          participants: [{ email: "planner@example.com", roleHint: "internal" }],
+          messages: [{ id: "message-3", createdAt: new Date("2027-04-05T12:00:00.000Z"), bodyMd: "Internal note: collect signed insurance certificate", attachments: [] }],
+        },
+      }),
+    } as Response);
+
+    renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: "Files" }));
+    fireEvent.change(screen.getByLabelText("Internal planner note"), { target: { value: "collect signed insurance certificate" } });
+    const saveButton = screen.getByRole("button", { name: "Save internal note" });
+    await waitFor(() => expect(saveButton).not.toBeDisabled());
+    fireEvent.click(saveButton);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
+      "/api/pro-planner/files/notes",
+      expect.objectContaining({ method: "POST" }),
+    ));
+    expect(await screen.findByText(/collect signed insurance certificate/)).toBeInTheDocument();
   });
 
   it("saves vendor relationship notes through the guarded vendor relationship endpoint", async () => {
