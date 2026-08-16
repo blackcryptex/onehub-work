@@ -125,8 +125,15 @@ type PlannerListing = {
   title: string;
   type: string;
   category: string;
+  description?: string | null;
+  minGuests?: number | null;
+  maxGuests?: number | null;
+  priceTier?: number | null;
   city: string | null;
   state: string | null;
+  offers?: { id: string; name: string; priceCents: number | null; unit: string | null }[];
+  availSlots?: { id: string; startAt: Date | string; endAt: Date | string; status: string; note: string | null }[];
+  bookingRequests?: { id: string; status: string; startAt: Date | string; endAt: Date | string; guests: number | null; quoteCents: number | null; event: { id: string; name: string; slug: string } }[];
 };
 
 type PlannerVendorRelationship = {
@@ -263,6 +270,14 @@ export function ProPlannerDashboard({
   const [vendorRelationshipFollowUp, setVendorRelationshipFollowUp] = useState("");
   const [vendorRelationshipMessage, setVendorRelationshipMessage] = useState<string | null>(null);
   const [vendorRelationshipBusy, setVendorRelationshipBusy] = useState(false);
+  const [localListings, setLocalListings] = useState<PlannerListing[]>(listings);
+  const [availabilityListingId, setAvailabilityListingId] = useState(listings[0]?.id ?? "");
+  const [availabilityStartDate, setAvailabilityStartDate] = useState("");
+  const [availabilityEndDate, setAvailabilityEndDate] = useState("");
+  const [availabilityStatus, setAvailabilityStatus] = useState("AVAILABLE");
+  const [availabilityNote, setAvailabilityNote] = useState("");
+  const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(null);
+  const [availabilityBusy, setAvailabilityBusy] = useState(false);
   const [timelineMilestoneEventId, setTimelineMilestoneEventId] = useState(events[0]?.id ?? "");
   const [timelineMilestoneTitle, setTimelineMilestoneTitle] = useState("");
   const [timelineMilestoneDueDate, setTimelineMilestoneDueDate] = useState("");
@@ -472,11 +487,37 @@ export function ProPlannerDashboard({
         .filter((thread) => thread.subject.toLowerCase().includes("file") || thread.subject.toLowerCase().includes("document"))
         .map((thread) => ({ id: `thread-file-${thread.id}`, event, title: thread.subject, detail: `${thread.participants?.length ?? 0} participants`, href: `/messages/${thread.id}` })),
     ]).slice(0, 10);
+    const serviceReadiness = localListings.map((listing) => {
+      const openRequests = (listing.bookingRequests ?? []).filter((request) => isOpenRequest(request.status));
+      const upcomingSlots = (listing.availSlots ?? []).filter((slot) => new Date(slot.endAt).getTime() >= Date.now());
+      const missingItems = [
+        !listing.description ? "description" : null,
+        !listing.priceTier && !(listing.offers ?? []).length ? "pricing" : null,
+        !upcomingSlots.length ? "availability" : null,
+      ].filter(Boolean) as string[];
+      return { listing, openRequests, upcomingSlots, missingItems, ready: missingItems.length === 0 };
+    });
+    const bookingPressure = localListings.flatMap((listing) => (listing.bookingRequests ?? []).map((request) => ({
+      id: request.id,
+      listing,
+      status: request.status,
+      startAt: request.startAt,
+      endAt: request.endAt,
+      guests: request.guests,
+      quoteCents: request.quoteCents,
+      event: request.event,
+      href: `/pro/planner/vault/${request.event.slug}#workspace-vendors-detail`,
+    }))).filter((request) => isOpenRequest(request.status)).slice(0, 12);
+    const availabilityQueue = localListings.flatMap((listing) => (listing.availSlots ?? []).map((slot) => ({
+      ...slot,
+      listing,
+    }))).filter((slot) => new Date(slot.endAt).getTime() >= Date.now()).sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime()).slice(0, 12);
     const reportMetrics = {
       pipelineCents: localEvents.flatMap((event) => event.proposals ?? []).reduce((sum, proposal) => sum + proposal.totalCents, 0),
       openContracts: localEvents.flatMap((event) => event.contracts ?? []).filter((contract) => isMoneyAttentionStatus(contract.status)).length,
       moneyAtRiskCents,
       vendorTouches: vendorRelationships.length,
+      serviceReadiness: serviceReadiness.filter((service) => service.ready).length,
       taskLoad: openTasks.length,
     };
 
@@ -491,8 +532,11 @@ export function ProPlannerDashboard({
       paymentRiskQueue,
       proposalPaymentPlanQueue,
       moneyAtRiskCents,
+      serviceReadiness,
+      bookingPressure,
+      availabilityQueue,
       unreadNotifications,
-      publishedListings: listings.length,
+      publishedListings: localListings.length,
       teamMembers,
       clients,
       waitingOnClientTasks,
@@ -502,7 +546,7 @@ export function ProPlannerDashboard({
       fileSignals,
       reportMetrics,
     };
-  }, [listings.length, localEvents, localVendorRelationships, members, notifications, vendorRelationships.length]);
+  }, [localEvents, localListings, localVendorRelationships, members, notifications, vendorRelationships.length]);
 
   const setupItems = [
     {
@@ -670,6 +714,41 @@ export function ProPlannerDashboard({
       setTimelineMilestoneStatus(error instanceof Error ? error.message : "Could not create timeline milestone");
     } finally {
       setTimelineMilestoneBusy(false);
+    }
+  };
+
+  const addAvailabilitySlot = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAvailabilityMessage(null);
+    if (!availabilityListingId || !availabilityStartDate || !availabilityEndDate) return;
+    setAvailabilityBusy(true);
+    try {
+      const response = await fetch("/api/pro-planner/availability/slots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          listingId: availabilityListingId,
+          startAt: new Date(`${availabilityStartDate}T09:00:00.000Z`).toISOString(),
+          endAt: new Date(`${availabilityEndDate}T17:00:00.000Z`).toISOString(),
+          status: availabilityStatus,
+          note: availabilityNote || undefined,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not add availability slot");
+      setLocalListings((current) => current.map((listing) => listing.id === availabilityListingId ? {
+        ...listing,
+        availSlots: [...(listing.availSlots ?? []), payload.slot].sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime()),
+      } : listing));
+      setAvailabilityStartDate("");
+      setAvailabilityEndDate("");
+      setAvailabilityNote("");
+      setAvailabilityMessage("Availability slot added to booking readiness.");
+    } catch (error) {
+      setAvailabilityMessage(error instanceof Error ? error.message : "Could not add availability slot");
+    } finally {
+      setAvailabilityBusy(false);
     }
   };
 
@@ -1169,12 +1248,26 @@ export function ProPlannerDashboard({
       case "services":
         return (
           <Panel title="Services & packages" icon={Briefcase}>
-            <p className="text-sm text-slate-600">Published marketplace services and package readiness for planner-led events.</p>
+            <p className="text-sm text-slate-600">Published marketplace services, pricing readiness, capacity, package offers, and booking pressure for planner-led events.</p>
+            <div className="grid gap-3 md:grid-cols-3">
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Published services</p><p className="mt-2 text-2xl font-semibold">{localListings.length}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Ready services</p><p className="mt-2 text-2xl font-semibold">{dashboard.serviceReadiness.filter((service) => service.ready).length}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Open booking requests</p><p className="mt-2 text-2xl font-semibold">{dashboard.bookingPressure.length}</p></Card>
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
-              {listings.length > 0 ? listings.map((listing) => (
+              {dashboard.serviceReadiness.length > 0 ? dashboard.serviceReadiness.map(({ listing, openRequests, upcomingSlots, missingItems, ready }) => (
                 <Card key={listing.id} className="p-4">
-                  <p className="font-semibold">{listing.title}</p>
-                  <p className="mt-1 text-sm text-slate-600">{listing.type} / {listing.category}{listing.city ? ` / ${listing.city}, ${listing.state}` : ""}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">{listing.title}</p>
+                      <p className="mt-1 text-sm text-slate-600">{listing.type} / {listing.category}{listing.city ? ` / ${listing.city}, ${listing.state}` : ""}</p>
+                    </div>
+                    <span className={`rounded-full px-2 py-1 text-xs font-semibold ${ready ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{ready ? "Ready" : "Needs setup"}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-600">Capacity {listing.minGuests ?? "min pending"}–{listing.maxGuests ?? "max pending"} / price tier {listing.priceTier ?? "pending"}</p>
+                  <p className="mt-1 text-sm text-slate-600">{(listing.offers ?? []).length} package offer{(listing.offers ?? []).length === 1 ? "" : "s"} / {upcomingSlots.length} availability slot{upcomingSlots.length === 1 ? "" : "s"} / {openRequests.length} open request{openRequests.length === 1 ? "" : "s"}</p>
+                  {(listing.offers ?? []).length > 0 && <p className="mt-1 text-xs text-slate-500">Packages: {(listing.offers ?? []).map((offer) => offer.name).join(", ")}</p>}
+                  {missingItems.length > 0 && <p className="mt-2 text-xs text-amber-800">Missing: {missingItems.join(", ")}</p>}
                 </Card>
               )) : (
                 <Card className="p-4">
@@ -1189,16 +1282,39 @@ export function ProPlannerDashboard({
       case "availability":
         return (
           <Panel title="Availability & booking" icon={Calendar}>
-            <p className="text-sm text-slate-600">Upcoming event dates and booking pressure across the agency.</p>
+            <p className="text-sm text-slate-600">Upcoming event dates, service availability, holds, and booking pressure across the agency.</p>
+            <form onSubmit={addAvailabilitySlot} className="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
+              <h3 className="font-semibold text-slate-900">Add availability or booking hold</h3>
+              <p className="mt-1 text-xs text-slate-600">Publish planner availability or hold dates for a service/package. This does not charge clients or confirm bookings.</p>
+              <div className="mt-3 grid gap-3 md:grid-cols-4">
+                <label className="text-sm font-medium text-slate-800">Service<select value={availabilityListingId} onChange={(event) => setAvailabilityListingId(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">{localListings.map((listing) => <option key={listing.id} value={listing.id}>{listing.title}</option>)}</select></label>
+                <label className="text-sm font-medium text-slate-800">Start date<input type="date" value={availabilityStartDate} onChange={(event) => setAvailabilityStartDate(event.target.value)} aria-label="Availability start date" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" /></label>
+                <label className="text-sm font-medium text-slate-800">End date<input type="date" value={availabilityEndDate} onChange={(event) => setAvailabilityEndDate(event.target.value)} aria-label="Availability end date" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" /></label>
+                <label className="text-sm font-medium text-slate-800">Status<select value={availabilityStatus} onChange={(event) => setAvailabilityStatus(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"><option value="AVAILABLE">Available</option><option value="HOLD">Hold</option><option value="BOOKED">Booked</option><option value="UNAVAILABLE">Unavailable</option></select></label>
+              </div>
+              <label className="mt-3 block text-sm font-medium text-slate-800">Availability note<input value={availabilityNote} onChange={(event) => setAvailabilityNote(event.target.value)} aria-label="Availability note" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" /></label>
+              <Button type="submit" className="mt-3" disabled={availabilityBusy || !availabilityListingId || !availabilityStartDate || !availabilityEndDate}>{availabilityBusy ? "Adding..." : "Add availability"}</Button>
+              {availabilityMessage && <p className="mt-2 text-sm text-slate-700">{availabilityMessage}</p>}
+            </form>
             <div className="grid gap-3 md:grid-cols-2">
-              {dashboard.nextEvents.length > 0 ? dashboard.nextEvents.map((event) => (
-                <Link key={event.id} href={`/pro/planner/vault/${event.slug}` as Route} className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
-                  <p className="font-semibold text-slate-900">{event.name}</p>
-                  <p className="mt-1 text-sm text-slate-600">{formatDate(event.startAt)} / {event.status.replace(/_/g, " ")}</p>
-                </Link>
+              {dashboard.availabilityQueue.length > 0 ? dashboard.availabilityQueue.map((slot) => (
+                <Card key={slot.id} className="p-4">
+                  <p className="font-semibold text-slate-900">{slot.listing.title}</p>
+                  <p className="mt-1 text-sm text-slate-600">{formatDate(slot.startAt)}–{formatDate(slot.endAt)} / {slot.status.replace(/_/g, " ")}</p>
+                  {slot.note && <p className="mt-2 text-xs text-slate-500">{slot.note}</p>}
+                </Card>
               )) : (
-                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No upcoming active event dates are loaded. Create or reopen events to populate agency availability.</p>
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No service availability slots are loaded. Add availability or booking holds to make scheduling capacity visible.</p>
               )}
+            </div>
+            <div className="space-y-3">
+              <h3 className="font-semibold text-slate-900">Booking pressure</h3>
+              {dashboard.bookingPressure.length > 0 ? dashboard.bookingPressure.map((request) => (
+                <Link key={request.id} href={request.href as Route} className="block rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
+                  <p className="font-semibold text-slate-900">{request.listing.title}</p>
+                  <p className="mt-1 text-sm text-slate-600">{request.event.name} / {request.status} / {formatDate(request.startAt)}{request.quoteCents ? ` / quote ${formatMoney(request.quoteCents)}` : ""}</p>
+                </Link>
+              )) : <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No open booking requests are loaded for planner services.</p>}
             </div>
           </Panel>
         );

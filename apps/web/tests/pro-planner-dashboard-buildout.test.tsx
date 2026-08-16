@@ -111,8 +111,15 @@ const listings = [
     title: "Full-service planning",
     type: "VENDOR",
     category: "PLANNER",
+    description: "Full-service planning for private events.",
+    minGuests: 50,
+    maxGuests: 250,
+    priceTier: 4,
     city: "Atlanta",
     state: "GA",
+    offers: [{ id: "offer-1", name: "Wedding weekend package", priceCents: 500000, unit: "package" }],
+    availSlots: [{ id: "availability-1", startAt: new Date("2027-05-01T09:00:00.000Z"), endAt: new Date("2027-05-03T17:00:00.000Z"), status: "AVAILABLE", note: "Spring planning weekend" }],
+    bookingRequests: [{ id: "planner-request-1", status: "PENDING", startAt: new Date("2027-05-10T09:00:00.000Z"), endAt: new Date("2027-05-10T17:00:00.000Z"), guests: 150, quoteCents: 750000, event: { id: "event-1", name: "Smith Wedding Weekend", slug: "smith-wedding-weekend" } }],
   },
 ];
 
@@ -243,10 +250,14 @@ describe("ProPlannerDashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Services" }));
     expect(screen.getByText("Services & packages")).toBeInTheDocument();
     expect(screen.getByText("Full-service planning")).toBeInTheDocument();
+    expect(screen.getByText("Ready services")).toBeInTheDocument();
+    expect(screen.getByText(/Wedding weekend package/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Availability" }));
     expect(screen.getByText("Availability & booking")).toBeInTheDocument();
-    expect(screen.getByText(/Upcoming event dates/)).toBeInTheDocument();
+    expect(screen.getByText("Add availability or booking hold")).toBeInTheDocument();
+    expect(screen.getByText("Spring planning weekend")).toBeInTheDocument();
+    expect(screen.getByText("Booking pressure")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Payments" }));
     expect(screen.getByText("Payments & contracts")).toBeInTheDocument();
@@ -352,6 +363,38 @@ describe("ProPlannerDashboard", () => {
       expect.objectContaining({ method: "POST" }),
     ));
     expect(await screen.findByText("Publish final run of show")).toBeInTheDocument();
+  });
+
+
+  it("adds service availability through the guarded availability endpoint", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        slot: {
+          id: "availability-2",
+          startAt: new Date("2027-05-15T09:00:00.000Z"),
+          endAt: new Date("2027-05-16T17:00:00.000Z"),
+          status: "HOLD",
+          note: "Tentative private client weekend",
+        },
+      }),
+    } as Response);
+
+    renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: "Availability" }));
+    fireEvent.change(screen.getByLabelText("Availability start date"), { target: { value: "2027-05-15" } });
+    fireEvent.change(screen.getByLabelText("Availability end date"), { target: { value: "2027-05-16" } });
+    fireEvent.change(screen.getByDisplayValue("Available"), { target: { value: "HOLD" } });
+    fireEvent.change(screen.getByLabelText("Availability note"), { target: { value: "Tentative private client weekend" } });
+    const addButton = screen.getByRole("button", { name: "Add availability" });
+    await waitFor(() => expect(addButton).not.toBeDisabled());
+    fireEvent.click(addButton);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
+      "/api/pro-planner/availability/slots",
+      expect.objectContaining({ method: "POST" }),
+    ));
+    expect(await screen.findByText("Tentative private client weekend")).toBeInTheDocument();
   });
 
   it("saves vendor relationship notes through the guarded vendor relationship endpoint", async () => {
