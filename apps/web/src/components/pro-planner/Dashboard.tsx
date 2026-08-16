@@ -581,13 +581,45 @@ export function ProPlannerDashboard({
       ...slot,
       listing,
     }))).filter((slot) => new Date(slot.endAt).getTime() >= Date.now()).sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime()).slice(0, 12);
+    const allProposals = localEvents.flatMap((event) => event.proposals ?? []);
+    const allContracts = localEvents.flatMap((event) => event.contracts ?? []);
+    const allBookingRequests = localEvents.flatMap((event) => event.bookingRequests ?? []);
+    const bookedRevenueCents = allProposals
+      .filter((proposal) => ["APPROVED", "ACCEPTED", "CONTRACTED", "PAID"].includes(proposal.status.toUpperCase()) || Boolean(proposal.contract))
+      .reduce((sum, proposal) => sum + proposal.totalCents, 0);
+    const outstandingPaymentCents = allContracts.flatMap((contract) => contract.paymentIntents ?? [])
+      .filter((intent) => intent.status.toUpperCase() !== "SUCCEEDED")
+      .reduce((sum, intent) => sum + intent.amountCents, 0);
+    const workloadByMonth = sortedEvents.reduce<{ month: string; count: number }[]>((months, event) => {
+      const month = new Date(event.startAt).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+      const existing = months.find((item) => item.month === month);
+      if (existing) existing.count += 1;
+      else months.push({ month, count: 1 });
+      return months;
+    }, []).slice(0, 6);
+    const packagePerformance = localListings.map((listing) => ({
+      id: listing.id,
+      title: listing.title,
+      offers: listing.offers?.length ?? 0,
+      requests: (listing.bookingRequests ?? []).length,
+      quotedCents: (listing.bookingRequests ?? []).reduce((sum, request) => sum + (request.quoteCents ?? 0), 0),
+    })).slice(0, 6);
+    const acceptedInquiryCount = allBookingRequests.filter((request) => ["ACCEPTED", "APPROVED", "BOOKED", "COMPLETED"].includes(request.status.toUpperCase())).length;
+    const inquiryConversionRate = allBookingRequests.length ? Math.round((acceptedInquiryCount / allBookingRequests.length) * 100) : 0;
     const reportMetrics = {
-      pipelineCents: localEvents.flatMap((event) => event.proposals ?? []).reduce((sum, proposal) => sum + proposal.totalCents, 0),
-      openContracts: localEvents.flatMap((event) => event.contracts ?? []).filter((contract) => isMoneyAttentionStatus(contract.status)).length,
+      pipelineCents: allProposals.reduce((sum, proposal) => sum + proposal.totalCents, 0),
+      bookedRevenueCents,
+      outstandingPaymentCents,
+      openContracts: allContracts.filter((contract) => isMoneyAttentionStatus(contract.status)).length,
       moneyAtRiskCents,
       vendorTouches: vendorRelationships.length,
       serviceReadiness: serviceReadiness.filter((service) => service.ready).length,
       taskLoad: openTasks.length,
+      workloadByMonth,
+      packagePerformance,
+      inquiryConversionRate,
+      totalInquiries: allBookingRequests.length,
+      acceptedInquiryCount,
     };
 
     return {
@@ -1519,14 +1551,33 @@ export function ProPlannerDashboard({
       case "reports":
         return (
           <Panel title="Reports & business intelligence" icon={BarChart3}>
-            <p className="text-sm text-slate-600">Agency workload, pipeline, contract risk, and vendor movement calculated from real OneHub records.</p>
+            <p className="text-sm text-slate-600">Agency workload, pipeline, contract risk, vendor movement, package performance, and booking conversion calculated from real OneHub records.</p>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Revenue pipeline</p><p className="mt-2 text-2xl font-semibold">{formatMoney(dashboard.reportMetrics.pipelineCents)}</p></Card>
-              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Open contracts</p><p className="mt-2 text-2xl font-semibold">{dashboard.reportMetrics.openContracts}</p><p className="mt-1 text-xs text-slate-500">Money at risk {formatMoney(dashboard.reportMetrics.moneyAtRiskCents)}</p></Card>
-              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Vendor touches</p><p className="mt-2 text-2xl font-semibold">{dashboard.reportMetrics.vendorTouches}</p></Card>
-              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Open task load</p><p className="mt-2 text-2xl font-semibold">{dashboard.reportMetrics.taskLoad}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Booked revenue</p><p className="mt-2 text-2xl font-semibold">{formatMoney(dashboard.reportMetrics.bookedRevenueCents)}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Outstanding payments</p><p className="mt-2 text-2xl font-semibold">{formatMoney(dashboard.reportMetrics.outstandingPaymentCents)}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Inquiry-to-booking conversion</p><p className="mt-2 text-2xl font-semibold">{dashboard.reportMetrics.inquiryConversionRate}%</p><p className="mt-1 text-xs text-slate-500">{dashboard.reportMetrics.acceptedInquiryCount} of {dashboard.reportMetrics.totalInquiries} inquiries booked</p></Card>
             </div>
-            <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">Reports are scoped to this planner organization and computed from events, proposals, contracts, booking requests, and tasks.</p>
+            <div className="grid gap-4 xl:grid-cols-3">
+              <Card className="p-4">
+                <h3 className="font-semibold text-slate-900">Event workload by month</h3>
+                <div className="mt-3 space-y-2">
+                  {dashboard.reportMetrics.workloadByMonth.length > 0 ? dashboard.reportMetrics.workloadByMonth.map((item) => <div key={item.month} className="flex justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm"><span>{item.month}</span><span className="font-semibold">{item.count} event{item.count === 1 ? "" : "s"}</span></div>) : <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">No dated events loaded for workload reporting.</p>}
+                </div>
+              </Card>
+              <Card className="p-4">
+                <h3 className="font-semibold text-slate-900">Vendor response performance</h3>
+                <p className="mt-2 text-sm text-slate-600">{dashboard.reportMetrics.vendorTouches} relationship touch{dashboard.reportMetrics.vendorTouches === 1 ? "" : "es"} tracked with preferred/watchlist/follow-up context.</p>
+                <p className="mt-2 text-sm text-slate-600">Open task load: {dashboard.reportMetrics.taskLoad}. Open contracts: {dashboard.reportMetrics.openContracts}. Money at risk: {formatMoney(dashboard.reportMetrics.moneyAtRiskCents)}.</p>
+              </Card>
+              <Card className="p-4">
+                <h3 className="font-semibold text-slate-900">Package performance</h3>
+                <div className="mt-3 space-y-2">
+                  {dashboard.reportMetrics.packagePerformance.length > 0 ? dashboard.reportMetrics.packagePerformance.map((item) => <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3"><p className="text-sm font-semibold text-slate-900">{item.title}</p><p className="mt-1 text-xs text-slate-600">{item.offers} package offer{item.offers === 1 ? "" : "s"} / {item.requests} request{item.requests === 1 ? "" : "s"} / quoted {formatMoney(item.quotedCents)}</p></div>) : <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">Publish packages and receive inquiries before package performance appears.</p>}
+                </div>
+              </Card>
+            </div>
+            <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">Reports are scoped to this planner organization and computed from real OneHub records: events, proposals, contracts, booking requests, listings, relationship notes, and tasks.</p>
           </Panel>
         );
       case "settings":
