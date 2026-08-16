@@ -213,7 +213,7 @@ describe("ProPlannerDashboard", () => {
 
     expect(screen.getByText("Agency command deck")).toBeInTheDocument();
     expect(screen.getByText("Active client events")).toBeInTheDocument();
-    expect(screen.getByText("Smith Wedding Weekend")).toBeInTheDocument();
+    expect(screen.getAllByText("Smith Wedding Weekend").length).toBeGreaterThan(0);
     expect(screen.getByText("Confirm final floorplan with venue")).toBeInTheDocument();
     expect(screen.getByText("Client/vendor follow-ups")).toBeInTheDocument();
     expect(screen.getByText("Avery Florals")).toBeInTheDocument();
@@ -222,6 +222,11 @@ describe("ProPlannerDashboard", () => {
     expect(screen.getByText("Venue agreement")).toBeInTheDocument();
     expect(screen.getByText("Business setup status")).toBeInTheDocument();
     expect(screen.getByText("Services and packages")).toBeInTheDocument();
+    expect(screen.getByText("Planner next-action engine")).toBeInTheDocument();
+    expect(screen.getByText("Client approval reminder")).toBeInTheDocument();
+    expect(screen.getByText("Missing contract or signature action")).toBeInTheDocument();
+    expect(screen.getByText("Payment plan check")).toBeInTheDocument();
+    expect(screen.getByText(/Deterministic guidance only/)).toBeInTheDocument();
     expect(screen.getByText("Open Event Command Center")).toBeInTheDocument();
     expect(container).not.toHaveTextContent(forbiddenPanelCopy);
   });
