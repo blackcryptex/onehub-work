@@ -556,6 +556,47 @@ export function ProPlannerDashboard({
       { label: "Week-of status check", detail: "Send a clear readiness check across client, vendor, venue, and assistant owners." },
     ];
     const followUpReminders = [...waitingOnClientTasks.slice(0, 3).map((task) => ({ id: `client-reminder-${task.id}`, title: task.title, detail: `${task.event.name} / client response needed` })), ...vendorRelationshipQueue.slice(0, 3).map((vendor) => ({ id: `vendor-reminder-${vendor.id}`, title: vendor.name, detail: vendor.detail }))].slice(0, 5);
+    const nextActions = [
+      ...waitingOnClientTasks.slice(0, 2).map((task) => ({
+        id: `next-client-${task.id}`,
+        label: "Client approval reminder",
+        event: task.event,
+        detail: `${task.title} needs a clear owner/date follow-up before planner work stalls.`,
+        href: `/pro/planner/vault/${task.event.slug}#event-workspace`,
+      })),
+      ...localEvents.flatMap((event) => (event.proposals ?? [])
+        .filter((proposal) => !proposal.contract)
+        .map((proposal) => ({
+          id: `next-contract-${proposal.id}`,
+          label: "Missing contract or signature action",
+          event,
+          detail: `${proposal.title} has proposal value ${formatMoney(proposal.totalCents)} and needs contract/signature movement before booking confidence.`,
+          href: `/pro/planner/vault/${event.slug}#workspace-proposals-detail`,
+        }))).slice(0, 2),
+      ...localEvents.flatMap((event) => (event.proposals ?? [])
+        .filter((proposal) => (proposal.milestones ?? []).some((milestone) => isMoneyAttentionStatus(milestone.status)))
+        .map((proposal) => ({
+          id: `next-payment-${proposal.id}`,
+          label: "Payment plan check",
+          event,
+          detail: `${proposal.title} has ${(proposal.milestones ?? []).filter((milestone) => isMoneyAttentionStatus(milestone.status)).length} open payment milestone${(proposal.milestones ?? []).filter((milestone) => isMoneyAttentionStatus(milestone.status)).length === 1 ? "" : "s"}.`,
+          href: `/pro/planner/vault/${event.slug}#workspace-payment-detail`,
+        }))).slice(0, 2),
+      ...derivedVendorRelationships.filter((vendor) => ["PENDING", "SENT", "DRAFT"].includes(vendor.status.toUpperCase())).slice(0, 2).map((vendor) => ({
+        id: `next-vendor-${vendor.id}`,
+        label: "Late vendor response check",
+        event: vendor.event,
+        detail: `${vendor.name} is still ${vendor.status}; confirm next response deadline.`,
+        href: vendor.href,
+      })),
+      ...localEvents.filter((event) => daysUntil(event.startAt) !== null && daysUntil(event.startAt)! <= 14).slice(0, 2).map((event) => ({
+        id: `next-weekof-${event.id}`,
+        label: "Week-of readiness check",
+        event,
+        detail: `${event.name} is ${daysUntil(event.startAt)} days out; confirm run sheet, vendor arrival, and client decisions.`,
+        href: `/pro/planner/vault/${event.slug}`,
+      })),
+    ].slice(0, 8);
     const serviceReadiness = localListings.map((listing) => {
       const openRequests = (listing.bookingRequests ?? []).filter((request) => isOpenRequest(request.status));
       const upcomingSlots = (listing.availSlots ?? []).filter((slot) => new Date(slot.endAt).getTime() >= Date.now());
@@ -649,6 +690,7 @@ export function ProPlannerDashboard({
       communicationThreads,
       messageTemplates,
       followUpReminders,
+      nextActions,
       reportMetrics,
     };
   }, [localEvents, localListings, localVendorRelationships, members, notifications, vendorRelationships.length]);
@@ -999,6 +1041,27 @@ export function ProPlannerDashboard({
           <p className="mt-1 text-sm text-slate-600">proposal, contract, or payment states to check</p>
         </Card>
       </div>
+
+      <Card className="p-5">
+        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-semibold"><ShieldCheck className="h-5 w-5 text-indigo-700" />Planner next-action engine</h2>
+            <p className="mt-1 text-sm text-slate-600">Deterministic guidance only: OneHub suggests next actions from real event, client, vendor, contract, payment, and timeline records. It does not send messages, approve contracts, release money, or fake AI decisions.</p>
+          </div>
+          <Button asChild size="sm" variant="secondary"><Link href={"/pro/planner/vault" as Route}>Open event work</Link></Button>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {dashboard.nextActions.length > 0 ? dashboard.nextActions.map((action) => (
+            <Link key={action.id} href={action.href as Route} className="rounded-xl border border-indigo-100 bg-indigo-50 p-4 hover:border-indigo-200">
+              <p className="text-sm font-semibold text-slate-900">{action.label}</p>
+              <p className="mt-1 text-xs text-indigo-900">{action.event.name}</p>
+              <p className="mt-2 text-xs text-slate-600">{action.detail}</p>
+            </Link>
+          )) : (
+            <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No high-priority next actions are loaded. New client decisions, missing contracts, payment milestones, late vendor responses, or week-of risks will appear here.</p>
+          )}
+        </div>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.9fr)]">
         <Card className="p-5">
