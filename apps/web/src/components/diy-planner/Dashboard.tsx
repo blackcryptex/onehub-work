@@ -75,7 +75,7 @@ export function DIYPlannerDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedEventInitialTab, setSelectedEventInitialTab] = useState<EventManagementTab>("vendors");
-  const { success, error } = useToast();
+  const { success, error, info } = useToast();
   const { data: session } = useSession();
 
   const fetchEvents = useCallback(async () => {
@@ -164,6 +164,18 @@ export function DIYPlannerDashboard() {
     }
   };
 
+  const handleShare = () => {
+    info("Private share controls are handled inside Event actions. Open the event menu to invite or manage access safely.");
+  };
+
+  const goToEventTab = (tab: EventManagementTab) => {
+    if (!selectedEventId && events[0]?.id) {
+      setSelectedEventId(events[0].id);
+    }
+    setSelectedEventInitialTab(tab);
+    setUiRoute("eventDetail");
+  };
+
   const handleEventChange = (patch: Partial<EventItemExtended>) => {
     if (!selectedEventId) return;
     setEvents((prev) =>
@@ -203,6 +215,94 @@ export function DIYPlannerDashboard() {
     setSelectedEventId(null);
     setUiRoute('overview');
     success('Event deleted successfully');
+  };
+
+  const GuidedCockpit = () => {
+    const eventCount = events.length;
+    const selectedName = selectedEvent?.name ?? events[0]?.name ?? "your event";
+    const flowSteps: Array<{
+      label: string;
+      helper: string;
+      onClick: () => void;
+    }> = [
+      {
+        label: "Dream up event",
+        helper: "Start with the vision, date, city, and guest target.",
+        onClick: () => setUiRoute("overview"),
+      },
+      {
+        label: "Create event",
+        helper: "Use the wizard when the event does not exist yet.",
+        onClick: () => setUiRoute("wizard"),
+      },
+      {
+        label: "Add needs",
+        helper: "Turn budget, guest, task, and milestone needs into the plan.",
+        onClick: () => goToEventTab("tasks"),
+      },
+      {
+        label: "Find vendors/venue",
+        helper: "Shortlist venues and vendors for this event.",
+        onClick: () => goToEventTab("vendors"),
+      },
+      {
+        label: "Compare proposals",
+        helper: "Review quotes before deciding who to book.",
+        onClick: () => goToEventTab("proposals"),
+      },
+      {
+        label: "Track contracts/payment readiness",
+        helper: "Watch signature status and payment readiness before booking is final.",
+        onClick: () => goToEventTab("contracts"),
+      },
+    ];
+
+    return (
+      <section className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-slate-50 p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">DIY planning cockpit</p>
+            <h1 className="mt-2 text-2xl font-bold text-slate-950">Dream, plan, book, track</h1>
+            <p className="mt-2 text-sm text-slate-700">
+              Next for {selectedName}: follow the guided path from event idea to vendor decisions,
+              contracts, and payment readiness. You have {eventCount} event{eventCount === 1 ? "" : "s"} in the Event Vault.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-sm sm:flex sm:flex-wrap sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setUiRoute("calendar")}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Calendar
+            </button>
+            <button
+              type="button"
+              onClick={() => info("Messages are available from proposal and contract threads for each event.")}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Messages
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {flowSteps.map((step, index) => (
+            <button
+              key={step.label}
+              type="button"
+              aria-label={step.label}
+              onClick={step.onClick}
+              className="rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-indigo-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <span className="text-xs font-semibold text-indigo-600">Step {index + 1}</span>
+              <span className="mt-1 block text-sm font-bold text-slate-950">{step.label}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-600">{step.helper}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    );
   };
 
   const Main = () => {
@@ -251,6 +351,7 @@ export function DIYPlannerDashboard() {
       case "overview":
         return (
           <section className="space-y-6">
+            <GuidedCockpit />
             <Overview 
               events={events.map(e => adaptEventToNewFormat(e))}
               selectedEventId={selectedEventId}
@@ -282,6 +383,7 @@ export function DIYPlannerDashboard() {
       case "eventDetail":
         return selectedEvent ? (
           <section className="space-y-6">
+            <GuidedCockpit />
             {/* Top header block */}
             <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
@@ -326,7 +428,7 @@ export function DIYPlannerDashboard() {
                     </button>
                     <button
                       className="rounded-lg px-3 py-2 text-sm font-semibold border border-slate-200 hover:bg-slate-50"
-                      onClick={() => console.log("Share link")}
+                      onClick={handleShare}
                     >
                       Share
                     </button>
@@ -399,10 +501,28 @@ export function DIYPlannerDashboard() {
       case "budget":
       case "guests":
       case "tasks":
-        return (
+        return selectedEvent ? (
+          <section className="space-y-6">
+            <GuidedCockpit />
+            <EventManagementSection
+              event={adaptEventToNewFormat(selectedEvent)}
+              initialTab={toEventManagementTab(uiRoute)}
+              onEventChange={handleEventChange}
+            />
+          </section>
+        ) : (
           <section className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
-            <h2 className="text-xl font-semibold capitalize">{uiRoute}</h2>
-            <p className="text-slate-600 mt-1">Content for {uiRoute} goes here.</p>
+            <h2 className="text-xl font-semibold text-slate-900">Choose an event first</h2>
+            <p className="mt-2 text-slate-600">
+              Select an event from the Event Vault or create a new event before opening {uiRoute}.
+            </p>
+            <button
+              type="button"
+              onClick={() => setUiRoute("wizard")}
+              className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+            >
+              Create event
+            </button>
           </section>
         );
 
