@@ -328,10 +328,12 @@ export function ProPlannerDashboard({
   };
 
   const dashboard = useMemo(() => {
+    const now = Date.now();
     const activeEvents = localEvents.filter((event) => isActiveEvent(event.status));
     const sortedEvents = [...activeEvents].sort(
       (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
     );
+    const upcomingActiveEvents = sortedEvents.filter((event) => new Date(event.startAt).getTime() >= now);
     const openTasks = localEvents
       .flatMap((event) => (event.tasks ?? []).filter((task) => isOpenTask(task.status)).map((task) => ({ ...task, event })))
       .sort((a, b) => {
@@ -433,7 +435,7 @@ export function ProPlannerDashboard({
       }))).slice(0, 12);
     const moneyAtRiskCents = paymentRiskQueue.reduce((sum, item) => sum + item.amountCents, 0) + contractQueue.reduce((sum, item) => sum + item.unpaidCents, 0);
     const unreadNotifications = notifications.filter((notification) => !notification.read);
-    const eventDates = sortedEvents.filter((event) => new Date(event.startAt).getTime() >= Date.now()).slice(0, 4);
+    const eventDates = upcomingActiveEvents.slice(0, 4);
     const teamMembers = [
       ...members.map((member) => ({
         id: member.user.id,
@@ -511,7 +513,7 @@ export function ProPlannerDashboard({
       ...(event.milestones ?? [])
         .filter((milestone) => !milestone.done)
         .map((milestone) => ({ id: `milestone-risk-${milestone.id}`, event, title: milestone.title, detail: `Milestone due ${formatDate(milestone.dueAt)}`, href: `/pro/planner/vault/${event.slug}#event-workspace` })),
-      ...(daysUntil(event.startAt) !== null && daysUntil(event.startAt)! <= 30
+      ...(daysUntil(event.startAt) !== null && daysUntil(event.startAt)! >= 0 && daysUntil(event.startAt)! <= 30
         ? [{ id: `event-week-${event.id}`, event, title: "Event day readiness", detail: `${daysUntil(event.startAt)} days until event`, href: `/pro/planner/vault/${event.slug}` }]
         : []),
     ]).slice(0, 10);
@@ -589,7 +591,7 @@ export function ProPlannerDashboard({
         detail: `${vendor.name} is still ${vendor.status}; confirm next response deadline.`,
         href: vendor.href,
       })),
-      ...localEvents.filter((event) => daysUntil(event.startAt) !== null && daysUntil(event.startAt)! <= 14).slice(0, 2).map((event) => ({
+      ...localEvents.filter((event) => daysUntil(event.startAt) !== null && daysUntil(event.startAt)! >= 0 && daysUntil(event.startAt)! <= 14).slice(0, 2).map((event) => ({
         id: `next-weekof-${event.id}`,
         label: "Week-of readiness check",
         event,
@@ -597,6 +599,54 @@ export function ProPlannerDashboard({
         href: `/pro/planner/vault/${event.slug}`,
       })),
     ].slice(0, 8);
+    const priorityEvent = eventDates[0] ?? null;
+    const priorityClientTask = priorityEvent
+      ? openTasks.find((task) => task.event.id === priorityEvent.id) ?? null
+      : null;
+    const vendorFollowUp = followUps.find((item) => !priorityEvent || item.event.id === priorityEvent.id) ?? followUps[0] ?? null;
+    const readinessItem = paymentRiskQueue.find((item) => !priorityEvent || item.event.id === priorityEvent.id)
+      ?? contractQueue.find((item) => !priorityEvent || item.event.id === priorityEvent.id)
+      ?? moneyAlerts.find((item) => !priorityEvent || item.event.id === priorityEvent.id)
+      ?? null;
+    const teamAction = priorityClientTask
+      ?? openTasks.find((task) => task.assignee)
+      ?? openTasks[0]
+      ?? null;
+    const nextSafeAction = nextActions.find((action) => !priorityEvent || action.event.id === priorityEvent.id) ?? nextActions[0] ?? null;
+    const commandDeck = [
+      {
+        label: "Today's priority client/event",
+        title: priorityEvent?.name ?? "No upcoming client event loaded",
+        detail: priorityEvent
+          ? `${formatDate(priorityEvent.startAt)} / ${priorityClientTask ? priorityClientTask.title : "open the event command center to review readiness"}`
+          : "Create or import the next client event before prioritizing planner work.",
+        href: priorityEvent ? `/pro/planner/vault/${priorityEvent.slug}` : "/events/new",
+      },
+      {
+        label: "Vendor/provider follow-up",
+        title: vendorFollowUp?.title ?? "No open vendor/provider follow-up",
+        detail: vendorFollowUp ? `${vendorFollowUp.event.name} / ${vendorFollowUp.label}` : "Booking requests, proposals, and vendor response gaps will appear with event context.",
+        href: vendorFollowUp?.href ?? "/explore/vendors",
+      },
+      {
+        label: "Contract/payment readiness",
+        title: readinessItem?.title ?? "No blocked contract/payment item",
+        detail: readinessItem ? `${readinessItem.event.name} / ${readinessItem.status}` : "Manual-status-safe contract, proposal, and payment readiness items will appear here without enabling live checkout.",
+        href: readinessItem?.href ?? "#money-contract-alerts",
+      },
+      {
+        label: "Team/assistant action",
+        title: teamAction?.title ?? "No open assistant task",
+        detail: teamAction ? `${teamAction.event.name} / ${teamAction.assignee ? contactName(teamAction.assignee) : "unassigned"} / due ${formatDate(teamAction.dueAt)}` : "Assign event checklist or client follow-up tasks when assistant work is needed.",
+        href: teamAction ? `/pro/planner/vault/${teamAction.event.slug}#event-workspace` : "/professional-planner/setup",
+      },
+      {
+        label: "Next safe planner action",
+        title: nextSafeAction?.label ?? "Open event work",
+        detail: nextSafeAction?.detail ?? "Review the next event command center; OneHub will not send messages, approve contracts, or move money automatically.",
+        href: nextSafeAction?.href ?? "/pro/planner/vault",
+      },
+    ];
     const serviceReadiness = localListings.map((listing) => {
       const openRequests = (listing.bookingRequests ?? []).filter((request) => isOpenRequest(request.status));
       const upcomingSlots = (listing.availSlots ?? []).filter((slot) => new Date(slot.endAt).getTime() >= Date.now());
@@ -667,6 +717,7 @@ export function ProPlannerDashboard({
       activeEvents,
       sortedEvents,
       nextEvents: eventDates,
+      commandDeck,
       openTasks,
       followUps,
       moneyAlerts,
@@ -939,8 +990,17 @@ export function ProPlannerDashboard({
             <Link href="/events/new">Create Event</Link>
           </Button>
         </div>
+      ) : compact && dashboard.nextEvents.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center">
+          <Calendar className="mx-auto mb-3 h-10 w-10 text-slate-400" />
+          <p className="font-medium text-slate-900">No upcoming client events are dated yet.</p>
+          <p className="mt-1 text-sm text-slate-600">Past active events stay out of the first-screen upcoming list; schedule or create the next event to restore command-deck priority.</p>
+          <Button asChild className="mt-4">
+            <Link href="/events/new">Create Event</Link>
+          </Button>
+        </div>
       ) : (
-        (compact ? dashboard.sortedEvents.slice(0, 4) : localEvents).map((event) => {
+        (compact ? dashboard.nextEvents : localEvents).map((event) => {
           const canManage = canManageEvent(event);
           const openTaskCount = (event.tasks ?? []).filter((task) => isOpenTask(task.status)).length;
           const openRequestCount = (event.bookingRequests ?? []).filter((request) => isOpenRequest(request.status)).length;
@@ -1041,6 +1101,25 @@ export function ProPlannerDashboard({
           <p className="mt-1 text-sm text-slate-600">proposal, contract, or payment states to check</p>
         </Card>
       </div>
+
+      <Card className="p-5">
+        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-semibold"><ClipboardList className="h-5 w-5 text-indigo-700" />Today’s command deck</h2>
+            <p className="mt-1 text-sm text-slate-600">Five fast answers from real planner records: client/event priority, vendor follow-up, contract/payment readiness, assistant work, and the next safe action.</p>
+          </div>
+          <Button asChild size="sm" variant="secondary"><Link href={"/pro/planner/vault" as Route}>Open event vault</Link></Button>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {dashboard.commandDeck.map((item) => (
+            <Link key={item.label} href={item.href as Route} className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{item.label}</p>
+              <p className="mt-2 text-sm font-semibold text-slate-900">{item.title}</p>
+              <p className="mt-2 text-xs text-slate-600">{item.detail}</p>
+            </Link>
+          ))}
+        </div>
+      </Card>
 
       <Card className="p-5">
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">

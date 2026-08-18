@@ -212,23 +212,81 @@ describe("ProPlannerDashboard", () => {
     const { container } = renderDashboard();
 
     expect(screen.getByText("Agency command deck")).toBeInTheDocument();
+    expect(screen.getByText("Today's priority client/event")).toBeInTheDocument();
+    expect(screen.getByText("Vendor/provider follow-up")).toBeInTheDocument();
+    expect(screen.getByText("Contract/payment readiness")).toBeInTheDocument();
+    expect(screen.getByText("Team/assistant action")).toBeInTheDocument();
+    expect(screen.getByText("Next safe planner action")).toBeInTheDocument();
     expect(screen.getByText("Active client events")).toBeInTheDocument();
     expect(screen.getAllByText("Smith Wedding Weekend").length).toBeGreaterThan(0);
-    expect(screen.getByText("Confirm final floorplan with venue")).toBeInTheDocument();
+    expect(screen.getAllByText("Confirm final floorplan with venue").length).toBeGreaterThan(0);
     expect(screen.getByText("Client/vendor follow-ups")).toBeInTheDocument();
-    expect(screen.getByText("Avery Florals")).toBeInTheDocument();
+    expect(screen.getAllByText("Avery Florals").length).toBeGreaterThan(0);
     expect(screen.getByText("Money / contract alerts")).toBeInTheDocument();
     expect(screen.getAllByText("Floral design proposal").length).toBeGreaterThan(0);
     expect(screen.getByText("Venue agreement")).toBeInTheDocument();
     expect(screen.getByText("Business setup status")).toBeInTheDocument();
     expect(screen.getByText("Services and packages")).toBeInTheDocument();
     expect(screen.getByText("Planner next-action engine")).toBeInTheDocument();
-    expect(screen.getByText("Client approval reminder")).toBeInTheDocument();
+    expect(screen.getAllByText("Client approval reminder").length).toBeGreaterThan(0);
     expect(screen.getByText("Missing contract or signature action")).toBeInTheDocument();
     expect(screen.getByText("Payment plan check")).toBeInTheDocument();
     expect(screen.getByText(/Deterministic guidance only/)).toBeInTheDocument();
     expect(screen.getByText("Open Event Command Center")).toBeInTheDocument();
     expect(container).not.toHaveTextContent(forbiddenPanelCopy);
+  });
+
+  it("does not promote stale past active events as first-screen upcoming work", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2027-04-01T12:00:00.000Z"));
+
+    const pastActiveEvent = {
+      ...events[0],
+      id: "event-past",
+      name: "Past Market Dinner",
+      slug: "past-market-dinner",
+      startAt: new Date("2027-03-15T18:00:00.000Z"),
+      tasks: [],
+      bookingRequests: [],
+      proposals: [],
+      contracts: [],
+      milestones: [],
+      stakeholders: [],
+      media: [],
+      threads: [],
+    };
+
+    const futureActiveEvent = {
+      ...events[0],
+      id: "event-future",
+      name: "Future Spring Gala",
+      slug: "future-spring-gala",
+      startAt: new Date("2027-04-20T18:00:00.000Z"),
+    };
+
+    try {
+      render(
+        <ProPlannerDashboard
+          orgId="org-1"
+          orgName="Atlas Events"
+          events={[pastActiveEvent, futureActiveEvent]}
+          userId="planner-1"
+          userRole="PRO_PLANNER"
+          orgOwnerId="planner-1"
+          listings={listings}
+          notifications={[]}
+          members={members}
+          invites={[]}
+          vendorRelationships={[]}
+        />,
+      );
+
+      expect(screen.getAllByText("Future Spring Gala").length).toBeGreaterThan(0);
+      expect(screen.queryByText("Past Market Dinner")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Mar 15, 2027/)).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("builds out every top-level section with real panels", () => {
