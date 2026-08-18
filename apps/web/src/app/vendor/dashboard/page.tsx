@@ -167,6 +167,12 @@ export default async function VendorDashboardPage() {
         unreadMessages,
       }}
       recentRequests={recentRequests}
+      profileReadiness={{
+        hasListings: listings.length > 0,
+        hasContact: Boolean(org.contactEmail || org.contactPhone),
+        hasAvailability: Boolean(org.availabilityJson),
+        hasPaymentSetup: Boolean(org.paymentsJson || org.stripeConnectAccountId),
+      }}
       paymentContracts={paymentContracts}
     />
   );
