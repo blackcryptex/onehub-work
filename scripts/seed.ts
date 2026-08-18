@@ -32,6 +32,7 @@ async function main() {
   }
 
   const admin = await prisma.user.findUniqueOrThrow({ where: { email: "admin@example.com" } });
+  const diy = await prisma.user.findUniqueOrThrow({ where: { email: "diy@example.com" } });
   const pro = await prisma.user.findUniqueOrThrow({ where: { email: "pro@example.com" } });
   const vendor = await prisma.user.findUniqueOrThrow({ where: { email: "vendor@example.com" } });
   const venue = await prisma.user.findUniqueOrThrow({ where: { email: "venue@example.com" } });
@@ -40,6 +41,11 @@ async function main() {
   const plannerAgency = await prisma.organization.upsert({
     where: { slug: "planner-agency" },
     create: { name: "Planner Agency", slug: "planner-agency", type: "PLANNER", ownerId: pro.id, members: { create: [{ userId: pro.id, role: "OWNER" }] }, settings: { create: {} } },
+    update: {},
+  });
+  const diyHousehold = await prisma.organization.upsert({
+    where: { slug: "diy-household" },
+    create: { name: "DIY Household", slug: "diy-household", type: "PLANNER", ownerId: diy.id, members: { create: [{ userId: diy.id, role: "OWNER" }] }, settings: { create: {} } },
     update: {},
   });
   const vendorCo = await prisma.organization.upsert({
@@ -119,6 +125,65 @@ async function main() {
       budgetCents: 6000000, // $60,000 in cents
     },
     update: {},
+  });
+
+  // DIY SMOKE EVENT: Stable slug for authenticated local smoke checks.
+  const diyEvent = await prisma.event.upsert({
+    where: { slug: "diy-sample-event" },
+    create: {
+      orgId: diyHousehold.id,
+      createdById: diy.id,
+      name: "DIY Sample Event",
+      slug: "diy-sample-event",
+      type: "BIRTHDAY",
+      startAt: new Date(now.getTime() + 60*24*60*60*1000),
+      endAt: new Date(now.getTime() + 60*24*60*60*1000 + 4*60*60*1000),
+      venueCity: "Austin",
+      venueState: "TX",
+      venueCountry: "US",
+      guestTarget: 40,
+      description: "Local smoke fixture for the DIY selected-event vault.",
+      objective: "Plan a trusted, self-serve celebration with marketplace support.",
+      budgetRaw: "$5,000 - $8,000",
+      budgetMin: 500000,
+      budgetMax: 800000,
+      budgetCurrency: "USD",
+      budgetCents: 650000,
+    },
+    update: {},
+  });
+  await prisma.milestone.createMany({ data: [
+    { id: "seed-diy-milestone-venue", eventId: diyEvent.id, title: "Confirm venue shortlist", dueAt: new Date(diyEvent.startAt.getTime() - 45*24*60*60*1000), order: 0 },
+    { id: "seed-diy-milestone-invites", eventId: diyEvent.id, title: "Send invitations", dueAt: new Date(diyEvent.startAt.getTime() - 30*24*60*60*1000), order: 1 },
+    { id: "seed-diy-milestone-event-day", eventId: diyEvent.id, title: "Event day", dueAt: diyEvent.startAt, order: 2 },
+  ], skipDuplicates: true });
+  await prisma.budgetLine.createMany({ data: [
+    { id: "seed-diy-budget-venue", eventId: diyEvent.id, category: "VENUE", label: "Community venue", plannedCents: 250000, actualCents: 0 },
+    { id: "seed-diy-budget-catering", eventId: diyEvent.id, category: "CATERING", label: "Food and drinks", plannedCents: 200000, actualCents: 0 },
+    { id: "seed-diy-budget-entertainment", eventId: diyEvent.id, category: "ENTERTAINMENT", label: "Entertainment", plannedCents: 100000, actualCents: 0 },
+  ], skipDuplicates: true });
+  const diyChecklist = await prisma.checklist.upsert({
+    where: { id: "seed-diy-sample-checklist" },
+    create: {
+      id: "seed-diy-sample-checklist",
+      eventId: diyEvent.id,
+      title: "DIY starter checklist",
+      items: {
+        create: [
+          { id: "seed-diy-checklist-budget", title: "Set event budget", done: true, order: 0 },
+          { id: "seed-diy-checklist-shortlist", title: "Shortlist vendors", done: false, order: 1 },
+          { id: "seed-diy-checklist-proposals", title: "Review proposals", done: false, order: 2 },
+        ],
+      },
+    },
+    update: {},
+  });
+  await prisma.activity.createMany({
+    data: [
+      { id: "seed-diy-activity-event-created", orgId: diyHousehold.id, eventId: diyEvent.id, actorId: diy.id, action: "DIY sample event created" },
+      { id: "seed-diy-activity-checklist", orgId: diyHousehold.id, eventId: diyEvent.id, actorId: diy.id, action: "Starter checklist prepared", target: diyChecklist.id },
+    ],
+    skipDuplicates: true,
   });
   await prisma.milestone.createMany({ data: [
     { eventId: ev.id, title: "90 days out", dueAt: new Date(in30.getTime() - 90*24*60*60*1000), order: 0 },
