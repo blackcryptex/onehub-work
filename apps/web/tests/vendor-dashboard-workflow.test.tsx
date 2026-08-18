@@ -113,7 +113,7 @@ describe("VendorDashboard lead response workflow", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
     expect(screen.getByRole("heading", { name: "Calendar & Bookings" })).toBeInTheDocument();
-    expect(screen.getByText(/No dated booking requests yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/No upcoming dated work/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Messages" }));
     expect(screen.getByRole("heading", { name: "Lead Messages" })).toBeInTheDocument();
@@ -124,5 +124,74 @@ describe("VendorDashboard lead response workflow", () => {
     expect(screen.getByText(/Add at least one listing/i)).toBeInTheDocument();
 
     expect(container).not.toHaveTextContent(/coming soon|placeholder|goes here/i);
+  });
+
+  it("shows the next future active request when a past active request is also present", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2027-04-01T12:00:00.000Z"));
+
+    const pastActiveRequest = {
+      id: "request-past-active",
+      createdAt: new Date("2027-02-01T10:00:00.000Z"),
+      contactName: "Priya Past",
+      contactEmail: "priya@example.com",
+      startAt: new Date("2027-03-15T18:00:00.000Z"),
+      endAt: new Date("2027-03-15T23:00:00.000Z"),
+      status: "CONFIRMED",
+      event: { id: "event-past", name: "Past Market Dinner", startAt: new Date("2027-03-15T18:00:00.000Z") },
+      listing: { title: "Past event florals" },
+    };
+
+    const futureActiveRequest = {
+      id: "request-future-active",
+      createdAt: new Date("2027-03-01T10:00:00.000Z"),
+      contactName: "Felix Future",
+      contactEmail: "felix@example.com",
+      startAt: new Date("2027-04-20T18:00:00.000Z"),
+      endAt: new Date("2027-04-20T23:00:00.000Z"),
+      status: "CONFIRMED",
+      event: { id: "event-future", name: "Future Spring Gala", startAt: new Date("2027-04-20T18:00:00.000Z") },
+      listing: { title: "Future event florals" },
+    };
+
+    try {
+      renderDashboard({ recentRequests: [pastActiveRequest, futureActiveRequest] });
+
+      expect(screen.getByText(/Next service date: 4\/20\/2027.*Future Spring Gala/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Next service date: 3\/15\/2027.*Past Market Dinner/i)).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shows an empty upcoming-work state instead of a stale past active date", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2027-04-01T12:00:00.000Z"));
+
+    const pastActiveRequest = {
+      id: "request-past-active-only",
+      createdAt: new Date("2027-02-01T10:00:00.000Z"),
+      contactName: "Priya Past",
+      contactEmail: "priya@example.com",
+      startAt: new Date("2027-03-15T18:00:00.000Z"),
+      endAt: new Date("2027-03-15T23:00:00.000Z"),
+      status: "CONFIRMED",
+      event: { id: "event-past-only", name: "Past Market Dinner", startAt: new Date("2027-03-15T18:00:00.000Z") },
+      listing: { title: "Past event florals" },
+    };
+
+    try {
+      renderDashboard({ recentRequests: [pastActiveRequest], stats: { todaysLeads: 0, upcomingEvents: 0, unreadMessages: 0 } });
+
+      expect(screen.getByText(/No upcoming dated work; keep availability current for new leads/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Next service date: 3\/15\/2027/i)).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Open Calendar" }));
+      expect(screen.getByRole("heading", { name: "Calendar & Bookings" })).toBeInTheDocument();
+      expect(screen.getByText(/No upcoming dated work\. Keep availability current/i)).toBeInTheDocument();
+      expect(screen.queryByText(/3\/15\/2027/i)).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

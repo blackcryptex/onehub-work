@@ -107,7 +107,9 @@ export function VendorDashboard({
   const activeRequests = recentRequests.filter(
     (request) => request.status !== "DECLINED" && request.status !== "WITHDRAWN"
   );
-  const upcomingRequest = [...activeRequests].sort((a, b) => a.startAt.getTime() - b.startAt.getTime())[0];
+  const now = new Date();
+  const futureActiveRequests = activeRequests.filter((request) => request.startAt >= now);
+  const upcomingRequest = [...futureActiveRequests].sort((a, b) => a.startAt.getTime() - b.startAt.getTime())[0];
   const nextLead = pendingRequests[0] ?? followUpRequests[0] ?? activeRequests[0];
   const heldMilestones = paymentContracts.flatMap((contract) =>
     contract.proposal.milestones.filter((milestone) => milestone.status === "IN_ESCROW")
@@ -227,7 +229,7 @@ export function VendorDashboard({
                     <p className="text-sm text-slate-600">
                       {upcomingRequest
                         ? `Next service date: ${formatDate(upcomingRequest.startAt)} for ${upcomingRequest.event?.name || upcomingRequest.listing?.title || "booking request"}`
-                        : "No dated booking requests yet; keep availability current for new leads."}
+                        : "No upcoming dated work; keep availability current for new leads and review Calendar before committing."}
                     </p>
                     <button type="button" className={secondaryButtonClass} onClick={() => setUiRoute("calendar")}>
                       Open Calendar
@@ -376,11 +378,11 @@ export function VendorDashboard({
         return (
           <section className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
             <h2 className="text-xl font-semibold mb-4">Calendar & Bookings</h2>
-            {activeRequests.length === 0 ? (
-              <p className="text-slate-600">No dated booking requests yet. When a lead includes a service date, it will appear here for schedule review before you respond.</p>
+            {futureActiveRequests.length === 0 ? (
+              <p className="text-slate-600">No upcoming dated work. Keep availability current; future active booking requests will appear here for schedule review before you respond.</p>
             ) : (
               <div className="space-y-3">
-                {activeRequests.map((request) => (
+                {futureActiveRequests.map((request) => (
                   <div key={request.id} className="rounded-lg border border-slate-200 p-4">
                     <div className="font-medium text-slate-900">{request.event?.name || request.listing?.title || "Booking request"}</div>
                     <div className="mt-1 text-sm text-slate-600">
