@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/useToast";
 import { EventActions } from "@/components/events/EventActions";
 import { EmptyStateOnboarding } from "@/components/overview/EmptyStateOnboarding";
 import { useSession } from "next-auth/react";
+import type { Role } from "@onehub/types/src/roles";
 
 type UIRoute =
   | "overview"
@@ -41,6 +42,8 @@ type UIRoute =
   | "guests"
   | "tasks"
   | "wizard"
+  | "shareAccess"
+  | "messages"
   | "eventDetail";
 
 const EVENT_MANAGEMENT_TABS: EventManagementTab[] = [
@@ -67,7 +70,7 @@ export function DIYPlannerDashboard() {
   // URL -> uiRoute bootstrap with validation and safe fallback
   const initialRoute = useMemo<UIRoute>(() => {
     const raw = searchParams.get('view');
-    const allowed: UIRoute[] = ['overview', 'vault', 'calendar', 'vendors', 'proposals', 'contracts', 'budget', 'guests', 'tasks', 'wizard', 'eventDetail'];
+    const allowed: UIRoute[] = ['overview', 'vault', 'calendar', 'vendors', 'proposals', 'contracts', 'budget', 'guests', 'tasks', 'wizard', 'shareAccess', 'messages', 'eventDetail'];
     return (allowed.includes(raw as UIRoute) ? (raw as UIRoute) : 'overview');
   }, [searchParams]);
 
@@ -75,7 +78,7 @@ export function DIYPlannerDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedEventInitialTab, setSelectedEventInitialTab] = useState<EventManagementTab>("vendors");
-  const { success, error, info } = useToast();
+  const { success, error } = useToast();
   const { data: session } = useSession();
 
   const fetchEvents = useCallback(async () => {
@@ -165,7 +168,7 @@ export function DIYPlannerDashboard() {
   };
 
   const handleShare = () => {
-    info("Private share controls are handled inside Event actions. Open the event menu to invite or manage access safely.");
+    setUiRoute("shareAccess");
   };
 
   const goToEventTab = (tab: EventManagementTab) => {
@@ -278,7 +281,7 @@ export function DIYPlannerDashboard() {
             </button>
             <button
               type="button"
-              onClick={() => info("Messages are available from proposal and contract threads for each event.")}
+              onClick={() => setUiRoute("messages")}
               className="rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50"
             >
               Messages
@@ -409,7 +412,7 @@ export function DIYPlannerDashboard() {
                   <div className="flex items-center gap-2 justify-end">
                     {selectedEvent.slug && (
                       <EventActions
-                        role={session?.user?.role as any}
+                        role={session?.user?.role as Role | undefined}
                         eventSlug={selectedEvent.slug}
                         eventId={selectedEvent.id}
                         eventName={selectedEvent.name}
@@ -495,6 +498,83 @@ export function DIYPlannerDashboard() {
             event={selectedEvent ? adaptEventToNewFormat(selectedEvent) : undefined}
           />
         );
+      case "shareAccess":
+        return selectedEvent ? (
+          <section className="space-y-6">
+            <GuidedCockpit />
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 shadow-sm">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="max-w-2xl">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Share access</p>
+                  <h2 className="mt-2 text-xl font-semibold text-slate-950">Sharing is not connected yet</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    No private share or access-control flow is wired for DIY events in this cockpit yet.
+                    Keep this event private here; use proposals or contracts when you need vendor-facing records.
+                  </p>
+                </div>
+                {selectedEvent.slug && (
+                  <EventActions
+                    role={session?.user?.role as Role | undefined}
+                    eventSlug={selectedEvent.slug}
+                    eventId={selectedEvent.id}
+                    eventName={selectedEvent.name}
+                    canEdit={true}
+                    canDelete={true}
+                    onDeleted={handleEventDeleted}
+                    size="sm"
+                    showLabels={true}
+                  />
+                )}
+              </div>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setUiRoute("eventDetail")}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                >
+                  Back to event
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUiRoute("proposals")}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Review proposals
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null;
+      case "messages":
+        return selectedEvent ? (
+          <section className="space-y-6">
+            <GuidedCockpit />
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Messages</p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-950">No message thread connected yet</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                OneHub has proposal and contract thread surfaces, but this DIY event does not expose a connected
+                message thread from the cockpit yet. Review proposals or contracts to continue vendor-facing work.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setUiRoute("proposals")}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                >
+                  Review proposals
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUiRoute("contracts")}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Review contracts
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null;
       case "vendors":
       case "proposals":
       case "contracts":

@@ -4,15 +4,17 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
-const { infoToast, successToast, errorToast } = vi.hoisted(() => ({
+const { infoToast, successToast, errorToast, routerPush } = vi.hoisted(() => ({
   infoToast: vi.fn(),
   successToast: vi.fn(),
   errorToast: vi.fn(),
+  routerPush: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/app/diy-planner",
   useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: routerPush }),
 }));
 
 vi.mock("next-auth/react", () => ({
@@ -28,9 +30,13 @@ vi.mock("../src/components/diy-planner/Header", () => ({
   ),
 }));
 
-vi.mock("../src/components/events/EventActions", () => ({
-  EventActions: () => <div data-testid="event-actions">Event actions</div>,
-}));
+vi.mock("@/components/ui", () => {
+  return {
+    Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+      <button {...props}>{children}</button>
+    ),
+  };
+});
 
 vi.mock("@/components/EventManagementSection", () => ({
   default: ({ initialTab }: { initialTab: string }) => (
@@ -131,6 +137,26 @@ describe("DIYPlannerDashboard cockpit", () => {
     fireEvent.click(screen.getByRole("button", { name: "Share" }));
 
     expect(consoleSpy).not.toHaveBeenCalledWith("Share link");
-    expect(infoToast).toHaveBeenCalledWith(expect.stringContaining("Private share controls"));
+    expect(infoToast).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Sharing is not connected yet" })).toBeInTheDocument();
+    expect(screen.getByText(/No private share or access-control flow is wired/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Event actions/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/invite or manage access safely/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+  });
+
+  it("opens a real Messages empty state instead of only showing a toast", async () => {
+    render(<DIYPlannerDashboard />);
+
+    await waitFor(() => expect(screen.getAllByText("Scout Gala").length).toBeGreaterThan(0));
+
+    fireEvent.click(screen.getByRole("button", { name: "Messages" }));
+
+    expect(infoToast).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "No message thread connected yet" })).toBeInTheDocument();
+    expect(screen.getByText(/OneHub has proposal and contract thread surfaces/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review proposals" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review contracts" })).toBeInTheDocument();
   });
 });
