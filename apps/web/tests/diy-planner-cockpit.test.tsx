@@ -159,4 +159,20 @@ describe("DIYPlannerDashboard cockpit", () => {
     expect(screen.getByRole("button", { name: "Review proposals" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Review contracts" })).toBeInTheDocument();
   });
+
+  it("opens real account Settings and Help empty states from the DIY sidebar", async () => {
+    render(<DIYPlannerDashboard />);
+
+    await waitFor(() => expect(screen.getAllByText("Scout Gala").length).toBeGreaterThan(0));
+
+    fireEvent.click(screen.getByRole("link", { name: "Settings" }));
+    expect(screen.getByRole("heading", { name: "DIY planner settings" })).toBeInTheDocument();
+    expect(screen.getByText(/account preferences and notification controls/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back to overview" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("link", { name: "Help" }));
+    expect(screen.getByRole("heading", { name: "DIY planner help" })).toBeInTheDocument();
+    expect(screen.getByText(/guided support surface for DIY planning questions/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review event tasks" })).toBeInTheDocument();
+  });
 });

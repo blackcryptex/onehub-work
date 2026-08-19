@@ -42,6 +42,8 @@ type UIRoute =
   | "guests"
   | "tasks"
   | "wizard"
+  | "settings"
+  | "help"
   | "shareAccess"
   | "messages"
   | "eventDetail";
@@ -70,7 +72,7 @@ export function DIYPlannerDashboard() {
   // URL -> uiRoute bootstrap with validation and safe fallback
   const initialRoute = useMemo<UIRoute>(() => {
     const raw = searchParams.get('view');
-    const allowed: UIRoute[] = ['overview', 'vault', 'calendar', 'vendors', 'proposals', 'contracts', 'budget', 'guests', 'tasks', 'wizard', 'shareAccess', 'messages', 'eventDetail'];
+    const allowed: UIRoute[] = ['overview', 'vault', 'calendar', 'vendors', 'proposals', 'contracts', 'budget', 'guests', 'tasks', 'wizard', 'settings', 'help', 'shareAccess', 'messages', 'eventDetail'];
     return (allowed.includes(raw as UIRoute) ? (raw as UIRoute) : 'overview');
   }, [searchParams]);
 
@@ -575,6 +577,66 @@ export function DIYPlannerDashboard() {
             </div>
           </section>
         ) : null;
+      case "settings":
+        return (
+          <section className="space-y-6">
+            <GuidedCockpit />
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Account</p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-950">DIY planner settings</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                Account preferences and notification controls are not connected to this DIY cockpit yet.
+                Keep planning here, and use your profile account settings when broader account controls are needed.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setUiRoute("overview")}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                >
+                  Back to overview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUiRoute("help")}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Open help
+                </button>
+              </div>
+            </div>
+          </section>
+        );
+      case "help":
+        return (
+          <section className="space-y-6">
+            <GuidedCockpit />
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Help</p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-950">DIY planner help</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                A guided support surface for DIY planning questions is not connected yet. Review your event tasks,
+                proposals, or contracts to continue from the surfaced planning workflow.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => goToEventTab("tasks")}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                >
+                  Review event tasks
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUiRoute("overview")}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Back to overview
+                </button>
+              </div>
+            </div>
+          </section>
+        );
       case "vendors":
       case "proposals":
       case "contracts":

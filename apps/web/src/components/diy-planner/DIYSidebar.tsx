@@ -32,6 +32,8 @@ type UIRoute =
   | "guests"
   | "tasks"
   | "wizard"
+  | "settings"
+  | "help"
   | "eventDetail";
 
 type Props = {
@@ -208,6 +210,7 @@ export default function DIYSidebar({
           label="Settings"
           Icon={Settings}
           onClick={() => {
+            onRoute("settings");
             setIsMobileOpen(false);
           }}
         />
@@ -216,6 +219,7 @@ export default function DIYSidebar({
           label="Help"
           Icon={HelpCircle}
           onClick={() => {
+            onRoute("help");
             setIsMobileOpen(false);
           }}
         />
