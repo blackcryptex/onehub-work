@@ -32,7 +32,16 @@ export default async function ProPlannerPage() {
     where.createdById = user.id;
   }
 
-  const [events, listings, notifications, members, invites, vendorRelationships] = await Promise.all([
+  type ProPlannerDashboardProps = Parameters<typeof ProPlannerDashboard>[0];
+  let events: ProPlannerDashboardProps["events"] = [];
+  let listings: NonNullable<ProPlannerDashboardProps["listings"]> = [];
+  let notifications: NonNullable<ProPlannerDashboardProps["notifications"]> = [];
+  let members: NonNullable<ProPlannerDashboardProps["members"]> = [];
+  let invites: NonNullable<ProPlannerDashboardProps["invites"]> = [];
+  let vendorRelationships: NonNullable<ProPlannerDashboardProps["vendorRelationships"]> = [];
+
+  try {
+    [events, listings, notifications, members, invites, vendorRelationships] = await Promise.all([
     prisma.event.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -173,7 +182,42 @@ export default async function ProPlannerPage() {
       },
       orderBy: [{ nextFollowUpAt: "asc" }, { updatedAt: "desc" }],
     }),
-  ]);
+    ]);
+  } catch (error) {
+    console.error(
+      "[ProPlannerPage] detailed dashboard query failed; rendering safe fallback",
+      error instanceof Error ? error.message : "unknown error",
+    );
+
+    try {
+      events = await prisma.event.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: {
+          org: { select: { name: true, slug: true, ownerId: true } },
+          createdBy: { select: { id: true, name: true } },
+          tasks: {
+            select: { id: true, title: true, description: true, status: true, priority: true, dueAt: true, assignee: { select: { id: true, name: true, email: true } } },
+            orderBy: [{ dueAt: "asc" }, { updatedAt: "desc" }],
+          },
+          milestones: {
+            select: { id: true, title: true, dueAt: true, done: true, order: true },
+            orderBy: [{ dueAt: "asc" }, { order: "asc" }],
+          },
+          stakeholders: {
+            select: { id: true, role: true, user: { select: { id: true, name: true, email: true } } },
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      });
+    } catch (fallbackError) {
+      console.error(
+        "[ProPlannerPage] fallback event query failed; rendering empty planner shell",
+        fallbackError instanceof Error ? fallbackError.message : "unknown error",
+      );
+      events = [];
+    }
+  }
 
   return (
     <ProPlannerDashboard
