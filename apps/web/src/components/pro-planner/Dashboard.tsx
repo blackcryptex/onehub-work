@@ -235,6 +235,12 @@ function isPaymentAtRiskStatus(status: string) {
   return ["REQUIRES_PAYMENT", "PROCESSING", "FAILED"].includes(status.toUpperCase());
 }
 
+function proposalTrustLabel(proposal: PlannerProposal) {
+  return proposal.status.toUpperCase() !== "DRAFT" && Boolean(proposal.listing?.id)
+    ? "provider-backed / vendor-ready"
+    : "draft or missing provider context";
+}
+
 function signatureProgress(contract: PlannerContract) {
   const signed = (contract.signatures ?? []).filter((signature) => Boolean(signature.signedAt)).length;
   const expected = Math.max(2, contract.signatures?.length ?? 0);
@@ -361,8 +367,8 @@ export function ProPlannerDashboard({
             id: `proposal-${proposal.id}`,
             event,
             title: proposal.title,
-            label: `Proposal: ${proposal.status}`,
-            detail: `${formatMoney(proposal.totalCents)}${proposal.listing?.title ? ` / ${proposal.listing.title}` : ""}`,
+            label: `Proposal: ${proposal.status} / ${proposalTrustLabel(proposal)}`,
+            detail: `${formatMoney(proposal.totalCents)}${proposal.listing?.title ? ` / ${proposal.listing.title}` : " / no provider listing"}`,
             href: `/pro/planner/vault/${event.slug}#workspace-proposals-detail`,
           })),
       ])
@@ -377,6 +383,7 @@ export function ProPlannerDashboard({
             title: proposal.title,
             status: proposal.status,
             amountCents: proposal.totalCents,
+            trustLabel: proposalTrustLabel(proposal),
             href: `/pro/planner/vault/${event.slug}#workspace-proposals-detail`,
           })),
         ...(event.contracts ?? [])
@@ -430,6 +437,7 @@ export function ProPlannerDashboard({
         title: proposal.title,
         status: proposal.status,
         amountCents: proposal.totalCents,
+        trustLabel: proposalTrustLabel(proposal),
         openMilestones: (proposal.milestones ?? []).filter((milestone) => isMoneyAttentionStatus(milestone.status)),
         href: `/pro/planner/vault/${event.slug}#workspace-proposals-detail`,
       }))).slice(0, 12);
@@ -486,7 +494,7 @@ export function ProPlannerDashboard({
         listingId: proposal.listing?.id ?? null,
         name: proposal.listing?.title ?? proposal.title,
         status: proposal.status,
-        detail: `${proposal.title} / ${formatMoney(proposal.totalCents)}`,
+        detail: `${proposal.title} / ${formatMoney(proposal.totalCents)} / ${proposalTrustLabel(proposal)}`,
         href: `/pro/planner/vault/${event.slug}#workspace-proposals-detail`,
       })),
     ]);
@@ -1210,7 +1218,7 @@ export function ProPlannerDashboard({
             {dashboard.moneyAlerts.length > 0 ? dashboard.moneyAlerts.map((item) => (
               <Link key={item.id} href={item.href as Route} className="block rounded-xl border border-emerald-100 bg-emerald-50 p-3 hover:border-emerald-200">
                 <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                <p className="mt-1 text-xs text-slate-700">{item.event.name} / {item.status} / {formatMoney(item.amountCents)}</p>
+                <p className="mt-1 text-xs text-slate-700">{item.event.name} / {item.status} / {"trustLabel" in item ? `${item.trustLabel} / ` : ""}{formatMoney(item.amountCents)}</p>
               </Link>
             )) : (
               <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No contract or payment items need attention. When proposals, signatures, deposits, or held funds exist, they will show here.</p>

@@ -140,12 +140,25 @@ export const proposalRouter = router({
           },
         },
         org: true,
+        listing: {
+          select: {
+            id: true,
+            orgId: true,
+          },
+        },
       },
     });
     if (!canManageEvent(user, proposal.event)) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "You do not have permission to accept this proposal",
+      });
+    }
+    const isProviderSubmitted = proposal.status === "SENT" && Boolean(proposal.listingId && proposal.listing?.id);
+    if (!isProviderSubmitted) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Only provider-submitted proposals with listing context can be approved",
       });
     }
     // Create contract

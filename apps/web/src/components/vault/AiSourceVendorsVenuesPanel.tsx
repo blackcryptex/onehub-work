@@ -46,26 +46,25 @@ export function AiSourceVendorsVenuesPanel({ eventId, eventName, eventLocation }
   const [addingToList, setAddingToList] = useState<string | null>(null);
   const router = useRouter();
 
-  // Fallback results (deterministic)
+  // Copy-only fallback leads (deterministic). These are never verified and do not
+  // carry listing ids, so they cannot be added to the on-platform shortlist.
   const getFallbackResults = (): Result[] => {
     return [
-      {
-        kind: "VERIFIED",
-        listingId: "fallback-1",
-        title: "Sample Verified Vendor",
-        listingType: "VENDOR",
-        category: "CATERING",
-        city: "Local",
-        state: null,
-        website: null,
-        orgName: "Sample Org",
-        badgeText: "Verified",
-      },
       {
         kind: "UNVERIFIED",
         title: "Local Premier Catering",
         listingType: "VENDOR",
         category: "CATERING",
+        city: "Local",
+        state: null,
+        website: null,
+        badgeText: "Unverified",
+      },
+      {
+        kind: "UNVERIFIED",
+        title: "Local Event Venue Lead",
+        listingType: "VENUE",
+        category: "VENUE_SPACE",
         city: "Local",
         state: null,
         website: null,
@@ -93,9 +92,9 @@ export function AiSourceVendorsVenuesPanel({ eventId, eventName, eventLocation }
       setResults(data.results || []);
     } catch (err) {
       console.error("[AiSourceVendorsVenuesPanel] Error sourcing vendors:", err);
-      // Use fallback results instead of showing a hard failure
+      // Use unverified copy-only leads instead of presenting fake verified listings.
       setResults(getFallbackResults());
-      setError("Using fallback results. API unavailable.");
+      setError("Using copy-only fallback leads. Sourcing API unavailable; these are unverified and cannot be shortlisted until a real OneHub listing exists.");
     } finally {
       setLoading(false);
     }

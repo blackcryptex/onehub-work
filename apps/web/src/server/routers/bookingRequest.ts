@@ -64,15 +64,65 @@ export const bookingRequestRouter = router({
     return updated;
   }),
   quote: publicProcedure.input(z.object({ id: z.string(), quoteCents: z.number().int().nonnegative(), note: z.string().optional() })).mutation(async ({ input }) => {
-    const req = await db.bookingRequest.findUniqueOrThrow({ where: { id: input.id }, include: { listing: { include: { org: { include: { members: true } } } } } });
+    const req = await db.bookingRequest.findUniqueOrThrow({
+      where: { id: input.id },
+      include: {
+        event: true,
+        listing: { include: { org: { include: { members: true } } } },
+      },
+    });
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     // Centralized permission check: see apps/web/src/lib/rbac.ts
     const mem = req.listing.org.members.find((m) => m.userId === user.id);
     if (!isOrgAdminOrOwner(user, req.listing.org, mem)) throw new Error("Forbidden");
     const updated = await db.bookingRequest.update({ where: { id: input.id }, data: { status: "QUOTED", quoteCents: input.quoteCents, notes: input.note } });
+    const proposal = await db.proposal.create({
+      data: {
+        orgId: req.orgId,
+        eventId: req.eventId,
+        listingId: req.listingId,
+        title: `${req.listing.title} quote for ${req.event.name}`,
+        summary: `Provider-submitted quote from ${req.listing.title}${input.note ? `: ${input.note}` : "."}`,
+        status: "SENT",
+        bookingClassification: "MARKETPLACE",
+        currency: "USD",
+        subtotalCents: input.quoteCents,
+        taxCents: 0,
+        totalCents: input.quoteCents,
+        terms: input.note,
+        lineItems: {
+          create: [{
+            label: `${req.listing.title} provider quote`,
+            description: input.note,
+            qty: 1,
+            unit: "quote",
+            unitPriceCents: input.quoteCents,
+            totalCents: input.quoteCents,
+          }],
+        },
+        milestones: {
+          create: [{
+            title: "Provider quote total",
+            description: "Payment schedule to be finalized during contract generation.",
+            dueType: "OFFSET_FROM_EVENT_START",
+            dueOffsetDays: -14,
+            amountCents: input.quoteCents,
+            status: "PENDING",
+          }],
+        },
+      },
+    });
+    await recordActivity({
+      orgId: req.orgId,
+      eventId: req.eventId,
+      actorId: user.id,
+      action: "PROVIDER_PROPOSAL_SUBMITTED",
+      target: proposal.id,
+      meta: { bookingRequestId: req.id, listingId: req.listingId, quoteCents: input.quoteCents },
+    });
     // TODO: Find user by email and notify; for now, notification appears when viewing requests
-    return updated;
+    return { bookingRequest: updated, proposal };
   }),
 });
 

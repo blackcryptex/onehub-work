@@ -53,6 +53,12 @@ export async function POST(
             },
           },
         },
+        listing: {
+          select: {
+            id: true,
+            orgId: true,
+          },
+        },
       },
     });
 
@@ -74,6 +80,14 @@ export async function POST(
         message: "Proposal already approved",
         proposal,
       });
+    }
+
+    const isProviderSubmitted = proposal.status === "SENT" && Boolean(proposal.listingId && proposal.listing?.id);
+    if (!isProviderSubmitted) {
+      return NextResponse.json(
+        { error: "Only provider-submitted proposals with listing context can be approved" },
+        { status: 400 }
+      );
     }
 
     // Update proposal status to ACCEPTED

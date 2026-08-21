@@ -36,6 +36,9 @@ export function ProposalPageClient({
   thread,
 }: ProposalPageClientProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const hasListingContext = Boolean(proposal.listing?.id || proposal.listingId);
+  const isProviderBacked = proposal.status !== "DRAFT" && hasListingContext;
+  const canApproveProviderBackedProposal = proposal.status === "SENT" && isProviderBacked;
   
   if (isEditing) {
     return (
@@ -66,6 +69,11 @@ export function ProposalPageClient({
         <div>
           <h1 className="text-2xl font-bold">{proposal.title || "Proposal"}</h1>
           <div className="mt-1 text-sm text-slate-600">Status: {proposal.status}</div>
+          <div className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-semibold ${isProviderBacked ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}`}>
+            {isProviderBacked
+              ? "Provider-backed proposal — vendor-ready"
+              : "Draft/generated proposal — not provider-backed"}
+          </div>
           {proposal.event && (
             <div className="mt-2 text-sm text-slate-500">
               Event: {eventVaultHref ? (
@@ -171,11 +179,19 @@ export function ProposalPageClient({
           </div>
         </Card>
       )}
-      {(proposal.status === "SENT" || proposal.status === "DRAFT") && (
+      {(proposal.status === "SENT" || proposal.status === "DRAFT") && !canApproveProviderBackedProposal && (
+        <Card className="p-4 space-y-2 border-amber-200 bg-amber-50">
+          <h3 className="font-semibold text-amber-950">Approval locked</h3>
+          <p className="text-sm text-amber-900">
+            This proposal cannot be approved until a provider or venue submits it as a non-draft proposal with real listing context.
+          </p>
+        </Card>
+      )}
+      {canApproveProviderBackedProposal && (
         <Card className="p-4 space-y-4">
           <h3 className="mb-2 font-semibold">Approve Proposal</h3>
           <p className="mb-4 text-sm text-slate-600">
-            Review the proposal details above. Once approved, you can generate a formal contract.
+            Review the provider-backed proposal details above. Once approved, you can generate a formal contract.
           </p>
           <LegalNotice
             label="Proposal approval records acceptance of the guarded MVP commercial terms for this booking flow."
