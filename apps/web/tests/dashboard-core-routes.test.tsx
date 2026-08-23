@@ -9,6 +9,7 @@ const auth = vi.fn();
 const findOrganizations = vi.fn();
 const findCalendarEvents = vi.fn();
 const findThreads = vi.fn();
+const findThread = vi.fn();
 const findNotifications = vi.fn();
 
 vi.mock("@/lib/auth-helpers", () => ({ getCurrentUser }));
@@ -17,7 +18,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     organization: { findMany: findOrganizations },
     calendarEvent: { findMany: findCalendarEvents },
-    thread: { findMany: findThreads },
+    thread: { findMany: findThreads, findFirst: findThread },
   },
 }));
 vi.mock("@/server/db", () => ({
@@ -42,6 +43,9 @@ vi.mock("@onehub/ui", () => ({
   CalendarView: ({ events }: { events: { title: string }[] }) => (
     <div aria-label="Calendar grid">{events.map((event) => <span key={event.title}>{event.title}</span>)}</div>
   ),
+  ThreadPanel: ({ messages }: { messages: { bodyMd: string }[] }) => (
+    <div aria-label="Thread messages">{messages.map((message) => <span key={message.bodyMd}>{message.bodyMd}</span>)}</div>
+  ),
 }));
 
 const forbiddenPlaceholderCopy = /coming soon|placeholder|stub|mock-only|content for/i;
@@ -53,6 +57,16 @@ beforeEach(() => {
   findOrganizations.mockResolvedValue([{ id: "org-1", name: "Atlas Events" }]);
   findCalendarEvents.mockResolvedValue([]);
   findThreads.mockResolvedValue([]);
+  findThread.mockResolvedValue({
+    id: "thread-1",
+    subject: "Proposal Discussion",
+    org: { name: "Atlas Events" },
+    event: { name: "Sample Wedding", slug: "sample-wedding" },
+    listing: null,
+    proposal: null,
+    participants: [{ email: "client@example.com", roleHint: "CLIENT" }],
+    messages: [{ id: "message-1", bodyMd: "Please confirm the floor plan.", createdAt: new Date("2027-04-05T12:00:00.000Z"), senderId: "planner-1" }],
+  });
   findNotifications.mockResolvedValue([]);
 });
 
@@ -76,6 +90,23 @@ describe("core dashboard destination routes", () => {
     expect(screen.getByRole("heading", { name: /calendar/i })).toBeInTheDocument();
     expect(screen.getByText(/Pro planner calendar overview/i)).toBeInTheDocument();
     expect(screen.getByText(/No upcoming calendar items are loaded/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(forbiddenPlaceholderCopy);
+  });
+
+  it("renders /messages/[threadId] as a real readable thread instead of a broken client handoff", async () => {
+    const { default: MessageThreadPage } = await import("../src/app/(app)/messages/[threadId]/page");
+
+    render(await MessageThreadPage({ params: Promise.resolve({ threadId: "thread-1" }) }));
+
+    expect(screen.getByRole("heading", { name: /proposal discussion/i })).toBeInTheDocument();
+    expect(screen.getByText(/Back to Message Inbox/i)).toBeInTheDocument();
+    expect(screen.getByText(/Please confirm the floor plan/i)).toBeInTheDocument();
+    expect(findThread).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        id: "thread-1",
+        org: { members: { some: { userId: "planner-1" } } },
+      }),
+    }));
     expect(document.body.textContent).not.toMatch(forbiddenPlaceholderCopy);
   });
 

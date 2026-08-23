@@ -58,8 +58,8 @@ export default async function CalendarPage() {
         events={events.map((e) => ({
           id: e.id,
           title: e.title,
-          startAt: e.startAt,
-          endAt: e.endAt,
+          startAt: e.startAt.toISOString(),
+          endAt: e.endAt.toISOString(),
           allDay: e.allDay,
           location: e.location ?? undefined,
         }))}

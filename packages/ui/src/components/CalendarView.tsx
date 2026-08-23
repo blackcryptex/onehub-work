@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 
 export type CalendarViewMode = "month" | "week" | "day";
@@ -5,10 +7,14 @@ export type CalendarViewMode = "month" | "week" | "day";
 export interface CalendarEvent {
   id: string;
   title: string;
-  startAt: Date;
-  endAt: Date;
+  startAt: string | Date;
+  endAt: string | Date;
   allDay?: boolean;
   location?: string;
+}
+
+function toDate(value: string | Date) {
+  return value instanceof Date ? value : new Date(value);
 }
 
 export function CalendarView({ events, mode = "month", onEventClick }: { events: CalendarEvent[]; mode?: CalendarViewMode; onEventClick?: (event: CalendarEvent) => void }) {
@@ -21,18 +27,18 @@ export function CalendarView({ events, mode = "month", onEventClick }: { events:
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
 
   const monthEvents = events.filter((e) => {
-    const d = new Date(e.startAt);
+    const d = toDate(e.startAt);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   });
 
-  const getDayEvents = (day: number) => monthEvents.filter((e) => new Date(e.startAt).getDate() === day);
+  const getDayEvents = (day: number) => monthEvents.filter((e) => toDate(e.startAt).getDate() === day);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <button onClick={() => { if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1); } else setCurrentMonth(currentMonth - 1); }}>←</button>
+        <button type="button" aria-label="Previous month" onClick={() => { if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1); } else setCurrentMonth(currentMonth - 1); }}>←</button>
         <div className="font-semibold">{new Date(currentYear, currentMonth).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
-        <button onClick={() => { if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1); } else setCurrentMonth(currentMonth + 1); }}>→</button>
+        <button type="button" aria-label="Next month" onClick={() => { if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1); } else setCurrentMonth(currentMonth + 1); }}>→</button>
       </div>
       <div className="grid grid-cols-7 gap-1">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
