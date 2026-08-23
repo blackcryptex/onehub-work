@@ -8,6 +8,10 @@ const getCurrentUser = vi.fn();
 const auth = vi.fn();
 const findOrganizations = vi.fn();
 const findCalendarEvents = vi.fn();
+const createCalendarEvent = vi.fn();
+const findOrg = vi.fn();
+const findEvents = vi.fn();
+const findEvent = vi.fn();
 const findThreads = vi.fn();
 const findThread = vi.fn();
 const findNotifications = vi.fn();
@@ -16,8 +20,9 @@ vi.mock("@/lib/auth-helpers", () => ({ getCurrentUser }));
 vi.mock("@/lib/auth", () => ({ auth }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    organization: { findMany: findOrganizations },
-    calendarEvent: { findMany: findCalendarEvents },
+    organization: { findMany: findOrganizations, findFirst: findOrg },
+    event: { findMany: findEvents, findFirst: findEvent },
+    calendarEvent: { findMany: findCalendarEvents, create: createCalendarEvent },
     thread: { findMany: findThreads, findFirst: findThread },
   },
 }));
@@ -55,7 +60,11 @@ beforeEach(() => {
   getCurrentUser.mockResolvedValue({ id: "planner-1", role: "PRO_PLANNER", name: "Pro Planner" });
   auth.mockResolvedValue({ user: { id: "planner-1", role: "PRO_PLANNER" } });
   findOrganizations.mockResolvedValue([{ id: "org-1", name: "Atlas Events" }]);
+  findOrg.mockResolvedValue({ id: "org-1" });
+  findEvents.mockResolvedValue([{ id: "event-1", name: "Sample Wedding", orgId: "org-1" }]);
+  findEvent.mockResolvedValue({ id: "event-1" });
   findCalendarEvents.mockResolvedValue([]);
+  createCalendarEvent.mockResolvedValue({ id: "calendar-1" });
   findThreads.mockResolvedValue([]);
   findThread.mockResolvedValue({
     id: "thread-1",
@@ -87,8 +96,11 @@ describe("core dashboard destination routes", () => {
 
     render(await CalendarPage());
 
-    expect(screen.getByRole("heading", { name: /calendar/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^calendar$/i })).toBeInTheDocument();
     expect(screen.getByText(/Pro planner calendar overview/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /add calendar item/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /add calendar item/i })).toBeInTheDocument();
+    expect(screen.getByText(/does not sync with Google Calendar or any live external integration/i)).toBeInTheDocument();
     expect(screen.getByText(/No upcoming calendar items are loaded/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(forbiddenPlaceholderCopy);
   });
