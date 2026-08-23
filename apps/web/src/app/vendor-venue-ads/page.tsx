@@ -16,10 +16,10 @@ export default function VendorVenueAdsPage() {
           </div>
           <h1 className="text-4xl font-bold text-slate-900 mb-4">Vendor & Venue Ads</h1>
           <p className="text-lg text-slate-600 mb-2">
-            Vendor & Venue Ads coming soon.
+            Ads are not live in this MVP.
           </p>
           <p className="text-base text-slate-600 max-w-2xl mx-auto">
-            We're building tools to help vendors and venues promote their services directly to planners and hosts on OneHub.
+            Start with a provider profile so planners and hosts can evaluate your services through OneHub&apos;s existing discovery and booking paths.
           </p>
         </div>
 
@@ -27,9 +27,9 @@ export default function VendorVenueAdsPage() {
           <div className="flex justify-center mb-4">
             <Sparkles className="w-12 h-12 text-indigo-600" />
           </div>
-          <h2 className="text-2xl font-semibold mb-4">What's Coming</h2>
+          <h2 className="text-2xl font-semibold mb-4">Provider growth path</h2>
           <p className="text-slate-600 mb-6">
-            Soon you'll be able to create targeted ad campaigns, reach event planners actively searching for your services, and grow your business with OneHub's advertising platform.
+            Create or update your vendor or venue profile, keep packages and policies accurate, and use active leads instead of ad claims. OneHub does not present campaign billing or advertising inventory here.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild>

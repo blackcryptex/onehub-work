@@ -70,7 +70,12 @@ export default async function EventGuests({ params }: { params: Promise<{ eventS
               </table>
             </div>
           ) : (
-            <div className="text-sm text-slate-600">No guests yet.</div>
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+              <div className="font-medium text-slate-900">No guests are attached to this list yet.</div>
+              <p className="mt-1">
+                Use this view to verify invites, RSVP status, and plus-one counts once guests are added.
+              </p>
+            </div>
           )}
         </Card>
       ))}

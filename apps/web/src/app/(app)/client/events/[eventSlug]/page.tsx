@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canViewEvent, isEventSharedWithUser } from "@/lib/rbac";
 import { redirect, notFound } from "next/navigation";
-import { Calendar, MapPin, Users, DollarSign, MessageSquare } from "lucide-react";
+import Link from "next/link";
+import { Calendar, MapPin, Users, MessageSquare } from "lucide-react";
 import { DepositPanel } from "@/components/client/DepositPanel";
 
 /**
@@ -89,7 +90,7 @@ export default async function ClientEventSummaryPage({
                 Nothing shared yet.
               </p>
               <p className="text-slate-500 text-sm mt-2">
-                Your planner hasn't shared any information about this event yet.
+                Your planner hasn&apos;t shared any information about this event yet.
               </p>
             </Card>
           </div>
@@ -211,15 +212,21 @@ export default async function ClientEventSummaryPage({
         }))}
       />
 
-      {/* Messages Section - Placeholder */}
+      {/* Messages Section */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <MessageSquare className="w-5 h-5 text-slate-600" />
           <h3 className="text-lg font-semibold">Messages</h3>
         </div>
-        <p className="text-sm text-slate-600">
-          Messaging functionality will be integrated here. You can communicate with your planner about this event.
+        <p className="text-sm text-slate-600 mb-3">
+          Use the Message Inbox to coordinate with your planner about this event. Keep event-specific decisions and attachments in the shared thread so both sides can review the latest context.
         </p>
+        <Link
+          href="/messages"
+          className="text-sm font-medium text-indigo-700 hover:text-indigo-900"
+        >
+          Open Message Inbox →
+        </Link>
       </Card>
 
       {/* Note about limited access */}

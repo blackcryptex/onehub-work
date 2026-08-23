@@ -23,11 +23,20 @@ export default async function EventChecklists({ params }: { params: Promise<{ ev
       {lists.map((cl) => (
         <Card key={cl.id} className="p-4">
           <div className="font-semibold">{cl.title}</div>
-          <ul className="mt-2 list-disc pl-5 text-sm">
-            {cl.items.map((it) => (
-              <li key={it.id} className={it.done ? "line-through text-slate-500" : ""}>{it.title}</li>
-            ))}
-          </ul>
+          {cl.items.length > 0 ? (
+            <ul className="mt-2 list-disc pl-5 text-sm">
+              {cl.items.map((it) => (
+                <li key={it.id} className={it.done ? "line-through text-slate-500" : ""}>{it.title}</li>
+              ))}
+            </ul>
+          ) : (
+            <div className="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+              <div className="font-medium text-slate-900">No checklist items are attached yet.</div>
+              <p className="mt-1">
+                Use this list to track owners, due dates, and completion once tasks are added.
+              </p>
+            </div>
+          )}
         </Card>
       ))}
       {lists.length === 0 && (

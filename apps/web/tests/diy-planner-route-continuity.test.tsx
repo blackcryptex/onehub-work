@@ -103,6 +103,19 @@ describe("DIY planner route continuity cleanup", () => {
     expect(html).toContain("Start by adding guests");
   });
 
+  it("renders a useful guest-list empty state when a guest list exists without guests", async () => {
+    prisma.guestList.findMany.mockResolvedValue([
+      { id: "guest-list-1", title: "Primary guests", invited: 0, rsvped: 0, guests: [] },
+    ]);
+
+    const page = await EventGuests({ params: Promise.resolve({ eventSlug: "scout-gala" }) });
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("Primary guests");
+    expect(html).toContain("No guests are attached to this list yet");
+    expect(html).toContain("Use this view to verify invites, RSVP status, and plus-one counts once guests are added");
+  });
+
   it("renders checklist empty state with event context and vault return link", async () => {
     prisma.checklist.findMany.mockResolvedValue([]);
 
@@ -116,6 +129,17 @@ describe("DIY planner route continuity cleanup", () => {
     expect(html).toContain("Build your planning checklist");
   });
 
+  it("renders a useful checklist empty state when a checklist exists without items", async () => {
+    prisma.checklist.findMany.mockResolvedValue([{ id: "checklist-1", title: "Launch checklist", items: [] }]);
+
+    const page = await EventChecklists({ params: Promise.resolve({ eventSlug: "scout-gala" }) });
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("Launch checklist");
+    expect(html).toContain("No checklist items are attached yet");
+    expect(html).toContain("Use this list to track owners, due dates, and completion once tasks are added");
+  });
+
   it("renders budget route with event context and vault return link", async () => {
     prisma.event.findUnique.mockResolvedValue({ id: "event-1", name: "Scout Gala", budgetLines: [] });
 
@@ -127,6 +151,16 @@ describe("DIY planner route continuity cleanup", () => {
     expect(html).toContain("Back to Event Vault");
     expect(html).toContain('/diy-planner/vault/scout-gala');
     expect(html).toContain("Track planned and actual spend");
+  });
+
+  it("renders a useful budget empty state instead of only an empty table", async () => {
+    prisma.event.findUnique.mockResolvedValue({ id: "event-1", name: "Scout Gala", budgetLines: [] });
+
+    const page = await EventBudget({ params: Promise.resolve({ eventSlug: "scout-gala" }) });
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("No budget lines are attached to this event yet");
+    expect(html).toContain("Use this page to review planned spend, actual spend, and category totals once budget lines are added");
   });
 
   it("does not self-redirect an admin visiting the legacy app vault", async () => {

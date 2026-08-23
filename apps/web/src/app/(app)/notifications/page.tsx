@@ -33,7 +33,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Notifications</h1>
-          <p className="text-sm text-slate-600">Local in-app notification history for your account. Email/SMS delivery remains stub/mock-only in this Gate 6B slice.</p>
+          <p className="text-sm text-slate-600">Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders.</p>
         </div>
         <div className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">{unreadCount} unread in current view</div>
       </div>
@@ -52,7 +52,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
         <div className="border-b px-4 py-3 font-semibold">Latest notifications</div>
         <div className="divide-y">
           {notifications.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-slate-500">No notifications found for this filter.</div>
+            <div className="px-4 py-8 text-center text-sm text-slate-500">No notifications match this view. New account, client, vendor, contract, and task alerts will appear here when they are created.</div>
           ) : (
             notifications.map((notification) => (
               <article key={notification.id} className={`space-y-2 px-4 py-3 text-sm ${notification.read ? "" : "bg-blue-50/50"}`}>
