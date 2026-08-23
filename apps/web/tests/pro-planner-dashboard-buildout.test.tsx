@@ -298,9 +298,12 @@ describe("ProPlannerDashboard", () => {
     expect(screen.getByText("pending@example.com")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Clients" }));
-    expect(screen.getByText("Client command center")).toBeInTheDocument();
+    expect(screen.getByText("Client follow-up center")).toBeInTheDocument();
+    expect(screen.getByText(/Planner-only workspace/i)).toBeInTheDocument();
     expect(screen.getAllByText("Maya Client").length).toBeGreaterThan(0);
-    expect(screen.getByText("Create waiting-on-client task")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Add client follow-up" })).toBeInTheDocument();
+    expect(screen.getByText(/Use this when you need a client to approve, answer, upload, sign, or pay/i)).toBeInTheDocument();
+    expect(screen.getByText("Client follow-ups needing action")).toBeInTheDocument();
     expect(screen.getByText("Confirm final floorplan with venue")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Vendors" }));
@@ -421,7 +424,7 @@ describe("ProPlannerDashboard", () => {
     renderDashboard();
     fireEvent.click(screen.getByRole("button", { name: "Clients" }));
     fireEvent.change(screen.getByLabelText("Client task title"), { target: { value: "Approve final guest count" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add client task" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add client follow-up" }));
 
     expect(await screen.findByText("Approve final guest count")).toBeInTheDocument();
     expect(global.fetch).toHaveBeenCalledWith(

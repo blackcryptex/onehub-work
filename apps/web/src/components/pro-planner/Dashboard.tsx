@@ -1321,11 +1321,13 @@ export function ProPlannerDashboard({
         );
       case "clients":
         return (
-          <Panel title="Client command center" icon={HeartHandshake}>
-            <p className="text-sm text-slate-600">Client contacts, waiting-on-client work, approvals, and event communication context.</p>
+          <Panel title="Client follow-up center" icon={HeartHandshake}>
+            <p className="text-sm text-slate-600">
+              Planner-only workspace for tracking what you need from clients, assigning follow-ups, and keeping approvals, signatures, payments, and messages from going stale.
+            </p>
             <form onSubmit={createClientTask} className="rounded-xl border border-rose-100 bg-rose-50 p-4">
-              <h3 className="font-semibold text-slate-900">Create waiting-on-client task</h3>
-              <p className="mt-1 text-xs text-slate-600">Turn a client decision, approval, document, or response into a real event task.</p>
+              <h3 className="font-semibold text-slate-900">Add client follow-up</h3>
+              <p className="mt-1 text-xs text-slate-600">Use this when you need a client to approve, answer, upload, sign, or pay. It creates a real event task, not a private note.</p>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <label className="text-sm font-medium text-slate-800">
                   Event
@@ -1361,7 +1363,7 @@ export function ProPlannerDashboard({
                   />
                 </label>
               </div>
-              <Button type="submit" className="mt-3" disabled={clientTaskBusy || !clientTaskEventId || !clientTaskTitle.trim()}>{clientTaskBusy ? "Creating..." : "Add client task"}</Button>
+              <Button type="submit" className="mt-3" disabled={clientTaskBusy || !clientTaskEventId || !clientTaskTitle.trim()}>{clientTaskBusy ? "Creating..." : "Add client follow-up"}</Button>
               {clientTaskStatus && <p className="mt-2 text-sm text-slate-700">{clientTaskStatus}</p>}
             </form>
             <div className="grid gap-3 md:grid-cols-2">
@@ -1369,13 +1371,14 @@ export function ProPlannerDashboard({
                 <Link key={`${client.event.id}-${client.id}`} href={`/pro/planner/vault/${client.event.slug}` as Route} className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-indigo-200">
                   <p className="font-semibold text-slate-900">{client.name}</p>
                   <p className="mt-1 text-sm text-slate-600">{client.event.name} / {client.role.replace(/_/g, " ")}</p>
+                  <p className="mt-2 text-xs font-medium text-indigo-700">Open event workspace →</p>
                 </Link>
               )) : (
-                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No client stakeholder records are loaded. Add client access from the event command center to track approvals and decisions.</p>
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No client contacts are attached yet. Add client access from the event workspace before assigning client approvals, signatures, payments, or message follow-ups.</p>
               )}
             </div>
             <div className="space-y-3">
-              <h3 className="font-semibold text-slate-900">Waiting on client</h3>
+              <h3 className="font-semibold text-slate-900">Client follow-ups needing action</h3>
               {dashboard.waitingOnClientTasks.length > 0 ? dashboard.waitingOnClientTasks.map((task) => (
                 <Link key={task.id} href={`/pro/planner/vault/${task.event.slug}#event-workspace` as Route} className="block rounded-xl border border-rose-100 bg-rose-50 p-3 hover:border-rose-200">
                   <p className="text-sm font-semibold text-slate-900">{task.title}</p>
@@ -1387,7 +1390,7 @@ export function ProPlannerDashboard({
                   {notification.body && <p className="mt-1 text-xs text-slate-600">{notification.body}</p>}
                 </Link>
               )) : (
-                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No waiting-on-client tasks or unread client/action notifications are loaded.</p>
+                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No client follow-ups yet. Add one when you need a client to approve, answer, upload, sign, or pay.</p>
               )}
             </div>
           </Panel>
