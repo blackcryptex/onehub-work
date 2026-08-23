@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findUnique, upsert } = vi.hoisted(() => ({
+const { findUnique, upsert, calendarAccountUpsert } = vi.hoisted(() => ({
   findUnique: vi.fn(),
   upsert: vi.fn(),
+  calendarAccountUpsert: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -10,6 +11,9 @@ vi.mock("@/lib/prisma", () => ({
     user: {
       findUnique,
       upsert,
+    },
+    calendarAccount: {
+      upsert: calendarAccountUpsert,
     },
   },
 }));
@@ -203,6 +207,46 @@ describe("auth JWT impersonation session updates", () => {
       id: "ordinary-google-id",
       realUserId: "ordinary-google-id",
       role: "CLIENT",
+    });
+  });
+
+  it("stores per-user Google Calendar tokens during Google OAuth login", async () => {
+    const jwt = authConfig.callbacks?.jwt;
+    expect(jwt).toBeTypeOf("function");
+
+    await jwt!({
+      token: {},
+      user: {
+        id: "planner-google-id",
+        email: "planner@example.com",
+        name: "Planner",
+        image: null,
+        role: "PRO_PLANNER",
+      },
+      account: {
+        provider: "google",
+        access_token: "access-token",
+        refresh_token: "refresh-token",
+        expires_at: 1800000000,
+      },
+    } as never);
+
+    expect(calendarAccountUpsert).toHaveBeenCalledWith({
+      where: { userId_provider: { userId: "planner-google-id", provider: "google" } },
+      create: {
+        userId: "planner-google-id",
+        provider: "google",
+        email: "planner@example.com",
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        expiresAt: new Date(1800000000 * 1000),
+      },
+      update: {
+        email: "planner@example.com",
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        expiresAt: new Date(1800000000 * 1000),
+      },
     });
   });
 

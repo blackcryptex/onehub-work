@@ -180,6 +180,11 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     async jwt({ token, user, account, trigger, session }) {
+      let googleCalendarUser: {
+        id: string;
+        email?: string | null;
+      } | null = null;
+
       // When a user first logs in, initialize realUserId
       if (user) {
         let effectiveLoginUser = user;
@@ -215,6 +220,10 @@ export const authConfig: NextAuthConfig = {
         // Otherwise, id is the real user
         token.id = token.actingUserId || effectiveLoginUser.id;
         token.role = effectiveLoginUser.role ?? token.role;
+        googleCalendarUser = {
+          id: effectiveLoginUser.id,
+          email: effectiveLoginUser.email ?? user.email,
+        };
       }
       
       // Handle session update trigger (used for impersonation)
@@ -267,6 +276,29 @@ export const authConfig: NextAuthConfig = {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.expiresAt = account.expires_at;
+
+        if (googleCalendarUser?.id && account.access_token) {
+          const expiresAt = account.expires_at ? new Date(account.expires_at * 1000) : null;
+          const email = googleCalendarUser.email || "";
+
+          await prisma.calendarAccount.upsert({
+            where: { userId_provider: { userId: googleCalendarUser.id, provider: "google" } },
+            create: {
+              userId: googleCalendarUser.id,
+              provider: "google",
+              email,
+              accessToken: account.access_token,
+              refreshToken: account.refresh_token || null,
+              expiresAt,
+            },
+            update: {
+              email,
+              accessToken: account.access_token,
+              refreshToken: account.refresh_token || undefined,
+              expiresAt,
+            },
+          });
+        }
       }
       
       return token;
