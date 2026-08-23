@@ -5,6 +5,12 @@ import { revalidatePath } from "next/cache";
 import { CalendarView } from "@onehub/ui";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
+import {
+  ensureOneHubCalendar,
+  pullMappedGoogleCalendarEvents,
+  pushOneHubCalendarEvents,
+  syncOneHubCalendarEventToGoogle,
+} from "@/lib/google.calendar";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +31,36 @@ function formatDateTime(value: Date | string) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function statusMessage(searchParams: Record<string, string | string[] | undefined>) {
+  const has = (key: string) => Boolean(searchParams[key]);
+  if (has("calendarCreated")) return "Calendar item saved in OneHub.";
+  if (has("calendarCreatedAndSynced")) return "Calendar item saved in OneHub and synced to Google.";
+  if (has("calendarCreatedGoogleFailed")) return "Calendar item saved in OneHub, but Google rejected the sync. Use Sync to Google after reconnecting or try again.";
+  if (has("googleConnected")) return "Google Calendar connected. You can now create or use the OneHub calendar and sync records.";
+  if (has("googleCalendarReady")) return "Google OneHub calendar is ready.";
+  if (has("googlePushed")) return "OneHub calendar records pushed to Google.";
+  if (has("googlePulled")) return "Google changes pulled for mapped OneHub calendar records.";
+  return null;
+}
+
+function errorMessage(searchParams: Record<string, string | string[] | undefined>) {
+  const code = searchParams.calendarError || searchParams.googleError;
+  if (!code) return null;
+  const value = Array.isArray(code) ? code[0] : code;
+  if (!value) return "Calendar action failed.";
+  const messages: Record<string, string> = {
+    "missing-required-fields": "Title, organization, and start time are required.",
+    "organization-not-available": "That organization is not available to your account.",
+    "event-not-available": "That event is not available for the selected organization.",
+    "invalid-date": "Use a valid start and end date/time.",
+    "connect-failed": "Google connection failed. Try reconnecting Google Calendar.",
+    "calendar-failed": "Google could not create or find the OneHub calendar.",
+    "push-failed": "Google rejected the sync request. Reconnect Google Calendar or try again.",
+    "pull-failed": "Google changes could not be pulled right now. Reconnect Google Calendar or try again.",
+  };
+  return messages[value] || "Calendar action failed.";
 }
 
 async function createCalendarItem(formData: FormData) {
@@ -75,7 +111,7 @@ async function createCalendarItem(formData: FormData) {
   }
   const endAt = explicitEndAt && explicitEndAt >= startAt ? explicitEndAt : new Date(startAt.getTime() + 60 * 60 * 1000);
 
-  await prisma.calendarEvent.create({
+  const created = await prisma.calendarEvent.create({
     data: {
       orgId,
       eventId,
@@ -91,13 +127,87 @@ async function createCalendarItem(formData: FormData) {
     },
   });
 
+  const googleAccount = await prisma.calendarAccount.findFirst({
+    where: { userId: user.id, provider: "google" },
+    select: { id: true },
+  });
+
+  if (googleAccount) {
+    try {
+      await syncOneHubCalendarEventToGoogle(user.id, created);
+      revalidatePath("/calendar");
+      redirect("/calendar?calendarCreatedAndSynced=1");
+    } catch {
+      revalidatePath("/calendar");
+      redirect("/calendar?calendarCreatedGoogleFailed=1");
+    }
+  }
+
   revalidatePath("/calendar");
   redirect("/calendar?calendarCreated=1");
 }
 
-export default async function CalendarPage() {
+async function createOrUseGoogleCalendar() {
+  "use server";
+
   const user = await getCurrentUser();
   if (!user) redirect("/signin");
+
+  try {
+    await ensureOneHubCalendar(user.id);
+    revalidatePath("/calendar");
+    redirect("/calendar?googleCalendarReady=1");
+  } catch {
+    redirect("/calendar?googleError=calendar-failed");
+  }
+}
+
+async function pushToGoogle() {
+  "use server";
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/signin");
+
+  const orgs = await prisma.organization.findMany({
+    where: {
+      OR: [
+        { ownerId: user.id },
+        { members: { some: { userId: user.id } } },
+      ],
+    },
+    select: { id: true },
+  });
+  const orgIds = orgs.map((org) => org.id);
+  const events = await prisma.calendarEvent.findMany({
+    where: { orgId: { in: orgIds } },
+    orderBy: { startAt: "asc" },
+    take: 250,
+  });
+
+  const result = await pushOneHubCalendarEvents(user.id, events);
+  revalidatePath("/calendar");
+  redirect(result.failed === 0 ? "/calendar?googlePushed=1" : "/calendar?googleError=push-failed");
+}
+
+async function pullFromGoogle() {
+  "use server";
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/signin");
+
+  const result = await pullMappedGoogleCalendarEvents(user.id);
+  revalidatePath("/calendar");
+  redirect(result.failed === 0 ? "/calendar?googlePulled=1" : "/calendar?googleError=pull-failed");
+}
+
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/signin");
+  const params = searchParams ? await searchParams : {};
 
   const orgs = await prisma.organization.findMany({
     where: { members: { some: { userId: user.id } } },
@@ -119,6 +229,12 @@ export default async function CalendarPage() {
     orderBy: { startAt: "asc" },
     take: 50,
   });
+  const googleAccount = await prisma.calendarAccount.findFirst({
+    where: { userId: user.id, provider: "google" },
+    select: { email: true, googleCalendarId: true },
+  });
+  const notice = statusMessage(params);
+  const error = errorMessage(params);
 
   return (
     <div className="space-y-6">
@@ -130,11 +246,59 @@ export default async function CalendarPage() {
         </p>
       </div>
 
+      {notice ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</div> : null}
+      {error ? <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</div> : null}
+
+      <section className="rounded-xl border bg-white p-5">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-slate-900">Google Calendar sync</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Connect your own Google account. OneHub only syncs calendar records your account can access through your organizations.
+          </p>
+        </div>
+        {googleAccount ? (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              Connected as {googleAccount.email}. {googleAccount.googleCalendarId ? "OneHub Google calendar is selected." : "Create or select the OneHub Google calendar before syncing."}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <form action={createOrUseGoogleCalendar}>
+                <button type="submit" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                  Create/use OneHub calendar
+                </button>
+              </form>
+              <form action={pushToGoogle}>
+                <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                  Sync OneHub to Google
+                </button>
+              </form>
+              <form action={pullFromGoogle}>
+                <button type="submit" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                  Pull Google changes
+                </button>
+              </form>
+            </div>
+            <p className="text-xs text-slate-500">
+              Duplicate protection uses OneHub-to-Google mapping records. Pull only updates Google events that OneHub originally synced.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-slate-600">
+              Not connected. Google sync needs Calendar permission and offline access so OneHub can refresh your token safely.
+            </p>
+            <Link href={`/api/auth/signin/google?callbackUrl=${encodeURIComponent("/api/google/callback")}` as Route} className="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+              Connect Google Calendar
+            </Link>
+          </div>
+        )}
+      </section>
+
       <section className="rounded-xl border bg-white p-5">
         <div className="mb-4">
           <h2 className="text-lg font-semibold text-slate-900">Add calendar item</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Add a OneHub calendar record for your team. This does not sync with Google Calendar or any live external integration.
+            Add a OneHub calendar record for your team. If Google Calendar is connected, OneHub will also sync this record to your OneHub Google calendar.
           </p>
         </div>
         {orgs.length === 0 ? (

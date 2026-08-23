@@ -2,6 +2,71 @@
 import { google } from 'googleapis';
 import { prisma } from './prisma';
 
+type GoogleEventPayload = {
+  summary: string;
+  description?: string;
+  location?: string;
+  start: { date?: string; dateTime?: string; timeZone?: string };
+  end: { date?: string; dateTime?: string; timeZone?: string };
+  colorId?: string;
+  extendedProperties?: { private?: Record<string, string> };
+};
+
+type OneHubCalendarEvent = {
+  id: string;
+  title: string;
+  description?: string | null;
+  location?: string | null;
+  startAt: Date;
+  endAt: Date;
+  allDay: boolean;
+};
+
+function getOAuthConfig() {
+  const clientId = process.env.GOOGLE_ID || process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL;
+
+  if (!clientId || !clientSecret || !baseUrl) {
+    throw new Error('Google Calendar is not configured for this environment');
+  }
+
+  return { clientId, clientSecret, redirectUri: `${baseUrl.replace(/\/$/, '')}/api/auth/callback/google` };
+}
+
+function isoDate(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+export function oneHubCalendarEventToGoogleEvent(event: OneHubCalendarEvent): GoogleEventPayload {
+  const privateProperties = {
+    onehubEntityType: 'calendarEvent',
+    onehubEntityId: event.id,
+  };
+
+  if (event.allDay) {
+    return {
+      summary: event.title,
+      description: event.description || undefined,
+      location: event.location || undefined,
+      start: { date: isoDate(event.startAt) },
+      end: { date: isoDate(event.endAt) },
+      colorId: '9',
+      extendedProperties: { private: privateProperties },
+    };
+  }
+
+  return {
+    summary: event.title,
+    description: event.description || undefined,
+    location: event.location || undefined,
+    start: { dateTime: event.startAt.toISOString() },
+    end: { dateTime: event.endAt.toISOString() },
+    colorId: '9',
+    extendedProperties: { private: privateProperties },
+  };
+}
+
 export async function getGoogleClient(userId: string) {
   const account = await prisma.calendarAccount.findFirst({
     where: { userId, provider: 'google' },
@@ -11,32 +76,33 @@ export async function getGoogleClient(userId: string) {
     throw new Error('Google Calendar not connected');
   }
 
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.NEXTAUTH_URL
-  );
+  const oauth = getOAuthConfig();
+  const oauth2Client = new google.auth.OAuth2(oauth.clientId, oauth.clientSecret, oauth.redirectUri);
 
   oauth2Client.setCredentials({
     access_token: account.accessToken,
     refresh_token: account.refreshToken || undefined,
+    expiry_date: account.expiresAt?.getTime(),
   });
 
-  // Auto-refresh if expired
-  if (account.expiresAt && account.expiresAt < new Date()) {
+  if (account.expiresAt && account.expiresAt < new Date(Date.now() + 60_000)) {
     if (!account.refreshToken) {
-      throw new Error('Token expired and no refresh token available');
+      throw new Error('Google Calendar token expired; reconnect Google Calendar');
     }
     const { credentials } = await oauth2Client.refreshAccessToken();
     await prisma.calendarAccount.update({
       where: { id: account.id },
       data: {
-        accessToken: credentials.access_token,
+        accessToken: credentials.access_token || account.accessToken,
         refreshToken: credentials.refresh_token || account.refreshToken,
-        expiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : undefined,
+        expiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : account.expiresAt,
       },
     });
-    oauth2Client.setCredentials(credentials);
+    oauth2Client.setCredentials({
+      access_token: credentials.access_token || account.accessToken,
+      refresh_token: credentials.refresh_token || account.refreshToken || undefined,
+      expiry_date: credentials.expiry_date || account.expiresAt?.getTime(),
+    });
   }
 
   return { oauth2Client, calendarAccount: account };
@@ -50,12 +116,10 @@ export async function ensureOneHubCalendar(userId: string): Promise<string> {
   }
 
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-
-  // Check if OneHub calendar already exists
   const calendars = await calendar.calendarList.list();
   const existing = calendars.data.items?.find(c => c.summary === 'OneHub');
 
-  if (existing && existing.id) {
+  if (existing?.id) {
     await prisma.calendarAccount.update({
       where: { id: calendarAccount.id },
       data: { googleCalendarId: existing.id },
@@ -63,12 +127,11 @@ export async function ensureOneHubCalendar(userId: string): Promise<string> {
     return existing.id;
   }
 
-  // Create new OneHub calendar
   const created = await calendar.calendars.insert({
     requestBody: {
       summary: 'OneHub',
       description: 'OneHub event planning calendar',
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timeZone: 'UTC',
     },
   });
 
@@ -88,18 +151,11 @@ export async function upsertGoogleEvent(
   userId: string,
   calendarId: string,
   mappingKey: string,
-  payload: {
-    summary: string;
-    description?: string;
-    start: { date?: string; dateTime?: string; timeZone?: string };
-    end: { date?: string; dateTime?: string; timeZone?: string };
-    colorId?: string;
-  }
+  payload: GoogleEventPayload
 ): Promise<string> {
   const { oauth2Client } = await getGoogleClient(userId);
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-  // Check for existing mapping
   const [entityType, entityId] = mappingKey.split(':');
   if (!entityType || !entityId) {
     throw new Error('Invalid mapping key format');
@@ -108,21 +164,25 @@ export async function upsertGoogleEvent(
     where: { userId_entityType_entityId: { userId, entityType, entityId } },
   });
 
-  if (mapping && mapping.googleEventId) {
-    // Update existing event
-    const updated = await calendar.events.update({
-      calendarId,
-      eventId: mapping.googleEventId,
-      requestBody: payload,
-    });
-    await prisma.calendarMapping.update({
-      where: { id: mapping.id },
-      data: { lastSyncedAt: new Date() },
-    });
-    return updated.data.id || mapping.googleEventId;
+  if (mapping?.googleEventId) {
+    try {
+      const updated = await calendar.events.update({
+        calendarId: mapping.googleCalendarId || calendarId,
+        eventId: mapping.googleEventId,
+        requestBody: payload,
+      });
+      await prisma.calendarMapping.update({
+        where: { id: mapping.id },
+        data: { lastSyncedAt: new Date() },
+      });
+      return updated.data.id || mapping.googleEventId;
+    } catch (error: unknown) {
+      const status = (error as { code?: number; status?: number }).code || (error as { status?: number }).status;
+      if (status !== 404 && status !== 410) throw error;
+      await prisma.calendarMapping.delete({ where: { id: mapping.id } });
+    }
   }
 
-  // Create new event
   const created = await calendar.events.insert({
     calendarId,
     requestBody: payload,
@@ -132,14 +192,20 @@ export async function upsertGoogleEvent(
     throw new Error('Failed to create Google Calendar event');
   }
 
-  // Create mapping
   const account = await prisma.calendarAccount.findFirst({
     where: { userId, provider: 'google' },
   });
 
-  if (account && created.data.id) {
-    await prisma.calendarMapping.create({
-      data: {
+  if (account) {
+    await prisma.calendarMapping.upsert({
+      where: { userId_entityType_entityId: { userId, entityType, entityId } },
+      update: {
+        calendarAccountId: account.id,
+        googleEventId: created.data.id,
+        googleCalendarId: calendarId,
+        lastSyncedAt: new Date(),
+      },
+      create: {
         userId,
         calendarAccountId: account.id,
         entityType,
@@ -153,16 +219,87 @@ export async function upsertGoogleEvent(
   return created.data.id;
 }
 
+export async function syncOneHubCalendarEventToGoogle(userId: string, event: OneHubCalendarEvent) {
+  const calendarId = await ensureOneHubCalendar(userId);
+  return upsertGoogleEvent(userId, calendarId, `calendarEvent:${event.id}`, oneHubCalendarEventToGoogleEvent(event));
+}
+
+export async function pushOneHubCalendarEvents(userId: string, events: OneHubCalendarEvent[]) {
+  const calendarId = await ensureOneHubCalendar(userId);
+  const results = { synced: 0, failed: 0, errors: [] as string[] };
+
+  for (const event of events) {
+    try {
+      await upsertGoogleEvent(userId, calendarId, `calendarEvent:${event.id}`, oneHubCalendarEventToGoogleEvent(event));
+      results.synced += 1;
+    } catch (error: unknown) {
+      results.failed += 1;
+      results.errors.push(error instanceof Error ? error.message : 'Google rejected a calendar event');
+    }
+  }
+
+  return results;
+}
+
+export async function pullMappedGoogleCalendarEvents(userId: string) {
+  const { oauth2Client, calendarAccount } = await getGoogleClient(userId);
+  const calendarId = calendarAccount.googleCalendarId || await ensureOneHubCalendar(userId);
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+  const mappings = await prisma.calendarMapping.findMany({
+    where: { userId, entityType: 'calendarEvent', googleCalendarId: calendarId },
+  });
+  const results = { updated: 0, missing: 0, failed: 0, errors: [] as string[] };
+
+  for (const mapping of mappings) {
+    try {
+      const response = await calendar.events.get({ calendarId, eventId: mapping.googleEventId });
+      const googleEvent = response.data;
+      if (googleEvent.status === 'cancelled') {
+        results.missing += 1;
+        continue;
+      }
+      const startValue = googleEvent.start?.dateTime || googleEvent.start?.date;
+      const endValue = googleEvent.end?.dateTime || googleEvent.end?.date || startValue;
+      if (!startValue || !endValue) continue;
+
+      await prisma.calendarEvent.update({
+        where: { id: mapping.entityId },
+        data: {
+          title: googleEvent.summary || 'Untitled Google event',
+          description: googleEvent.description || null,
+          location: googleEvent.location || null,
+          startAt: new Date(startValue),
+          endAt: new Date(endValue),
+          allDay: Boolean(googleEvent.start?.date),
+          source: 'google-sync',
+        },
+      });
+      await prisma.calendarMapping.update({ where: { id: mapping.id }, data: { lastSyncedAt: new Date() } });
+      results.updated += 1;
+    } catch (error: unknown) {
+      const status = (error as { code?: number; status?: number }).code || (error as { status?: number }).status;
+      if (status === 404 || status === 410) {
+        results.missing += 1;
+      } else {
+        results.failed += 1;
+        results.errors.push(error instanceof Error ? error.message : 'Google pull failed');
+      }
+    }
+  }
+
+  return results;
+}
+
 export async function listOverlayEvents(
   userId: string,
   timeMin: string,
   timeMax: string
 ): Promise<unknown[]> {
-  const { oauth2Client } = await getGoogleClient(userId);
+  const { oauth2Client, calendarAccount } = await getGoogleClient(userId);
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
   const response = await calendar.events.list({
-    calendarId: 'primary',
+    calendarId: calendarAccount.googleCalendarId || 'primary',
     timeMin,
     timeMax,
     maxResults: 250,
@@ -180,10 +317,5 @@ export async function deleteGoogleEvent(
 ): Promise<void> {
   const { oauth2Client } = await getGoogleClient(userId);
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-
-  await calendar.events.delete({
-    calendarId,
-    eventId: googleEventId,
-  });
+  await calendar.events.delete({ calendarId, eventId: googleEventId });
 }
-

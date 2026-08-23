@@ -9,6 +9,7 @@ const auth = vi.fn();
 const findOrganizations = vi.fn();
 const findCalendarEvents = vi.fn();
 const createCalendarEvent = vi.fn();
+const findCalendarAccount = vi.fn();
 const findOrg = vi.fn();
 const findEvents = vi.fn();
 const findEvent = vi.fn();
@@ -23,8 +24,15 @@ vi.mock("@/lib/prisma", () => ({
     organization: { findMany: findOrganizations, findFirst: findOrg },
     event: { findMany: findEvents, findFirst: findEvent },
     calendarEvent: { findMany: findCalendarEvents, create: createCalendarEvent },
+    calendarAccount: { findFirst: findCalendarAccount },
     thread: { findMany: findThreads, findFirst: findThread },
   },
+}));
+vi.mock("@/lib/google.calendar", () => ({
+  ensureOneHubCalendar: vi.fn(),
+  pullMappedGoogleCalendarEvents: vi.fn(),
+  pushOneHubCalendarEvents: vi.fn(),
+  syncOneHubCalendarEventToGoogle: vi.fn(),
 }));
 vi.mock("@/server/db", () => ({
   db: {
@@ -64,6 +72,7 @@ beforeEach(() => {
   findEvents.mockResolvedValue([{ id: "event-1", name: "Sample Wedding", orgId: "org-1" }]);
   findEvent.mockResolvedValue({ id: "event-1" });
   findCalendarEvents.mockResolvedValue([]);
+  findCalendarAccount.mockResolvedValue(null);
   createCalendarEvent.mockResolvedValue({ id: "calendar-1" });
   findThreads.mockResolvedValue([]);
   findThread.mockResolvedValue({
@@ -94,13 +103,16 @@ describe("core dashboard destination routes", () => {
   it("renders /calendar as an upcoming calendar overview with a truthful empty state", async () => {
     const { default: CalendarPage } = await import("../src/app/(app)/calendar/page");
 
-    render(await CalendarPage());
+    render(await CalendarPage({ searchParams: Promise.resolve({}) }));
 
     expect(screen.getByRole("heading", { name: /^calendar$/i })).toBeInTheDocument();
     expect(screen.getByText(/Pro planner calendar overview/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /add calendar item/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /add calendar item/i })).toBeInTheDocument();
-    expect(screen.getByText(/does not sync with Google Calendar or any live external integration/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /google calendar sync/i })).toBeInTheDocument();
+    expect(screen.getByText(/not connected/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /connect google calendar/i })).toBeInTheDocument();
+    expect(screen.getByText(/If Google Calendar is connected/i)).toBeInTheDocument();
     expect(screen.getByText(/No upcoming calendar items are loaded/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(forbiddenPlaceholderCopy);
   });

@@ -50,9 +50,9 @@ export async function GET(_request: NextRequest) {
       }
     }
 
-    return redirect('/diy-planner');
+    return redirect('/calendar?googleConnected=1');
   } catch (error) {
     console.error('Google callback error:', error);
-    return redirect('/diy-planner');
+    return redirect('/calendar?googleError=connect-failed');
   }
 }
