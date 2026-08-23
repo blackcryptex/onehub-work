@@ -267,12 +267,15 @@ export default async function ProVaultDetailPage({
   const progress =
     checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
 
-  const guestList = event.guestLists;
-  const totalGuests = guestList?.guests.length || 0;
-  const rsvped =
-    guestList?.guests.filter((g) => g.status === "ACCEPTED").length || 0;
-  const rsvpPending =
-    guestList?.guests.filter((g) => g.status === "PENDING").length || 0;
+  const guestLists = Array.isArray(event.guestLists)
+    ? event.guestLists
+    : event.guestLists
+      ? [event.guestLists]
+      : [];
+  const guests = guestLists.flatMap((list) => list.guests || []);
+  const totalGuests = guests.length;
+  const rsvped = guests.filter((guest) => guest.status === "ACCEPTED").length;
+  const rsvpPending = guests.filter((guest) => guest.status === "PENDING").length;
 
   const upcomingMilestones = event.milestones
     .filter((m) => !m.done && m.dueAt && new Date(m.dueAt) > new Date())
@@ -390,6 +393,7 @@ export default async function ProVaultDetailPage({
     { label: "Requests", href: "#workspace-requests-detail" },
     { label: "Proposals", href: "#workspace-proposals-detail" },
     { label: "Contracts", href: "#workspace-contracts-detail" },
+    { label: "Documents", href: "#workspace-files" },
     { label: "Payments", href: "#workspace-payment-detail" },
     { label: "Tasks", href: "#workspace-operations" },
     { label: "Guests", href: "#workspace-guests" },
@@ -506,6 +510,58 @@ export default async function ProVaultDetailPage({
   const confirmedVendorCount = new Set(
     confirmedVendorItems.map((item) => item.title),
   ).size;
+
+  const plannerQuickLanes = [
+    {
+      title: "Approvals & decisions",
+      summary: "Review proposals, contracts, and client decisions that need a planner or client yes/no.",
+      action: "Review proposals",
+      href: "#workspace-proposals-detail",
+      icon: FileCheck,
+    },
+    {
+      title: "Messages",
+      summary: "Open the inbox for client, vendor, and event communication instead of hunting through dashboards.",
+      action: "Open messages",
+      href: "/messages",
+      icon: Bell,
+    },
+    {
+      title: "Documents",
+      summary: "Find proposals, contracts, and event files tied to this workspace. Internal notes stay planner-only.",
+      action: "Open event files",
+      href: "#workspace-files",
+      icon: FileText,
+    },
+    {
+      title: "Payments",
+      summary: "Check payment readiness only after contract state supports it. No live-payment shortcut is added here.",
+      action: "Check payment",
+      href: "#workspace-payment-detail",
+      icon: CreditCard,
+    },
+    {
+      title: "Guests",
+      summary: "Track guest count and RSVP state for this event.",
+      action: "Manage guests",
+      href: `/events/${eventSlug}/guests`,
+      icon: Users,
+    },
+    {
+      title: "Budget",
+      summary: "Compare planned and actual spend before making vendor or scope decisions.",
+      action: "View budget",
+      href: `/events/${eventSlug}/budget`,
+      icon: BarChart3,
+    },
+    {
+      title: "Timeline",
+      summary: "See upcoming event milestones and what needs attention next.",
+      action: "View timeline",
+      href: "#workspace-timeline-detail",
+      icon: CalendarDays,
+    },
+  ];
 
   const operationCards = [
     {
@@ -817,16 +873,38 @@ export default async function ProVaultDetailPage({
               <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
-                    Operational workspace
+                    Planner event workspace
                   </p>
-                  <h2 className="mt-1 text-2xl font-semibold">Command Center Overview</h2>
+                  <h2 className="mt-1 text-2xl font-semibold">Start here when you need to move this event forward</h2>
                   <p className="mt-1 max-w-3xl text-sm text-slate-600">
-                    Sourcing, shortlist, confirmed vendors, budget planning, and payments are separated so each area reflects real event state.
+                    Use these lanes to jump directly to approvals, messages, documents, payments, guests, budget, and timeline work for this event. The operational cards below still show the deeper sourcing-to-payment state.
                   </p>
                 </div>
                 <Button asChild size="sm">
                   <Link href={sourceVendorsHref as Route}>Source vendors</Link>
                 </Button>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {plannerQuickLanes.map((lane) => {
+                  const LaneIcon = lane.icon;
+                  return (
+                    <Card key={lane.title} className="p-4">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
+                          <LaneIcon className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-slate-950">{lane.title}</h3>
+                          <p className="mt-1 text-sm leading-6 text-slate-600">{lane.summary}</p>
+                          <Button asChild size="sm" variant="secondary" className="mt-3">
+                            <Link href={lane.href as any}>{lane.action}</Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
 
               <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -1057,6 +1135,23 @@ export default async function ProVaultDetailPage({
                       No contract exists yet. Contracts appear only after accepted proposal work advances.
                     </p>
                   )}
+                </div>
+              </Card>
+
+              <Card id="workspace-files" className="scroll-mt-24 p-5">
+                <h3 className="text-lg font-semibold">Documents</h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  Event documents collect the files a planner needs to review: proposals, contracts, floorplans, layouts, vendor paperwork, and internal notes. Use this area as the document checkpoint before approvals, signatures, and payment steps.
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="font-semibold">Proposal and contract documents</p>
+                    <p className="mt-1 text-xs text-slate-600">Open proposal and contract detail pages from this event workspace when review or signature is needed.</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="font-semibold">Planner-only notes</p>
+                    <p className="mt-1 text-xs text-slate-600">Internal notes stay planner-only and should not be treated as client-shared documents.</p>
+                  </div>
                 </div>
               </Card>
 
