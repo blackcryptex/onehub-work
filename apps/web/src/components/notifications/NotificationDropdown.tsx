@@ -17,6 +17,7 @@ interface Notification {
 export function NotificationDropdown() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unavailable, setUnavailable] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -27,9 +28,16 @@ export function NotificationDropdown() {
         if (response.ok) {
           const data = await response.json();
           setNotifications(data);
+          setUnavailable(false);
+          return;
         }
+
+        setUnavailable(true);
       } catch (err) {
-        console.error("Error fetching notifications:", err);
+        setUnavailable(true);
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Notifications are temporarily unavailable:", err);
+        }
       } finally {
         setLoading(false);
       }
@@ -60,12 +68,16 @@ export function NotificationDropdown() {
 
   const handleMarkRead = async (id: string) => {
     try {
-      await fetch(`/api/notifications/${id}/read`, { method: "POST" });
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      );
+      const response = await fetch(`/api/notifications/${id}/read`, { method: "POST" });
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        );
+      }
     } catch (err) {
-      console.error("Error marking notification as read:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("Could not mark notification as read:", err);
+      }
     }
   };
 
@@ -102,6 +114,10 @@ export function NotificationDropdown() {
             {loading ? (
               <div className="flex items-center justify-center p-8">
                 <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+              </div>
+            ) : unavailable ? (
+              <div className="p-8 text-center text-sm text-slate-500">
+                Notifications are temporarily unavailable
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center text-sm text-slate-500">

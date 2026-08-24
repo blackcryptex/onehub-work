@@ -16,6 +16,7 @@ const { getCurrentUser, redirect, requireAuthorizedEventBySlug, prisma } = vi.ho
     guestList: { findMany: vi.fn() },
     checklist: { findMany: vi.fn() },
     event: { findUnique: vi.fn() },
+    activity: { findMany: vi.fn() },
   },
 }));
 
@@ -52,7 +53,10 @@ import EventManagementSection from "../src/components/EventManagementSection";
 import EventGuests from "../src/app/(app)/events/[eventSlug]/guests/page";
 import EventChecklists from "../src/app/(app)/events/[eventSlug]/checklists/page";
 import EventBudget from "../src/app/(app)/events/[eventSlug]/budget/page";
+import EventOverview from "../src/app/(app)/events/[eventSlug]/page";
 import LegacyAppVaultPage from "../src/app/app/vault/page";
+import LegacyAppContractsPage from "../src/app/app/contracts/page";
+import LegacyAppProposalsPage from "../src/app/app/proposals/page";
 
 const event = {
   id: "event-1",
@@ -74,6 +78,7 @@ describe("DIY planner route continuity cleanup", () => {
       event: { id: "event-1", name: "Scout Gala", slug: "scout-gala" },
     });
     prisma.organization.findMany.mockResolvedValue([]);
+    prisma.activity.findMany.mockResolvedValue([]);
   });
 
   it("can open the requested dashboard event tab instead of always defaulting to vendors", () => {
@@ -194,5 +199,52 @@ describe("DIY planner route continuity cleanup", () => {
       role: "PRO_PLANNER",
     });
     await expect(LegacyAppVaultPage()).rejects.toThrow("redirect:/pro/planner/vault");
+  });
+
+  it("renders the authenticated event overview as a server-safe page", async () => {
+    requireAuthorizedEventBySlug.mockResolvedValue({
+      event: { id: "event-1", name: "Agency Sample Event", slug: "agency-sample-event" },
+    });
+    prisma.event.findUnique.mockResolvedValue({
+      id: "event-1",
+      status: "PLANNING",
+      startAt: new Date("2027-05-01T18:00:00.000Z"),
+      endAt: new Date("2027-05-01T22:00:00.000Z"),
+      budgetLines: [{ plannedCents: 500000, actualCents: 125000 }],
+      milestones: [{ id: "milestone-1", title: "Confirm venue", dueAt: new Date("2027-04-01T12:00:00.000Z"), done: false }],
+    });
+    prisma.activity.findMany.mockResolvedValue([{ id: "activity-1", at: new Date("2027-03-01T12:00:00.000Z"), action: "EVENT_CREATED", target: null }]);
+
+    const page = await EventOverview({ params: Promise.resolve({ eventSlug: "agency-sample-event" }) });
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("PLANNING");
+    expect(html).toContain("Budget used");
+    expect(html).toContain("Confirm venue");
+    expect(html).toContain("EVENT_CREATED");
+  });
+
+  it("routes vendor and venue users away from planner-style app vault empty states", async () => {
+    getCurrentUser.mockResolvedValue({
+      id: "vendor-1",
+      email: "vendor@test.local",
+      name: "Vendor User",
+      role: "VENDOR",
+    });
+
+    await expect(LegacyAppVaultPage()).rejects.toThrow("redirect:/vendor/dashboard");
+    await expect(LegacyAppContractsPage()).rejects.toThrow("redirect:/vendor/dashboard");
+    await expect(LegacyAppProposalsPage()).rejects.toThrow("redirect:/vendor/dashboard");
+
+    getCurrentUser.mockResolvedValue({
+      id: "venue-1",
+      email: "venue@test.local",
+      name: "Venue User",
+      role: "VENUE",
+    });
+
+    await expect(LegacyAppVaultPage()).rejects.toThrow("redirect:/venue/dashboard");
+    await expect(LegacyAppContractsPage()).rejects.toThrow("redirect:/venue/dashboard");
+    await expect(LegacyAppProposalsPage()).rejects.toThrow("redirect:/venue/dashboard");
   });
 });
