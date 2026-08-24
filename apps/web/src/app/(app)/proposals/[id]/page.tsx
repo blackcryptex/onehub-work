@@ -1,12 +1,8 @@
-import { Card, Button, LineItemsTable, TotalsSummary, ThreadPanel } from "@onehub/ui";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { GenerateContractButton } from "@/components/contracts/GenerateContractButton";
-import { ApproveProposalButton } from "@/components/proposals/ApproveProposalButton";
 import { ProposalPageClient } from "@/components/proposals/ProposalPageClient";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { canManageEvent } from "@/lib/rbac";
-import Link from "next/link";
+import { canManageEvent, canViewCommercialProposal } from "@/lib/rbac";
 
 type ThreadMessage = {
   id: string;
@@ -33,14 +29,23 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
             },
           },
           createdBy: { select: { id: true } },
+          stakeholders: { select: { userId: true, role: true } },
+          shares: { select: { viewerUserId: true, scope: true } },
         },
       },
       listing: {
         select: {
           id: true,
+          orgId: true,
           title: true,
           type: true,
           category: true,
+          org: {
+            select: {
+              ownerId: true,
+              members: { select: { userId: true, role: true } },
+            },
+          },
         },
       },
       sections: {
@@ -49,10 +54,12 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
     },
   });
   if (!proposal) return notFound();
-  const thread = await prisma.thread.findFirst({ where: { proposalId: proposal.id }, include: { messages: true } });
   
   // Determine vault route based on user role
   const user = await getCurrentUser();
+  if (!canViewCommercialProposal(user, proposal)) return notFound();
+
+  const thread = await prisma.thread.findFirst({ where: { proposalId: proposal.id }, include: { messages: true } });
   let eventVaultHref: string | null = null;
   if (proposal.event?.slug) {
     if (user?.role === "DIY_PLANNER") {

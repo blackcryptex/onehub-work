@@ -93,13 +93,16 @@ export default async function BillingConnectPage({ searchParams }: BillingConnec
       <h1 className="text-2xl font-bold">Stripe Connect Setup</h1>
       <Card className="p-4 space-y-4">
         <div className="space-y-1">
-          <p className="text-sm text-slate-600">Connect your Stripe account to receive payments.</p>
+          <p className="text-sm text-slate-600">
+            Stripe Connect setup is for private-pilot readiness only; it does not enable live charges,
+            payouts, held-funds release, or payment movement without OneHub manual approval.
+          </p>
           <p className="text-xs text-slate-500">
             Organization: {org.name} ({org.type === "VENUE" ? "Venue" : "Vendor"})
           </p>
           {success ? (
             <p className="text-sm text-emerald-600">
-              Stripe returned successfully. Seller payout readiness was refreshed from Stripe.
+              Stripe returned successfully. Seller setup readiness was refreshed from Stripe; live payment movement still requires OneHub manual approval.
             </p>
           ) : null}
           {isConnected ? (
@@ -116,7 +119,7 @@ export default async function BillingConnectPage({ searchParams }: BillingConnec
         </div>
 
         <form action={startOnboarding}>
-          <Button type="submit">{isConnected ? "Continue Onboarding" : "Start Onboarding"}</Button>
+          <Button type="submit">{isConnected ? "Continue Setup" : "Start Setup"}</Button>
         </form>
       </Card>
     </div>

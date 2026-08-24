@@ -101,6 +101,19 @@ interface ListingLike {
   org?: OrgLike;
 }
 
+interface CommercialProposalLike {
+  event?: EventLike | null;
+  listing?: ListingLike | null;
+}
+
+interface CommercialContractLike {
+  proposal?: CommercialProposalLike | null;
+  signatures?: Array<{
+    signerId?: string | null;
+    signerEmail?: string | null;
+  }>;
+}
+
 /**
  * Returns true if the user is the owner of the org.
  */
@@ -553,6 +566,53 @@ export function canEditListing(user: AppUser | null | undefined, listing: Listin
   }
   
   return false;
+}
+
+/**
+ * Returns true if the user can view private-pilot commercial record details.
+ * Proposal/contract detail pages are broader than event pages because seller-side
+ * listing org participants and intended signers also need read access, but
+ * unrelated authenticated pilot users must fail closed.
+ */
+export function canViewCommercialProposal(
+  user: AppUser | null | undefined,
+  proposal: CommercialProposalLike | null | undefined
+): boolean {
+  if (!user || !proposal) return false;
+  if (isAdmin(user)) return true;
+
+  if (proposal.event) {
+    const eventOrg = proposal.event.org || { ownerId: "", members: [] };
+    if (isOrgMember(user, eventOrg)) return true;
+    if (canViewEvent(user, proposal.event)) return true;
+  }
+
+  if (proposal.listing) {
+    const listingOrg = proposal.listing.org || { ownerId: "", members: [] };
+    if (isOrgMember(user, listingOrg)) return true;
+    if (canEditListing(user, proposal.listing)) return true;
+  }
+
+  return false;
+}
+
+export function canViewCommercialContract(
+  user: AppUser | null | undefined,
+  contract: CommercialContractLike | null | undefined
+): boolean {
+  if (!user || !contract) return false;
+  if (canViewCommercialProposal(user, contract.proposal)) return true;
+
+  const userEmail = user.email?.toLowerCase();
+  return Boolean(
+    contract.signatures?.some((signature) => {
+      const signatureEmail = signature.signerEmail?.toLowerCase();
+      return (
+        (signature.signerId && signature.signerId === user.id) ||
+        (signatureEmail && userEmail && signatureEmail === userEmail)
+      );
+    })
+  );
 }
 
 /**

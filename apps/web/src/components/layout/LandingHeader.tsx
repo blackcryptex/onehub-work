@@ -3,10 +3,35 @@
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { useState, useEffect, useRef } from "react";
+import { SignOutButton } from "@/components/layout/SignOutButton";
 
-export function LandingHeader() {
+type LandingHeaderUser = {
+  role?: string | null;
+} | null;
+
+function dashboardHrefForRole(user: LandingHeaderUser) {
+  switch (user?.role) {
+    case "ADMIN":
+      return "/admin/overview";
+    case "PRO_PLANNER":
+      return "/pro/planner";
+    case "DIY_PLANNER":
+      return "/diy-planner";
+    case "VENDOR":
+      return "/vendor/dashboard";
+    case "VENUE":
+      return "/venue/dashboard";
+    case "CLIENT":
+      return "/app";
+    default:
+      return "/app";
+  }
+}
+
+export function LandingHeader({ currentUser = null }: { currentUser?: LandingHeaderUser }) {
   const [showMore, setShowMore] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isAuthenticated = Boolean(currentUser);
 
   // Close dropdown when clicking outside or pressing Escape
   useEffect(() => {
@@ -150,15 +175,27 @@ export function LandingHeader() {
             />
           </div>
 
-          {/* Sign In */}
-          <Button asChild variant="ghost">
-            <Link href="/signin">Sign in</Link>
-          </Button>
+          {isAuthenticated ? (
+            <>
+              <Button asChild variant="ghost">
+                <Link href="/messages">Messages</Link>
+              </Button>
+              <Button asChild>
+                <Link href={dashboardHrefForRole(currentUser)}>Dashboard</Link>
+              </Button>
+              <SignOutButton />
+            </>
+          ) : (
+            <>
+              <Button asChild variant="ghost">
+                <Link href="/signin">Sign in</Link>
+              </Button>
 
-          {/* Create Account */}
-          <Button asChild>
-            <Link href="/signup">Create account</Link>
-          </Button>
+              <Button asChild>
+                <Link href="/signup">Create account</Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>

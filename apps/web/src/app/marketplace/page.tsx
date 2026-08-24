@@ -4,6 +4,7 @@ import { Card, Button } from "@/components/ui";
 import Link from "next/link";
 import { safeInternalReturnTo } from "@/lib/routes";
 import { LandingHeader } from "@/components/layout/LandingHeader";
+import { getCurrentUser } from "@/lib/auth-helpers";
 
 interface MarketplacePageProps {
   searchParams?: Promise<{
@@ -16,6 +17,7 @@ interface MarketplacePageProps {
 
 export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
   const resolvedSearchParams = await searchParams;
+  const user = await getCurrentUser();
   const listings = await prisma.listing.findMany({ 
     take: 20, 
     include: { tags: true, gallery: { take: 1 } },
@@ -25,6 +27,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
   const eventId = resolvedSearchParams?.eventId;
   const eventSlug = resolvedSearchParams?.eventSlug;
   const eventName = resolvedSearchParams?.eventName;
+  const eventContextLabel = eventName ?? eventSlug;
   const returnTo = safeInternalReturnTo(resolvedSearchParams?.returnTo);
   const listingQuery = new URLSearchParams();
   if (eventId) listingQuery.set("eventId", eventId);
@@ -35,7 +38,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
   
   return (
     <>
-      <LandingHeader />
+      <LandingHeader currentUser={user} />
       <main className="mx-auto max-w-7xl px-4 py-12">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -45,11 +48,11 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
             </div>
           </div>
 
-          {eventId && eventName ? (
+          {eventContextLabel ? (
             <Card className="border-indigo-200 bg-indigo-50 p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-indigo-950">Browsing for {eventName}</div>
+                  <div className="text-sm font-semibold text-indigo-950">Browsing for {eventContextLabel}</div>
                   <div className="text-sm text-indigo-700">
                     Open a listing to add it to this event’s shortlist or send a booking request with the event pre-selected.
                   </div>

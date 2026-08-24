@@ -97,15 +97,17 @@ export function InviteVendorModal({
       }
 
       setSuccess(true);
-
-      if (onSuccess) onSuccess();
-      onClose();
     } catch (err) {
       console.error("Error sending invite:", err);
       setError(err instanceof Error ? err.message : "Failed to send invite");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSuccessClose = () => {
+    if (onSuccess) onSuccess();
+    onClose();
   };
 
   const handleCopy = () => {
@@ -125,11 +127,11 @@ export function InviteVendorModal({
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Mail className="w-8 h-8 text-green-600" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Invite Queued</h3>
+            <h3 className="text-lg font-semibold mb-2">Invite Copy Prepared</h3>
             <p className="text-sm text-slate-600 mb-4">
-              The invite has been queued for {email}.
+              Invite copy was prepared for {email}. No email was sent by OneHub because outbound invite delivery is not active yet.
             </p>
-            <Button onClick={onClose} className="w-full">
+            <Button onClick={handleSuccessClose} className="w-full">
               Close
             </Button>
           </div>

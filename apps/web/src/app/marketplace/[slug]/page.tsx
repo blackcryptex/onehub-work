@@ -6,6 +6,7 @@ import { BookingRequestButtonClient } from "@/components/bookings/BookingRequest
 import { AddToShortlistButtonClient } from "@/components/shortlist/AddToShortlistButtonClient";
 import Link from "next/link";
 import { safeInternalReturnTo } from "@/lib/routes";
+import { getCurrentUser } from "@/lib/auth-helpers";
 
 interface ListingProfileProps {
   params: Promise<{ slug: string }>;
@@ -20,6 +21,7 @@ interface ListingProfileProps {
 export default async function ListingProfile({ params, searchParams }: ListingProfileProps) {
   const resolvedSearchParams = await searchParams;
   const resolvedParams = await params;
+  const user = await getCurrentUser();
   const listing = await prisma.listing.findUnique({
     where: { slug: resolvedParams.slug },
     include: { tags: true, gallery: true, offers: true, availSlots: { orderBy: { startAt: "asc" } }, reviews: { where: { flagged: false }, take: 5, include: { author: true } } },
@@ -27,7 +29,9 @@ export default async function ListingProfile({ params, searchParams }: ListingPr
   if (!listing) return notFound();
 
   const eventId = resolvedSearchParams?.eventId;
+  const eventSlug = resolvedSearchParams?.eventSlug;
   const eventName = resolvedSearchParams?.eventName;
+  const eventContextLabel = eventName ?? eventSlug;
   const returnTo = safeInternalReturnTo(resolvedSearchParams?.returnTo);
   const availability = listing.availSlots.map((slot: { id: string; startAt: Date; endAt: Date; status: string }) => ({
     id: slot.id,
@@ -37,14 +41,14 @@ export default async function ListingProfile({ params, searchParams }: ListingPr
   }));
   return (
     <>
-      <LandingHeader />
+      <LandingHeader currentUser={user} />
       <main className="mx-auto max-w-7xl px-4 py-12">
         <div className="space-y-6">
-      {eventId && eventName ? (
+      {eventContextLabel ? (
         <Card className="border-indigo-200 bg-indigo-50 p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="text-sm font-semibold text-indigo-950">Viewing this listing for {eventName}</div>
+              <div className="text-sm font-semibold text-indigo-950">Viewing this listing for {eventContextLabel}</div>
               <div className="text-sm text-indigo-700">
                 Add it to your shortlist or send a booking request directly against this event.
               </div>

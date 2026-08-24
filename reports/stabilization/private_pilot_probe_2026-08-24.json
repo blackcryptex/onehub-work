@@ -1,0 +1,3361 @@
+{
+  "base": "https://www.1hubevents.com",
+  "timestamp": "2026-08-24T17:43:45.321011+00:00",
+  "roles": {
+    "Admin": {
+      "login": {
+        "status": 200,
+        "ok": true
+      },
+      "routes": [
+        {
+          "path": "/app",
+          "requested_url": "https://www.1hubevents.com/app",
+          "final_url": "https://www.1hubevents.com/app",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading...",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/admin/overview",
+          "requested_url": "https://www.1hubevents.com/app/admin/overview",
+          "final_url": "https://www.1hubevents.com/app/admin/overview",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/admin/overview",
+          "requested_url": "https://www.1hubevents.com/admin/overview",
+          "final_url": "https://www.1hubevents.com/admin/overview",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Admin trust & risk command center Oversight only: no live money movement or credential changes from this dashboard. Verification \u2192 Manage users \u2192 Abuse reports \u2192 Trust/risk item Review now Dispute: Venue availability issue. 5 open disputes \u2022 0 refund requests \u2022 0 active holdbacks Open dispute detail \u2192 Role safety Users, roles & verification 3 admins \u2022 0 event dreamers to verify. Role roster is visible; keep admin access limited and review event dreamer conversions before changing permissions. Review users and roles \u2192 Refunds, holdbacks, payouts Payments needing oversight 3 pending payouts \u2022 0 refund requests \u2022 0 holdbacks Open verification queues \u2192 Safety metric Platform safety route 4 open abuse reports: Spam content Open abuse reports \u2192 Read-only step Next safe admin action Open the dispute detail and verify context before any override. Keep freeze/release decisions inside existing guarded verification surfaces. Review dispute context \u2192 Organizations 37 Users 72 Events 40 Open trust queue 9 Platform volume trend Latest GMV $5,362.86 \u2022 payouts $4",
+          "snippets": [
+            "Admin trust & risk command center Oversight only: no live money movement or credential changes from this dashboard.",
+            "Verification \u2192 Manage users \u2192 Abuse reports \u2192 Trust/risk item Review now Dispute: Venue availability issue.",
+            "5 open disputes \u2022 0 refund requests \u2022 0 active holdbacks Open dispute detail \u2192 Role safety Users, roles & verification 3 admins \u2022 0 event dreamers to verify.",
+            "Role roster is visible; keep admin access limited and review event dreamer conversions before changing permissions.",
+            "Keep freeze/release decisions inside existing guarded verification surfaces.",
+            "Review dispute context \u2192 Organizations 37 Users 72 Events 40 Open trust queue 9 Platform volume trend Latest GMV $5,362.86 \u2022 payouts $4,428.73"
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Verification \u2192",
+              "href": "/admin/verification"
+            },
+            {
+              "text": "Manage users \u2192",
+              "href": "/admin/users"
+            },
+            {
+              "text": "Abuse reports \u2192",
+              "href": "/admin/abuse"
+            },
+            {
+              "text": "Open dispute detail",
+              "href": "/admin/verification/disputes/cmjmmz6wt0036wlz249qsazr2"
+            },
+            {
+              "text": "\u2192",
+              "href": "/admin/verification/disputes/cmjmmz6wt0036wlz249qsazr2"
+            },
+            {
+              "text": "Review users and roles",
+              "href": "/admin/users"
+            },
+            {
+              "text": "\u2192",
+              "href": "/admin/users"
+            },
+            {
+              "text": "Open verification queues",
+              "href": "/admin/verification?payoutStatus=PENDING"
+            },
+            {
+              "text": "\u2192",
+              "href": "/admin/verification?payoutStatus=PENDING"
+            },
+            {
+              "text": "Open abuse reports",
+              "href": "/admin/abuse"
+            },
+            {
+              "text": "\u2192",
+              "href": "/admin/abuse"
+            },
+            {
+              "text": "Review dispute context",
+              "href": "/admin/verification/disputes/cmjmmz6wt0036wlz249qsazr2"
+            }
+          ]
+        },
+        {
+          "path": "/admin/users",
+          "requested_url": "https://www.1hubevents.com/admin/users",
+          "final_url": "https://www.1hubevents.com/admin/users",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Users Search Zero Event Pro Planner Beta Proof pro-zero-beta-20260512@example.com Role: PRO_PLANNER \u2022 Created: 5/12/2026 Break-glass view as pro-zero-beta-20260512@example.com Break-glass reason Incident ticket View as Atlas Vendor Retest atlas.vendor.api.1777839442164@example.com Role: DIY_PLANNER \u2022 Created: 5/3/2026 Break-glass view as atlas.vendor.api.1777839442164@example.com Break-glass reason Incident ticket View as Atlas Vendor Retest atlas.vendor.api.1777839252994@example.com Role: DIY_PLANNER \u2022 Created: 5/3/2026 Break-glass view as atlas.vendor.api.1777839252994@example.com Break-glass reason Incident ticket View as Atlas Vendor Retest atlas.vendor.1777839143293@example.com Role: DIY_PLANNER \u2022 Created: 5/3/2026 Break-glass view as atlas.vendor.1777839143293@example.com Break-glass reason Incident ticket View as Atlas Vendor Retest atlas.vendor.1777839089623@example.com Role: DIY_PLANNER \u2022 Created: 5/3/2026 Break-glass view as atlas.vendor.1777839089623@example.com Break-glass reason Incident ticket View as Atlas Vendor Retest atlas.vendor",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Load More",
+              "href": "/admin/users?cursor=cmnuv5cdw00034qr2dgrion9s"
+            }
+          ]
+        },
+        {
+          "path": "/admin/verification",
+          "requested_url": "https://www.1hubevents.com/admin/verification",
+          "final_url": "https://www.1hubevents.com/admin/verification",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Admin verification Canonical manual-trust review surfaces for refunds, disputes, holdbacks, payouts, and overrides. Review proposal, contract, payment intent, held-funds, and payout status before any guarded release action. Unified detail \u2192 Filter Refund requests No records found. Dispute cases cmjmmz6wt0036wlz249qsazr2 OPEN \u2022 FROZEN \u2022 cmjmmz5yc002uwlz2tja3em8t cmjmmwly5003617xtf2cudlgf OPEN \u2022 FROZEN \u2022 cmjmmwl0w002u17xtwh3ur21w cmjmmvqn40036lefsw3d5x9aq OPEN \u2022 FROZEN \u2022 cmjmmvpql002ulefs54b9461d cmjmmstb00036ypiuzoy05kbo OPEN \u2022 FROZEN \u2022 cmjmmssf0002uypiux5ak41y3 cmhfwpq2d002m5mmhlgzzfn7e OPEN \u2022 FROZEN \u2022 cmhfwppbc002a5mmhtsqj6zws Holdbacks cmors5xcc0006xa2i9npzcukq NONE \u2022 cmorkko5y0001clkhg0te3hkn \u2022 firstTransactionWithSeller, sellerNotFullyVerified Payouts cmnrj7zrv0009st7a42xhb38y SENT \u2022 cmjmq4gk70003n7u1p5yxnui8 \u2022 $30.00 cmnrip6ba0002wxk4wa16ohk2 PENDING \u2022 cmjmq4gk70003n7u1p5yxnui8 \u2022 $30.00 cmnrezhck000211dviaut23ai PENDING \u2022 cmjmq4gk70003n7u1p5yxnui8 \u2022 $30.00 cmnnhywh80002thizkqg3821q PENDING \u2022 cmjmqpaob000xn7u16g21ngwx \u2022 $26.25 cmnngwzp10002z2f",
+          "snippets": [
+            "Admin verification Canonical manual-trust review surfaces for refunds, disputes, holdbacks, payouts, and overrides.",
+            "Review proposal, contract, payment intent, held-funds, and payout status before any guarded release action.",
+            "Unified detail \u2192 Filter Refund requests No records found."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Unified detail \u2192",
+              "href": "/admin/verification/detail"
+            },
+            {
+              "text": "cmjmmz6wt0036wlz249qsazr2",
+              "href": "/admin/verification/disputes/cmjmmz6wt0036wlz249qsazr2"
+            },
+            {
+              "text": "OPEN \u2022 FROZEN \u2022 cmjmmz5yc002uwlz2tja3em8t",
+              "href": "/admin/verification/disputes/cmjmmz6wt0036wlz249qsazr2"
+            },
+            {
+              "text": "cmjmmwly5003617xtf2cudlgf",
+              "href": "/admin/verification/disputes/cmjmmwly5003617xtf2cudlgf"
+            },
+            {
+              "text": "OPEN \u2022 FROZEN \u2022 cmjmmwl0w002u17xtwh3ur21w",
+              "href": "/admin/verification/disputes/cmjmmwly5003617xtf2cudlgf"
+            },
+            {
+              "text": "cmjmmvqn40036lefsw3d5x9aq",
+              "href": "/admin/verification/disputes/cmjmmvqn40036lefsw3d5x9aq"
+            },
+            {
+              "text": "OPEN \u2022 FROZEN \u2022 cmjmmvpql002ulefs54b9461d",
+              "href": "/admin/verification/disputes/cmjmmvqn40036lefsw3d5x9aq"
+            },
+            {
+              "text": "cmjmmstb00036ypiuzoy05kbo",
+              "href": "/admin/verification/disputes/cmjmmstb00036ypiuzoy05kbo"
+            },
+            {
+              "text": "OPEN \u2022 FROZEN \u2022 cmjmmssf0002uypiux5ak41y3",
+              "href": "/admin/verification/disputes/cmjmmstb00036ypiuzoy05kbo"
+            },
+            {
+              "text": "cmhfwpq2d002m5mmhlgzzfn7e",
+              "href": "/admin/verification/disputes/cmhfwpq2d002m5mmhlgzzfn7e"
+            },
+            {
+              "text": "OPEN \u2022 FROZEN \u2022 cmhfwppbc002a5mmhtsqj6zws",
+              "href": "/admin/verification/disputes/cmhfwpq2d002m5mmhlgzzfn7e"
+            },
+            {
+              "text": "cmors5xcc0006xa2i9npzcukq",
+              "href": "/admin/verification/holdbacks/cmors5xcc0006xa2i9npzcukq"
+            },
+            {
+              "text": "NONE \u2022 cmorkko5y0001clkhg0te3hkn \u2022 firstTransactionWithSeller, sellerNotFullyVerified",
+              "href": "/admin/verification/holdbacks/cmors5xcc0006xa2i9npzcukq"
+            },
+            {
+              "text": "cmnrj7zrv0009st7a42xhb38y",
+              "href": "/admin/verification/payouts/cmnrj7zrv0009st7a42xhb38y"
+            },
+            {
+              "text": "SENT \u2022 cmjmq4gk70003n7u1p5yxnui8 \u2022 $30.00",
+              "href": "/admin/verification/payouts/cmnrj7zrv0009st7a42xhb38y"
+            },
+            {
+              "text": "cmnrip6ba0002wxk4wa16ohk2",
+              "href": "/admin/verification/payouts/cmnrip6ba0002wxk4wa16ohk2"
+            },
+            {
+              "text": "PENDING \u2022 cmjmq4gk70003n7u1p5yxnui8 \u2022 $30.00",
+              "href": "/admin/verification/payouts/cmnrip6ba0002wxk4wa16ohk2"
+            },
+            {
+              "text": "cmnrezhck000211dviaut23ai",
+              "href": "/admin/verification/payouts/cmnrezhck000211dviaut23ai"
+            },
+            {
+              "text": "PENDING \u2022 cmjmq4gk70003n7u1p5yxnui8 \u2022 $30.00",
+              "href": "/admin/verification/payouts/cmnrezhck000211dviaut23ai"
+            },
+            {
+              "text": "cmnnhywh80002thizkqg3821q",
+              "href": "/admin/verification/payouts/cmnnhywh80002thizkqg3821q"
+            },
+            {
+              "text": "PENDING \u2022 cmjmqpaob000xn7u16g21ngwx \u2022 $26.25",
+              "href": "/admin/verification/payouts/cmnnhywh80002thizkqg3821q"
+            },
+            {
+              "text": "cmnngwzp10002z2f0419q4p4b",
+              "href": "/admin/verification/payouts/cmnngwzp10002z2f0419q4p4b"
+            },
+            {
+              "text": "SENT \u2022 cmjmqpaob000xn7u16g21ngwx \u2022 $30.00",
+              "href": "/admin/verification/payouts/cmnngwzp10002z2f0419q4p4b"
+            },
+            {
+              "text": "cmorz3bu9000613qk6wlie43x",
+              "href": "/admin/verification/overrides/cmorz3bu9000613qk6wlie43x"
+            },
+            {
+              "text": "PAYMENT_HOLDBACK \u2022 HOLDBACK_DECISION \u2022 guarded-mvp.PLATFORM_ADMIN",
+              "href": "/admin/verification/overrides/cmorz3bu9000613qk6wlie43x"
+            }
+          ]
+        },
+        {
+          "path": "/notifications",
+          "requested_url": "https://www.1hubevents.com/notifications",
+          "final_url": "https://www.1hubevents.com/notifications",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders. 0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view. New account, client, vendor, contract, and task alerts will appear here when they are created.",
+          "snippets": [
+            "Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders.",
+            "0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view.",
+            "New account, client, vendor, contract, and task alerts will appear here when they are created."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/messages",
+          "requested_url": "https://www.1hubevents.com/messages",
+          "final_url": "https://www.1hubevents.com/messages",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Admin follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access. Recent threads Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 We're excited to work with you. Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 Thank you for the proposal! Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 We're excited to work with you. Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 We're excited to work with you. Proposal Discussion Sample Wedding / 2 participant s Nov 1, 2025 Thank you for the proposal!",
+          "snippets": [
+            "Admin follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access.",
+            "Recent threads Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 We're excited to work with you.",
+            "Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 Thank you for the proposal!",
+            "Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 We're excited to work with you.",
+            "Proposal Discussion Sample Wedding / 2 participant s Nov 1, 2025 Thank you for the proposal!"
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Proposal Discussion",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "Sample Wedding",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "/",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "2",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "participant",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "s",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "Dec 26, 2025",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "We're excited to work with you.",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "Proposal Discussion",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "Sample Wedding",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "/",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "2",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "participant",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "s",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "Dec 26, 2025",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "Thank you for the proposal!",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "Proposal Discussion",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "Sample Wedding",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "/",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "2",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "participant",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "s",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "Dec 26, 2025",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "We're excited to work with you.",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "Proposal Discussion",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "Sample Wedding",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "/",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "2",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "participant",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "s",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "Dec 26, 2025",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "We're excited to work with you.",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "Proposal Discussion",
+              "href": "/messages/cmhfwpq56002o5mmhnqksbd16"
+            }
+          ]
+        },
+        {
+          "path": "/app/proposals",
+          "requested_url": "https://www.1hubevents.com/app/proposals",
+          "final_url": "https://www.1hubevents.com/app/proposals",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/contracts",
+          "requested_url": "https://www.1hubevents.com/app/contracts",
+          "final_url": "https://www.1hubevents.com/app/contracts",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        }
+      ]
+    },
+    "Pro Planner": {
+      "login": {
+        "status": 200,
+        "ok": true
+      },
+      "routes": [
+        {
+          "path": "/app",
+          "requested_url": "https://www.1hubevents.com/app",
+          "final_url": "https://www.1hubevents.com/app",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading...",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/pro/planner",
+          "requested_url": "https://www.1hubevents.com/pro/planner",
+          "final_url": "https://www.1hubevents.com/pro/planner",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved Loading... Pro Planner Professional Event Planning Dashboard Command Team Clients Vendors Timeline Contracts Payments Files Services Availability Portfolio Reports Settings Professional planner command center Agency command deck Manage today\u2019s event work, client follow-ups, vendor movement, assistant tasks, and money readiness for Planner Agency . Create Event Open Messages Active events 3 client events currently needing planner oversight Today\u2019s work 24 open event and assistant task items Follow-ups 0 client/vendor requests or proposals needing movement Money alerts 0 proposal, contract, or payment states to check Today\u2019s command deck Five fast answers from real planner records: client/event priority, vendor follow-up, contract/payment readiness, assistant work, and the next safe action. Open event vault Today's priority client/event No upcoming client event loaded Create or import the next client event before prioritizing planner work. Vendor/provider follow-up No open vendor/provider follow-up Booking requests, proposals, and vendor response gaps will appear with event context. Contract/payme",
+          "snippets": [
+            "Open event vault Today's priority client/event No upcoming client event loaded Create or import the next client event before prioritizing planner work.",
+            "Vendor/provider follow-up No open vendor/provider follow-up Booking requests, proposals, and vendor response gaps will appear with event context.",
+            "Contract/payment readiness No blocked contract/payment item Manual-status-safe contract, proposal, and payment readiness items will appear here without enabling live checkout.",
+            "Team/assistant action Arrange photographer Sample Wedding / unassigned / due Date pending Next safe planner action Open event work Review the next event command center; OneHub will not send messages, approve contracts, or move money automatically.",
+            "Planner next-action engine Deterministic guidance only: OneHub suggests next actions from real event, client, vendor, contract, payment, and timeline records.",
+            "It does not send messages, approve contracts, release money, or fake AI decisions.",
+            "Open event work No high-priority next actions are loaded.",
+            "New client decisions, missing contracts, payment milestones, late vendor responses, or week-of risks will appear here.",
+            "Active client events Open each event\u2019s command center to manage vendors, proposals, contracts, payments, tasks, and client access.",
+            "View vault No upcoming client events are dated yet.",
+            "Past active events stay out of the first-screen upcoming list; schedule or create the next event to restore command-deck priority.",
+            "Client, vendor, contract, and task alerts will appear here.",
+            "Client/vendor follow-ups No open booking requests or draft/sent proposals.",
+            "Money / contract alerts Private-pilot status only; this does not enable live charges or payouts.",
+            "No contract or payment items need attention.",
+            "When proposals, signatures, deposits, or held funds exist, they will show here.",
+            "Business setup status Keep the planner business ready for invite-only clients without hiding unfinished setup work.",
+            "Services and packages Manage marketplace services Availability and booking readiness Review event calendar Contracts and payment safety Check money alerts Portfolio and business profile Update profile assets"
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Open Messages",
+              "href": "/messages"
+            },
+            {
+              "text": "Open event vault",
+              "href": "/pro/planner/vault"
+            },
+            {
+              "text": "Vendor/provider follow-up",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "No open vendor/provider follow-up",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "Booking requests, proposals, and vendor response gaps will appear with event context.",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "Team/assistant action",
+              "href": "/pro/planner/vault/agency-sample-event#event-workspace"
+            },
+            {
+              "text": "Arrange photographer",
+              "href": "/pro/planner/vault/agency-sample-event#event-workspace"
+            },
+            {
+              "text": "Sample Wedding / unassigned / due Date pending",
+              "href": "/pro/planner/vault/agency-sample-event#event-workspace"
+            },
+            {
+              "text": "Next safe planner action",
+              "href": "/pro/planner/vault"
+            },
+            {
+              "text": "Open event work",
+              "href": "/pro/planner/vault"
+            },
+            {
+              "text": "Review the next event command center; OneHub will not send messages, approve contracts, or move money automatically.",
+              "href": "/pro/planner/vault"
+            },
+            {
+              "text": "View vault",
+              "href": "/pro/planner/vault"
+            },
+            {
+              "text": "Sample Wedding",
+              "href": "/pro/planner/vault/agency-sample-event#event-workspace"
+            },
+            {
+              "text": "/",
+              "href": "/pro/planner/vault/agency-sample-event#event-workspace"
+            },
+            {
+              "text": "MEDIUM",
+              "href": "/pro/planner/vault/agency-sample-event#event-workspace"
+            },
+            {
+              "text": "/ due",
+              "href": "/pro/planner/vault/agency-sample-event#event-workspace"
+            },
+            {
+              "text": "Date pending",
+              "href": "/pro/planner/vault/agency-sample-event#event-workspace"
+            },
+            {
+              "text": "Send invitations",
+              "href": "/pro/planner/vault/agency-sample-event#event-workspace"
+            },
+            {
+              "text": "Confirm venue",
+              "href": "/pro/planner/vault/agency-sample-event#event-workspace"
+            },
+            {
+              "text": "Availability and booking readiness",
+              "href": "/pro/planner/vault"
+            },
+            {
+              "text": "Review event calendar",
+              "href": "/pro/planner/vault"
+            },
+            {
+              "text": "Portfolio and business profile",
+              "href": "/providers/onboarding?providerType=planner"
+            },
+            {
+              "text": "Update profile assets",
+              "href": "/providers/onboarding?providerType=planner"
+            }
+          ]
+        },
+        {
+          "path": "/pro/planner/vault",
+          "requested_url": "https://www.1hubevents.com/pro/planner/vault",
+          "final_url": "https://www.1hubevents.com/pro/planner/vault",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved Event Vault All your events organized in one place At a glance Artifact Verification Event 8/15/2026 PLANNING Progress 0 % 0 / 6 checklist items done Budget $ 0 of $ 15600 Main Contact Pro Planner Upcoming Event Day 8/15/2026 Recent EVENT_DELETED 6/12/2026, 6:44:52 AM At a glance Demo Wedding Event 3/26/2026 PLANNING Progress 0 % 0 / 0 checklist items done Budget $ 0 of $ 0 Main Contact Pro Planner Upcoming No upcoming milestones Recent EVENT_DELETED 6/6/2026, 11:23:42 AM At a glance Sample Wedding 12/1/2025 PLANNING Progress 0 % 0 / 0 checklist items done Budget $ 16000 of $ 64000 Main Contact Pro Planner Upcoming 90 days out 9/2/2025 Recent No recent activity Timeline & Notifications Upcoming Tasks 90 days out \u2014 Sample Wedding -356 d 90 days out \u2014 Sample Wedding -356 d 90 days out \u2014 Sample Wedding -356 d 90 days out \u2014 Sample Wedding -301 d 90 days out \u2014 Sample Wedding -301 d Alerts EVENT_DELETED \u2014 Artifact Verification Event 6/12/2026, 6:44:52 AM EVENT_DELETED \u2014 Artifact Verification Event 6/8/2026, 10:03:55 AM EVENT_DELETED \u2014 Artifact Verification Event 6/6/2026, 11:56:39 AM EVENT_DELETED \u2014 A",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "At a glance",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "Artifact Verification Event",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "8/15/2026",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "PLANNING",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "Progress",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "0",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "%",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "/",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "6",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "checklist items done",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "Budget",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "$",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "of $",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "15600",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "Main Contact",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "Pro Planner",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "Upcoming",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "Event Day",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "Recent",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "EVENT_DELETED",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "6/12/2026, 6:44:52 AM",
+              "href": "/pro/planner/vault/artifact-verification-event-qtx3"
+            },
+            {
+              "text": "At a glance",
+              "href": "/pro/planner/vault/demo-wedding"
+            },
+            {
+              "text": "Demo Wedding Event",
+              "href": "/pro/planner/vault/demo-wedding"
+            },
+            {
+              "text": "3/26/2026",
+              "href": "/pro/planner/vault/demo-wedding"
+            },
+            {
+              "text": "PLANNING",
+              "href": "/pro/planner/vault/demo-wedding"
+            },
+            {
+              "text": "Progress",
+              "href": "/pro/planner/vault/demo-wedding"
+            },
+            {
+              "text": "0",
+              "href": "/pro/planner/vault/demo-wedding"
+            },
+            {
+              "text": "%",
+              "href": "/pro/planner/vault/demo-wedding"
+            },
+            {
+              "text": "/",
+              "href": "/pro/planner/vault/demo-wedding"
+            },
+            {
+              "text": "checklist items done",
+              "href": "/pro/planner/vault/demo-wedding"
+            },
+            {
+              "text": "Budget",
+              "href": "/pro/planner/vault/demo-wedding"
+            },
+            {
+              "text": "$",
+              "href": "/pro/planner/vault/demo-wedding"
+            },
+            {
+              "text": "of $",
+              "href": "/pro/planner/vault/demo-wedding"
+            }
+          ]
+        },
+        {
+          "path": "/pro/planner/vault/demo-wedding",
+          "requested_url": "https://www.1hubevents.com/pro/planner/vault/demo-wedding",
+          "final_url": "https://www.1hubevents.com/pro/planner/vault/demo-wedding",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Home Events Calendar Marketplace Help Events / Demo Wedding Event Demo Wedding Event PLANNING 3/26/2026, 8:43:25 AM Chicago, IL Share Summary Open event workspace Back to Vault Next actions Resolve the open payment step attached to the signed contract. No open checklist items loaded. Recent activity EVENT_DELETED 6/6/2026, 11:23:42 AM EVENT_DELETED 6/6/2026, 11:03:56 AM EVENT_DELETED 6/6/2026, 11:03:48 AM EVENT_DELETED 6/6/2026, 10:59:34 AM EVENT_DELETED 4/25/2026, 11:52:07 AM Key contacts More Delete Selected-event navigation Next real action: Resolve the open payment step attached to the signed contract. Overview Sourcing Shortlist Requests Proposals Contracts Documents Payments Tasks Guests Budget Timeline Contacts 01 Discovery Happened Event-specific sourcing has produced attached vendor activity. Keep the event shortlist current. 02 Shortlist Happened 3 vendors or venues attached to this event. Choose who should receive a request. Progress 0 % 0 / 0 checklist items complete. Budget $ 0 of $ 0 planned Guests 0 / 0 0 RSVP pending Status PLANNING No blocked spine it",
+          "snippets": [
+            "Home Events Calendar Marketplace Help Events / Demo Wedding Event Demo Wedding Event PLANNING 3/26/2026, 8:43:25 AM Chicago, IL Share Summary Open event workspace Back to Vault Next actions Resolve the open payment step attached to the signed contract.",
+            "No open checklist items loaded.",
+            "Overview Sourcing Shortlist Requests Proposals Contracts Documents Payments Tasks Guests Budget Timeline Contacts 01 Discovery Happened Event-specific sourcing has produced attached vendor activity.",
+            "The operational cards below still show the deeper sourcing-to-payment state.",
+            "Source vendors Approvals & decisions Review proposals, contracts, and client decisions that need a planner or client yes/no.",
+            "Review proposals Messages Open the inbox for client, vendor, and event communication instead of hunting through dashboards.",
+            "Open messages Documents Find proposals, contracts, and event files tied to this workspace.",
+            "Open event files Payments Check payment readiness only after contract state supports it.",
+            "No live-payment shortcut is added here.",
+            "Check payment Guests Track guest count and RSVP state for this event.",
+            "It does not mean a vendor is shortlisted, requested, contracted, or paid.",
+            "Date 3/26/2026 Type WEDDING Location Chicago, IL Guest target 150 Create an unforgettable wedding experience AI Source Vendors & Venues AI Source Vendors & Venues Investor Confidence: Verified = On-platform account (trust + held funds).",
+            "Shortlist 3 shortlisted Atlas Flow Vendor 20260809091630 Vendor / CATERING / Austin, TX Contract: IN_PAYMENT .",
+            "Review attached contract .",
+            "Request booking Generate AI Proposal Add to shortlist Grand Ballroom Chicago Venue / VENUE_SPACE / Austin, TX Contract: PARTIALLY_SIGNED .",
+            "Request booking Generate AI Proposal Add to shortlist Premium Catering Co.",
+            "Request booking or prepare a proposal request .",
+            "Request booking Generate AI Proposal Add to shortlist Confirmed vendors 3 confirmed Confirmed vendors require accepted proposal or contract-backed state.",
+            "Draft proposal requests are not vendor-sent or vendor-ready.",
+            "Vendor - Event Services Proposal for Demo Wedding Event Draft request / $ 75.00 Draft only; not counted as a vendor-ready proposal."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Home",
+              "href": "/pro/planner"
+            },
+            {
+              "text": "Events",
+              "href": "/pro/planner/vault"
+            },
+            {
+              "text": "Back to Vault",
+              "href": "/pro/planner/vault"
+            },
+            {
+              "text": "Source vendors",
+              "href": "/marketplace?eventId=cmjmmjtgr000tgo3e5j1e6qi1&eventSlug=demo-wedding&eventName=Demo%20Wedding%20Event&location=Chicago%2C%20IL&returnTo=%2Fpro%2Fplanner%2Fvault%2Fdemo-wedding"
+            },
+            {
+              "text": "Open messages",
+              "href": "/messages"
+            },
+            {
+              "text": "Request booking",
+              "href": "/marketplace/demo-premier-entertainment?eventId=cmjmmjtgr000tgo3e5j1e6qi1&eventSlug=demo-wedding&eventName=Demo%20Wedding%20Event&returnTo=%2Fpro%2Fplanner%2Fvault%2Fdemo-wedding"
+            },
+            {
+              "text": "Request booking",
+              "href": "/marketplace/demo-grand-ballroom-chicago?eventId=cmjmmjtgr000tgo3e5j1e6qi1&eventSlug=demo-wedding&eventName=Demo%20Wedding%20Event&returnTo=%2Fpro%2Fplanner%2Fvault%2Fdemo-wedding"
+            },
+            {
+              "text": "Request booking",
+              "href": "/marketplace/premium-catering-co?eventId=cmjmmjtgr000tgo3e5j1e6qi1&eventSlug=demo-wedding&eventName=Demo%20Wedding%20Event&returnTo=%2Fpro%2Fplanner%2Fvault%2Fdemo-wedding"
+            },
+            {
+              "text": "View",
+              "href": "/proposals/cmox488p8002nzsgp5spnno9q"
+            },
+            {
+              "text": "View",
+              "href": "/proposals/cmovzqg9p0003yiq3ryn0a5nk"
+            },
+            {
+              "text": "View",
+              "href": "/proposals/cmok20ca4000fbqgjmv0i6usb"
+            },
+            {
+              "text": "View",
+              "href": "/proposals/cmjmqpaob000xn7u16g21ngwx"
+            },
+            {
+              "text": "View",
+              "href": "/proposals/cmjmqn75o000hn7u1jbe5ztq2"
+            },
+            {
+              "text": "View",
+              "href": "/proposals/cmjmq4gk70003n7u1p5yxnui8"
+            },
+            {
+              "text": "View",
+              "href": "/contracts/cmovzu0i1000jyiq3oemjacav"
+            },
+            {
+              "text": "View",
+              "href": "/contracts/cmjms8yhp001bn7u1cfjru7c7"
+            },
+            {
+              "text": "View",
+              "href": "/contracts/cmjmqor65000vn7u1gjzom1vo"
+            },
+            {
+              "text": "View",
+              "href": "/contracts/cmnqg6yhd0001k303i1r0n5ss"
+            },
+            {
+              "text": "View",
+              "href": "/contracts/cmjmq2wuk0001n7u18p19ibvh"
+            },
+            {
+              "text": "View",
+              "href": "/proposals/cmjmp43yk000fzwufumrlahfa"
+            }
+          ]
+        },
+        {
+          "path": "/marketplace?eventSlug=demo-wedding",
+          "requested_url": "https://www.1hubevents.com/marketplace?eventSlug=demo-wedding",
+          "final_url": "https://www.1hubevents.com/marketplace?eventSlug=demo-wedding",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Events Features More Sign in Create account Vendor & Venue Marketplace Discover vendors and venues for your events Atlas Flow Venue 20260809152526 Austin 0 Atlas Flow Vendor 20260809152526 Austin 0 All Seasons Event Rental 10354 Lemoyne Blvd Suite C, D'Iberville, MS 39540, USA 0 Always and Forever Flowers & Gifts 0 Shindig 215 Ashley Pl, Ocean Springs, MS 39564, USA 0 The Slavonian Lodge 0 The Sanctuary - Biloxi 0 The Grand Sofia 1785 Beach Blvd, Biloxi, MS 39531, USA 0 Atlas Live Proof Vendor New York, NY 0 XChangeSpaces event, conference and training space rentals 0 Taylor's Event Space LLC 0 The Assembly \u2013 Midtown Manhattan Corporate Event Venue 2 Park Ave, New York, NY 10016, USA 0 Supply Proof Listing Final Austin 0 $$$ Grand Ballroom Chicago Chicago \u2b50 4.7 $$$$ Atlas Flow Vendor 20260809091630 Austin \u2b50 4.5 $$$ Elegant Floral Design Chicago \u2b50 4.6 $$$ Elite Photography Studio Chicago \u2b50 4.8 $$$$ Premium Catering Co. Chicago \u2b50 4.7 $$$ Lakeside Venue Seattle Seattle \u2b50 4.2 $$$ Atlas Flow Venue 20260809091630 Austin \u2b50 4.5 $$$$",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Atlas Flow Venue 20260809152526",
+              "href": "/marketplace/atlas-flow-venue-20260809152526-v3xq?eventSlug=demo-wedding"
+            },
+            {
+              "text": "Austin",
+              "href": "/marketplace/atlas-flow-venue-20260809152526-v3xq?eventSlug=demo-wedding"
+            },
+            {
+              "text": "0",
+              "href": "/marketplace/atlas-flow-venue-20260809152526-v3xq?eventSlug=demo-wedding"
+            },
+            {
+              "text": "Atlas Flow Vendor 20260809152526",
+              "href": "/marketplace/atlas-flow-vendor-20260809152526-53ds?eventSlug=demo-wedding"
+            },
+            {
+              "text": "Austin",
+              "href": "/marketplace/atlas-flow-vendor-20260809152526-53ds?eventSlug=demo-wedding"
+            },
+            {
+              "text": "0",
+              "href": "/marketplace/atlas-flow-vendor-20260809152526-53ds?eventSlug=demo-wedding"
+            },
+            {
+              "text": "Atlas Live Proof Vendor",
+              "href": "/marketplace/atlas-live-proof-vendor-778255936333-listing?eventSlug=demo-wedding"
+            },
+            {
+              "text": "New York, NY",
+              "href": "/marketplace/atlas-live-proof-vendor-778255936333-listing?eventSlug=demo-wedding"
+            },
+            {
+              "text": "0",
+              "href": "/marketplace/atlas-live-proof-vendor-778255936333-listing?eventSlug=demo-wedding"
+            },
+            {
+              "text": "The Assembly \u2013 Midtown Manhattan Corporate Event Venue",
+              "href": "/marketplace/the-assembly-midtown-manhattan-corporate-event-venue-rq1b-v08n0dg-listing?eventSlug=demo-wedding"
+            },
+            {
+              "text": "2 Park Ave, New York, NY 10016, USA",
+              "href": "/marketplace/the-assembly-midtown-manhattan-corporate-event-venue-rq1b-v08n0dg-listing?eventSlug=demo-wedding"
+            },
+            {
+              "text": "0",
+              "href": "/marketplace/the-assembly-midtown-manhattan-corporate-event-venue-rq1b-v08n0dg-listing?eventSlug=demo-wedding"
+            },
+            {
+              "text": "Lakeside Venue Seattle",
+              "href": "/marketplace/lakeside-venue-seattle?eventSlug=demo-wedding"
+            },
+            {
+              "text": "Seattle",
+              "href": "/marketplace/lakeside-venue-seattle?eventSlug=demo-wedding"
+            },
+            {
+              "text": "\u2b50",
+              "href": "/marketplace/lakeside-venue-seattle?eventSlug=demo-wedding"
+            },
+            {
+              "text": "4.2",
+              "href": "/marketplace/lakeside-venue-seattle?eventSlug=demo-wedding"
+            },
+            {
+              "text": "$$$",
+              "href": "/marketplace/lakeside-venue-seattle?eventSlug=demo-wedding"
+            }
+          ]
+        },
+        {
+          "path": "/app/requests",
+          "requested_url": "https://www.1hubevents.com/app/requests",
+          "final_url": "https://www.1hubevents.com/app/requests",
+          "status": 404,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content 404 This page could not be found. Go home Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [
+            "OneHub Skip to content 404 This page could not be found."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/notifications",
+          "requested_url": "https://www.1hubevents.com/notifications",
+          "final_url": "https://www.1hubevents.com/notifications",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders. 0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view. New account, client, vendor, contract, and task alerts will appear here when they are created.",
+          "snippets": [
+            "Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders.",
+            "0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view.",
+            "New account, client, vendor, contract, and task alerts will appear here when they are created."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/messages",
+          "requested_url": "https://www.1hubevents.com/messages",
+          "final_url": "https://www.1hubevents.com/messages",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Pro planner follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access. Recent threads Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 We're excited to work with you. Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 Thank you for the proposal! Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 We're excited to work with you. Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 We're excited to work with you. Proposal Discussion Sample Wedding / 2 participant s Nov 1, 2025 Thank you for the proposal!",
+          "snippets": [
+            "Pro planner follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access.",
+            "Recent threads Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 We're excited to work with you.",
+            "Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 Thank you for the proposal!",
+            "Proposal Discussion Sample Wedding / 2 participant s Dec 26, 2025 We're excited to work with you.",
+            "Proposal Discussion Sample Wedding / 2 participant s Nov 1, 2025 Thank you for the proposal!"
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Proposal Discussion",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "Sample Wedding",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "/",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "2",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "participant",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "s",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "Dec 26, 2025",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "We're excited to work with you.",
+              "href": "/messages/cmjmmz7220038wlz2ruqhv47b"
+            },
+            {
+              "text": "Proposal Discussion",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "Sample Wedding",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "/",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "2",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "participant",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "s",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "Dec 26, 2025",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "Thank you for the proposal!",
+              "href": "/messages/cmjmmwm0q003817xto45pmng9"
+            },
+            {
+              "text": "Proposal Discussion",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "Sample Wedding",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "/",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "2",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "participant",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "s",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "Dec 26, 2025",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "We're excited to work with you.",
+              "href": "/messages/cmjmmvqpp0038lefs0ta1xp71"
+            },
+            {
+              "text": "Proposal Discussion",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "Sample Wedding",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "/",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "2",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "participant",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "s",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "Dec 26, 2025",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "We're excited to work with you.",
+              "href": "/messages/cmjmmstdq0038ypiuw7v049nb"
+            },
+            {
+              "text": "Proposal Discussion",
+              "href": "/messages/cmhfwpq56002o5mmhnqksbd16"
+            }
+          ]
+        },
+        {
+          "path": "/app/proposals",
+          "requested_url": "https://www.1hubevents.com/app/proposals",
+          "final_url": "https://www.1hubevents.com/app/proposals",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/contracts",
+          "requested_url": "https://www.1hubevents.com/app/contracts",
+          "final_url": "https://www.1hubevents.com/app/contracts",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        }
+      ]
+    },
+    "DIY Planner": {
+      "login": {
+        "status": 200,
+        "ok": true
+      },
+      "routes": [
+        {
+          "path": "/app",
+          "requested_url": "https://www.1hubevents.com/app",
+          "final_url": "https://www.1hubevents.com/app",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub DIY Planner Dashboard Loading... Dashboard Loading...",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/diy-planner",
+          "requested_url": "https://www.1hubevents.com/diy-planner",
+          "final_url": "https://www.1hubevents.com/diy-planner",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved Loading... DIY Planner Event Wizard Create Event Dashboard Overview Calendar Event Vault My Events Planning Vendors Proposals Contracts Budget Guests Tasks Account Settings Help Loading events\u2026 Please wait while we fetch your events.",
+          "snippets": [
+            "DIY Planner Event Wizard Create Event Dashboard Overview Calendar Event Vault My Events Planning Vendors Proposals Contracts Budget Guests Tasks Account Settings Help Loading events\u2026 Please wait while we fetch your events."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/diy-planner/vault",
+          "requested_url": "https://www.1hubevents.com/diy-planner/vault",
+          "final_url": "https://www.1hubevents.com/diy-planner/vault",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved Event Vault All your events organized in one place At a glance Atlas Preview Smoke 20260808232634 12/15/2026 PLANNING Progress 0 % 0 / 6 checklist items done Budget $ 0 of $ 9750 Main Contact DIY Planner Upcoming Event Day 12/15/2026 Recent No recent activity At a glance Atlas Provider Flow Event 20260809152526 12/15/2026 PLANNING Progress 0 % 0 / 6 checklist items done Budget $ 0 of $ 10400 Main Contact DIY Planner Upcoming Event Day 12/15/2026 Recent At a glance Atlas Provider Flow Event 20260809091630 12/15/2026 PLANNING Progress 0 % 0 / 6 checklist items done Budget $ 0 of $ 10400 Main Contact DIY Planner Upcoming Event Day 12/15/2026 Recent At a glance Sentinel DIY Vault 20260503172417 12/15/2026 PLANNING Progress 0 % 0 / 6 checklist items done Budget $ 0 of $ 5460 Main Contact DIY Planner Upcoming Event Day 12/15/2026 Recent At a glance Sentinel DIY Vault 20260503172442 12/15/2026 PLANNING Progress 0 % 0 / 6 checklist items done Budget $ 0 of $ 5460 Main Contact DIY Planner Upcoming Event Day 12/15/2026 Recent At a glance Atlas Provider Flow Event 20260809031449 12/15/2026 PLANNING Progres",
+          "snippets": [
+            "No recent activity No recent activity No recent activity No recent activity No recent activity No recent activity Recent No recent activity MILESTONE_MARKED_COMPLETE 5/5/2026, 1:33:45 AM Recent No recent activity No recent activity Recent No recent activity"
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "At a glance",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "Atlas Preview Smoke 20260808232634",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "12/15/2026",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "PLANNING",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "Progress",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "0",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "%",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "/",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "6",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "checklist items done",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "Budget",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "$",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "of $",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "9750",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "Main Contact",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "Upcoming",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "Event Day",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "Recent",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "No recent activity",
+              "href": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm"
+            },
+            {
+              "text": "At a glance",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "Atlas Provider Flow Event 20260809152526",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "12/15/2026",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "PLANNING",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "Progress",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "0",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "%",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "/",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "6",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "checklist items done",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "Budget",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "$",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            },
+            {
+              "text": "of $",
+              "href": "/diy-planner/vault/atlas-provider-flow-event-20260809152526-2d66"
+            }
+          ]
+        },
+        {
+          "path": "/diy-planner/vault/diy-sample-event",
+          "requested_url": "https://www.1hubevents.com/diy-planner/vault/diy-sample-event",
+          "final_url": "https://www.1hubevents.com/diy-planner/vault/diy-sample-event",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/marketplace?eventSlug=diy-sample-event",
+          "requested_url": "https://www.1hubevents.com/marketplace?eventSlug=diy-sample-event",
+          "final_url": "https://www.1hubevents.com/marketplace?eventSlug=diy-sample-event",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Events Features More Sign in Create account Vendor & Venue Marketplace Discover vendors and venues for your events Atlas Flow Venue 20260809152526 Austin 0 Atlas Flow Vendor 20260809152526 Austin 0 All Seasons Event Rental 10354 Lemoyne Blvd Suite C, D'Iberville, MS 39540, USA 0 Always and Forever Flowers & Gifts 0 Shindig 215 Ashley Pl, Ocean Springs, MS 39564, USA 0 The Slavonian Lodge 0 The Sanctuary - Biloxi 0 The Grand Sofia 1785 Beach Blvd, Biloxi, MS 39531, USA 0 Atlas Live Proof Vendor New York, NY 0 XChangeSpaces event, conference and training space rentals 0 Taylor's Event Space LLC 0 The Assembly \u2013 Midtown Manhattan Corporate Event Venue 2 Park Ave, New York, NY 10016, USA 0 Supply Proof Listing Final Austin 0 $$$ Grand Ballroom Chicago Chicago \u2b50 4.7 $$$$ Atlas Flow Vendor 20260809091630 Austin \u2b50 4.5 $$$ Elegant Floral Design Chicago \u2b50 4.6 $$$ Elite Photography Studio Chicago \u2b50 4.8 $$$$ Premium Catering Co. Chicago \u2b50 4.7 $$$ Lakeside Venue Seattle Seattle \u2b50 4.2 $$$ Atlas Flow Venue 20260809091630 Austin \u2b50 4.5 $$$$",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Atlas Flow Venue 20260809152526",
+              "href": "/marketplace/atlas-flow-venue-20260809152526-v3xq?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "Austin",
+              "href": "/marketplace/atlas-flow-venue-20260809152526-v3xq?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "0",
+              "href": "/marketplace/atlas-flow-venue-20260809152526-v3xq?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "Atlas Flow Vendor 20260809152526",
+              "href": "/marketplace/atlas-flow-vendor-20260809152526-53ds?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "Austin",
+              "href": "/marketplace/atlas-flow-vendor-20260809152526-53ds?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "0",
+              "href": "/marketplace/atlas-flow-vendor-20260809152526-53ds?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "Atlas Live Proof Vendor",
+              "href": "/marketplace/atlas-live-proof-vendor-778255936333-listing?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "New York, NY",
+              "href": "/marketplace/atlas-live-proof-vendor-778255936333-listing?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "0",
+              "href": "/marketplace/atlas-live-proof-vendor-778255936333-listing?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "The Assembly \u2013 Midtown Manhattan Corporate Event Venue",
+              "href": "/marketplace/the-assembly-midtown-manhattan-corporate-event-venue-rq1b-v08n0dg-listing?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "2 Park Ave, New York, NY 10016, USA",
+              "href": "/marketplace/the-assembly-midtown-manhattan-corporate-event-venue-rq1b-v08n0dg-listing?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "0",
+              "href": "/marketplace/the-assembly-midtown-manhattan-corporate-event-venue-rq1b-v08n0dg-listing?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "Lakeside Venue Seattle",
+              "href": "/marketplace/lakeside-venue-seattle?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "Seattle",
+              "href": "/marketplace/lakeside-venue-seattle?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "\u2b50",
+              "href": "/marketplace/lakeside-venue-seattle?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "4.2",
+              "href": "/marketplace/lakeside-venue-seattle?eventSlug=diy-sample-event"
+            },
+            {
+              "text": "$$$",
+              "href": "/marketplace/lakeside-venue-seattle?eventSlug=diy-sample-event"
+            }
+          ]
+        },
+        {
+          "path": "/app/requests",
+          "requested_url": "https://www.1hubevents.com/app/requests",
+          "final_url": "https://www.1hubevents.com/app/requests",
+          "status": 404,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content 404 This page could not be found. Go home Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [
+            "OneHub Skip to content 404 This page could not be found."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/notifications",
+          "requested_url": "https://www.1hubevents.com/notifications",
+          "final_url": "https://www.1hubevents.com/notifications",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub DIY Planner Dashboard Loading... Dashboard Loading... Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders. 0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view. New account, client, vendor, contract, and task alerts will appear here when they are created.",
+          "snippets": [
+            "Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders.",
+            "0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view.",
+            "New account, client, vendor, contract, and task alerts will appear here when they are created."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/messages",
+          "requested_url": "https://www.1hubevents.com/messages",
+          "final_url": "https://www.1hubevents.com/messages",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub DIY Planner Dashboard Loading... Dashboard Loading... DIY planner follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access. Recent threads No message threads need your attention. Client, vendor, venue, proposal, and internal planning conversations will appear here once they are attached to your organization records.",
+          "snippets": [
+            "DIY planner follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access.",
+            "Recent threads No message threads need your attention.",
+            "Client, vendor, venue, proposal, and internal planning conversations will appear here once they are attached to your organization records."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        }
+      ]
+    },
+    "Client": {
+      "login": {
+        "status": 200,
+        "ok": true
+      },
+      "routes": [
+        {
+          "path": "/app",
+          "requested_url": "https://www.1hubevents.com/app",
+          "final_url": "https://www.1hubevents.com/app",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Dashboard CLIENT Organizations View all No planner organization is connected to your client workspace yet. Your planner will connect you when an event relationship is ready. Recent Events Demo Wedding Event Planner Agency \u00b7 3/26/2026 Waiting on your planner to share the event summary Open workspace Getting Started Welcome to OneHub \u2014 your setup checklist is coming in Wave 3. Quick Links Dashboard System Status All systems operational.",
+          "snippets": [
+            "Dashboard CLIENT Organizations View all No planner organization is connected to your client workspace yet."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Open workspace",
+              "href": "/client/events/demo-wedding"
+            }
+          ]
+        },
+        {
+          "path": "/client/events/demo-wedding",
+          "requested_url": "https://www.1hubevents.com/client/events/demo-wedding",
+          "final_url": "https://www.1hubevents.com/client/events/demo-wedding",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Waiting on your planner Demo Wedding Event Event by Planner Agency Your client workspace is ready, but the summary is not shared yet. You are attached to this event. Your planner still needs to share the client summary before event details appear here. Planner contact: Pro Planner Open Message Inbox Back to dashboard",
+          "snippets": [
+            "Planner contact: Pro Planner Open Message Inbox Back to dashboard"
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Open Message Inbox",
+              "href": "/messages"
+            }
+          ]
+        },
+        {
+          "path": "/app/vault/demo-wedding",
+          "requested_url": "https://www.1hubevents.com/app/vault/demo-wedding",
+          "final_url": "https://www.1hubevents.com/app",
+          "status": 200,
+          "redirected": true,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Dashboard CLIENT Organizations View all No planner organization is connected to your client workspace yet. Your planner will connect you when an event relationship is ready. Recent Events Demo Wedding Event Planner Agency \u00b7 3/26/2026 Waiting on your planner to share the event summary Open workspace Getting Started Welcome to OneHub \u2014 your setup checklist is coming in Wave 3. Quick Links Dashboard System Status All systems operational.",
+          "snippets": [
+            "Dashboard CLIENT Organizations View all No planner organization is connected to your client workspace yet."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "Open workspace",
+              "href": "/client/events/demo-wedding"
+            }
+          ]
+        },
+        {
+          "path": "/messages",
+          "requested_url": "https://www.1hubevents.com/messages",
+          "final_url": "https://www.1hubevents.com/messages",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Team follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access. Recent threads No message threads need your attention. Client, vendor, venue, proposal, and internal planning conversations will appear here once they are attached to your organization records.",
+          "snippets": [
+            "Team follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access.",
+            "Recent threads No message threads need your attention.",
+            "Client, vendor, venue, proposal, and internal planning conversations will appear here once they are attached to your organization records."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/notifications",
+          "requested_url": "https://www.1hubevents.com/notifications",
+          "final_url": "https://www.1hubevents.com/notifications",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders. 0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view. New account, client, vendor, contract, and task alerts will appear here when they are created.",
+          "snippets": [
+            "Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders.",
+            "0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view.",
+            "New account, client, vendor, contract, and task alerts will appear here when they are created."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/proposals",
+          "requested_url": "https://www.1hubevents.com/app/proposals",
+          "final_url": "https://www.1hubevents.com/app/proposals",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/contracts",
+          "requested_url": "https://www.1hubevents.com/app/contracts",
+          "final_url": "https://www.1hubevents.com/app/contracts",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        }
+      ]
+    },
+    "Vendor": {
+      "login": {
+        "status": 200,
+        "ok": true
+      },
+      "routes": [
+        {
+          "path": "/app",
+          "requested_url": "https://www.1hubevents.com/app",
+          "final_url": "https://www.1hubevents.com/app",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading...",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/vendor/dashboard",
+          "requested_url": "https://www.1hubevents.com/vendor/dashboard",
+          "final_url": "https://www.1hubevents.com/vendor/dashboard",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved Loading... Vendor Dashboard Manage Your Services Dashboard Overview Leads Payments Calendar Messages Settings Welcome, Atlas Flow Vendor 20260809152526 Lead response command center Start with the newest money-making lead, then confirm dates, contact, contract, and manual payment readiness before committing. Open lead queue Calendar overview Payment overview Fix profile readiness New leads today 0 Upcoming Events 1 Unread Messages 0 Lead action now 5 new leads 0 follow-ups needed Next safe response: Reply to Atlas Flow Buyer 20260809152526 about Atlas Flow Vendor 20260809152526 Respond in Leads Upcoming work Next service date: 12/15/2026 for Atlas Provider Flow Event 20260809152526 Open Calendar Contract & payment readiness Manual payment readiness: No active payment milestones need action. Review payment readiness Profile readiness Listing, contact, availability, and manual payment readiness are in place. Fix profile readiness Safe vendor response path Use Leads for client contact, Calendar for service dates, Payments for manual milestone status, and Settings for profile readiness. Live checkout",
+          "snippets": [
+            "Review payment readiness Profile readiness Listing, contact, availability, and manual payment readiness are in place.",
+            "Fix profile readiness Safe vendor response path Use Leads for client contact, Calendar for service dates, Payments for manual milestone status, and Settings for profile readiness."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/requests",
+          "requested_url": "https://www.1hubevents.com/app/requests",
+          "final_url": "https://www.1hubevents.com/app/requests",
+          "status": 404,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content 404 This page could not be found. Go home Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [
+            "OneHub Skip to content 404 This page could not be found."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/marketplace/manage",
+          "requested_url": "https://www.1hubevents.com/marketplace/manage",
+          "final_url": "https://www.1hubevents.com/marketplace/manage",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Manage Listings Create Listing Premium Catering Co. Chicago , IL CATERING View Atlas Flow Vendor 20260809152526 Austin , TX CATERING View Elite Photography Studio Chicago , IL PHOTO_VIDEO View Elegant Floral Design Chicago , IL DECOR_FLORAL View Atlas Flow Vendor 20260809091630 Austin , TX CATERING View",
+          "snippets": [
+            "Manage Listings Create Listing Premium Catering Co."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "View",
+              "href": "/marketplace/atlas-flow-vendor-20260809152526-53ds"
+            }
+          ]
+        },
+        {
+          "path": "/messages",
+          "requested_url": "https://www.1hubevents.com/messages",
+          "final_url": "https://www.1hubevents.com/messages",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Vendor follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access. Recent threads No message threads need your attention. Client, vendor, venue, proposal, and internal planning conversations will appear here once they are attached to your organization records.",
+          "snippets": [
+            "Vendor follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access.",
+            "Recent threads No message threads need your attention.",
+            "Client, vendor, venue, proposal, and internal planning conversations will appear here once they are attached to your organization records."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/notifications",
+          "requested_url": "https://www.1hubevents.com/notifications",
+          "final_url": "https://www.1hubevents.com/notifications",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders. 0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view. New account, client, vendor, contract, and task alerts will appear here when they are created.",
+          "snippets": [
+            "Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders.",
+            "0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view.",
+            "New account, client, vendor, contract, and task alerts will appear here when they are created."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/billing/connect",
+          "requested_url": "https://www.1hubevents.com/billing/connect",
+          "final_url": "https://www.1hubevents.com/billing/connect",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading...",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/billing/connect",
+          "requested_url": "https://www.1hubevents.com/app/billing/connect",
+          "final_url": "https://www.1hubevents.com/app/billing/connect",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading...",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/proposals",
+          "requested_url": "https://www.1hubevents.com/app/proposals",
+          "final_url": "https://www.1hubevents.com/app/proposals",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/contracts",
+          "requested_url": "https://www.1hubevents.com/app/contracts",
+          "final_url": "https://www.1hubevents.com/app/contracts",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        }
+      ]
+    },
+    "Venue": {
+      "login": {
+        "status": 200,
+        "ok": true
+      },
+      "routes": [
+        {
+          "path": "/app",
+          "requested_url": "https://www.1hubevents.com/app",
+          "final_url": "https://www.1hubevents.com/app",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading...",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/venue/dashboard",
+          "requested_url": "https://www.1hubevents.com/venue/dashboard",
+          "final_url": "https://www.1hubevents.com/venue/dashboard",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved Loading... Venue Dashboard Manage Your Space Dashboard Overview Leads Calendar Messages Settings Welcome, Atlas Flow Venue 20260809152526 Venue booking command center Start with new inquiries, then confirm holds, tour timing, calendar fit, and manual booking readiness before promising a date. Open inquiry queue Calendar overview Lead contact Fix venue readiness New inquiries today 0 Upcoming holds/bookings 1 Unread Messages 0 Inquiry action now 1 new inquiry 0 holds/tours to confirm Next safe response: Reply to Atlas Flow Buyer 20260809152526 about Atlas Flow Venue 20260809152526 Respond in Leads Upcoming venue dates Next event date: 12/15/2026 for Atlas Provider Flow Event 20260809152526 Open Calendar Booking & payment readiness Booking readiness: No active payment milestones need action. Review booking readiness Venue profile readiness Spaces, contact, availability, and manual payment readiness are in place. Fix venue readiness Safe venue response path Use Leads for inquiry response, Messages for client contact, Calendar for holds/tours/bookings, and Settings for readiness. Live checkout remai",
+          "snippets": [
+            "Review booking readiness Venue profile readiness Spaces, contact, availability, and manual payment readiness are in place.",
+            "Fix venue readiness Safe venue response path Use Leads for inquiry response, Messages for client contact, Calendar for holds/tours/bookings, and Settings for readiness."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/requests",
+          "requested_url": "https://www.1hubevents.com/app/requests",
+          "final_url": "https://www.1hubevents.com/app/requests",
+          "status": 404,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content 404 This page could not be found. Go home Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [
+            "OneHub Skip to content 404 This page could not be found."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/marketplace/manage",
+          "requested_url": "https://www.1hubevents.com/marketplace/manage",
+          "final_url": "https://www.1hubevents.com/marketplace/manage",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Manage Listings Create Listing Lakeside Venue Seattle Seattle , WA VENUE_SPACE View Grand Ballroom Chicago Chicago , IL VENUE_SPACE View Atlas Flow Venue 20260809152526 Austin , TX VENUE_SPACE View Atlas Flow Venue 20260809091630 Austin , TX VENUE_SPACE View",
+          "snippets": [
+            "Manage Listings Create Listing Lakeside Venue Seattle Seattle , WA VENUE_SPACE View Grand Ballroom Chicago Chicago , IL VENUE_SPACE View Atlas Flow Venue 20260809152526 Austin , TX VENUE_SPACE View Atlas Flow Venue 20260809091630 Austin , TX VENUE_SPACE View"
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            },
+            {
+              "text": "View",
+              "href": "/marketplace/lakeside-venue-seattle"
+            },
+            {
+              "text": "View",
+              "href": "/marketplace/atlas-flow-venue-20260809152526-v3xq"
+            }
+          ]
+        },
+        {
+          "path": "/messages",
+          "requested_url": "https://www.1hubevents.com/messages",
+          "final_url": "https://www.1hubevents.com/messages",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Venue follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access. Recent threads No message threads need your attention. Client, vendor, venue, proposal, and internal planning conversations will appear here once they are attached to your organization records.",
+          "snippets": [
+            "Venue follow-up inbox Message inbox Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access.",
+            "Recent threads No message threads need your attention.",
+            "Client, vendor, venue, proposal, and internal planning conversations will appear here once they are attached to your organization records."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/notifications",
+          "requested_url": "https://www.1hubevents.com/notifications",
+          "final_url": "https://www.1hubevents.com/notifications",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders. 0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view. New account, client, vendor, contract, and task alerts will appear here when they are created.",
+          "snippets": [
+            "Notifications Notification center for account alerts, client follow-ups, vendor updates, contract activity, and task reminders.",
+            "0 unread in current view All statuses Unread Read Filter Latest notifications No notifications match this view.",
+            "New account, client, vendor, contract, and task alerts will appear here when they are created."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/billing/connect",
+          "requested_url": "https://www.1hubevents.com/billing/connect",
+          "final_url": "https://www.1hubevents.com/billing/connect",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Stripe Connect Setup Connect your Stripe account to receive payments. Organization: Atlas Flow Venue 20260809152526 ( Venue ) Start Onboarding",
+          "snippets": [
+            "Stripe Connect Setup Connect your Stripe account to receive payments."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/billing/connect",
+          "requested_url": "https://www.1hubevents.com/app/billing/connect",
+          "final_url": "https://www.1hubevents.com/app/billing/connect",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved OneHub Dashboard Loading... Dashboard Loading... Stripe Connect Setup Connect your Stripe account to receive payments. Organization: Atlas Flow Venue 20260809152526 ( Venue ) Start Onboarding",
+          "snippets": [
+            "Stripe Connect Setup Connect your Stripe account to receive payments."
+          ],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/proposals",
+          "requested_url": "https://www.1hubevents.com/app/proposals",
+          "final_url": "https://www.1hubevents.com/app/proposals",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        },
+        {
+          "path": "/app/contracts",
+          "requested_url": "https://www.1hubevents.com/app/contracts",
+          "final_url": "https://www.1hubevents.com/app/contracts",
+          "status": 200,
+          "redirected": false,
+          "title": "OneHub",
+          "text_head": "OneHub Skip to content Site Map Getting Started Home Features Event Wizard Event Vault For Users DIY Planner Professional Planner Vendors & Venues Event Dreamer Marketplace Explore Vendors AI Contracts Proposals Vendor & Venue Ads Resources Help Center Support Privacy Policy Terms of Service support@onehub.events 1-800-ONEHUB AI-Assisted Chat \u00a9 2026 OneHub Events \u2014 All rights reserved",
+          "snippets": [],
+          "links": [
+            {
+              "text": "Event Vault",
+              "href": "/app/vault"
+            },
+            {
+              "text": "DIY Planner",
+              "href": "/diy-planner"
+            },
+            {
+              "text": "Professional Planner",
+              "href": "/professional-planner/setup"
+            },
+            {
+              "text": "Explore Vendors",
+              "href": "/explore/vendors"
+            },
+            {
+              "text": "AI Contracts",
+              "href": "/app/contracts"
+            },
+            {
+              "text": "Proposals",
+              "href": "/app/proposals"
+            },
+            {
+              "text": "Vendor & Venue Ads",
+              "href": "/vendor-venue-ads"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
