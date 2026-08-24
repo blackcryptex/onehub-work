@@ -43,8 +43,17 @@ describe("private-pilot readiness hardening", () => {
     expect(screen.queryByText("Create account")).not.toBeInTheDocument();
   });
 
-  it("keeps the invite modal open long enough to show no-email success copy", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: true } as Response);
+  it("keeps the invite modal open long enough to show not-configured delivery truth copy", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        delivery: {
+          channel: "email",
+          status: "NOT_CONFIGURED",
+          reason: "Outbound email provider is not configured; no email was sent.",
+        },
+      }),
+    } as Response);
 
     function ProductionLikeInviteFlow() {
       const [open, setOpen] = React.useState(true);
@@ -70,9 +79,9 @@ describe("private-pilot readiness hardening", () => {
     fireEvent.click(screen.getByRole("button", { name: /send invite/i }));
 
     await waitFor(() => {
-      expect(screen.getByText("Invite Copy Prepared")).toBeInTheDocument();
+      expect(screen.getByText("Invite Delivery Not Configured")).toBeInTheDocument();
     });
-    expect(screen.getByText(/No email was sent by OneHub/i)).toBeInTheDocument();
+    expect(screen.getByText(/no email was sent by OneHub/i)).toBeInTheDocument();
     expect(screen.queryByText("Modal closed")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));

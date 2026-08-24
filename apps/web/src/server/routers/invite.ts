@@ -4,6 +4,7 @@ import { router, publicProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner } from "@/lib/rbac";
+import { sendOutboundEmail } from "@/lib/outbound";
 import { recordAudit } from "@/server/lib/audit";
 import { randomUUID } from "crypto";
 
@@ -18,9 +19,21 @@ export const inviteRouter = router({
     if (!isOrgAdminOrOwner(user, org, mem)) throw new Error("Forbidden");
     const token = randomUUID();
     const invite = await db.invite.create({ data: { orgId: input.orgId, email: input.email, role: input.role, token, expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7) } });
-    // Email delivery is intentionally not wired in the guarded MVP path.
+    const acceptPath = `/signup?invite=${token}`;
+    const appBaseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const delivery = await sendOutboundEmail({
+      to: input.email,
+      subject: "You have been invited to join OneHub",
+      text: [
+        "You have been invited to join OneHub.",
+        "",
+        `Accept the invitation: ${new URL(acceptPath, appBaseUrl).toString()}`,
+        "",
+        "If you were not expecting this invitation, you can ignore this message.",
+      ].join("\n"),
+    });
     await recordAudit({ actorId: user.id, orgId: input.orgId, action: "invite.create", target: invite.id, metadata: { email: input.email } });
-    return invite;
+    return { ...invite, acceptPath, delivery };
   }),
   getInvites: publicProcedure.input(z.object({ orgId: z.string() })).query(({ input }) => {
     return db.invite.findMany({ where: { orgId: input.orgId, accepted: false } });

@@ -1,12 +1,23 @@
-// lib/email.service.ts (stub)
+type LegacyEmailDeliveryResult = {
+  ok: false;
+  status: "NOT_CONFIGURED";
+  reason: string;
+};
+
+function legacyEmailNotConfigured(): LegacyEmailDeliveryResult {
+  return {
+    ok: false,
+    status: "NOT_CONFIGURED",
+    reason: "Legacy client-side email helper cannot send outbound email; use a server outbound route with provider credentials.",
+  };
+}
+
 export async function sendEmail(_to: string, _subject: string, _body: string) {
-  await new Promise(r => setTimeout(r, 200));
-  return { ok: true };
+  return legacyEmailNotConfigured();
 }
 
 export async function sendProposalEmail(_to: string, _subject: string, _body: string) {
-  await new Promise(r => setTimeout(r, 200));
-  return { ok: true };
+  return legacyEmailNotConfigured();
 }
 
 /**
@@ -38,14 +49,6 @@ You can review event details, make deposits, and communicate with your planner t
 Best regards,
 OneHub
   `.trim();
-
-  // TODO: Replace with actual email service integration
-  // For now, this is a stub that logs the email
-  console.log("[Email] Would send event shared email:", {
-    to,
-    subject,
-    body,
-  });
 
   return sendEmail(to, subject, body);
 }

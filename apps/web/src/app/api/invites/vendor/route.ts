@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
+import { sendOutboundEmail } from "@/lib/outbound";
 import { z } from "zod";
 
 const inviteVendorSchema = z.object({
@@ -26,9 +27,23 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = inviteVendorSchema.parse(body);
 
+    const delivery = await sendOutboundEmail({
+      to: validated.to,
+      subject: validated.subject,
+      text: validated.body,
+    });
+
+    const deliveryMessage =
+      delivery.status === "SENT"
+        ? "Invite email sent through configured outbound provider."
+        : delivery.status === "NOT_CONFIGURED"
+          ? "Outbound email delivery is not configured; no email was sent by OneHub."
+          : "Outbound email provider failed; no delivery confirmation was recorded.";
+
     return NextResponse.json({
       ok: true,
-      message: "Invite queued (email sending not yet implemented)",
+      message: deliveryMessage,
+      delivery,
       preview: {
         to: validated.to,
         subject: validated.subject,

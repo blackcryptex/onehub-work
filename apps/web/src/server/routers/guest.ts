@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { router, publicProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { recordActivity } from "@/server/lib/activity";
+import { sendOutboundEmail } from "@/lib/outbound";
 import { randomBytes } from "crypto";
 
 export const guestRouter = router({
@@ -133,13 +134,40 @@ export const guestRouter = router({
             invitationUrl: `${baseUrl}/rsvp/${token}`,
           },
         });
-        // Email delivery is intentionally not wired in the guarded MVP path.
-        await prisma.invitation.update({ where: { id: invitation.id }, data: { sentAt: new Date() } });
-        return invitation;
+        const delivery = await sendOutboundEmail({
+          to: guest.email,
+          subject: `RSVP for ${event.name}`,
+          text: `You have been invited to ${event.name}. RSVP here: ${baseUrl}/rsvp/${token}`,
+          html: `<p>You have been invited to ${event.name}.</p><p><a href="${baseUrl}/rsvp/${token}">RSVP here</a></p>`,
+        });
+        if (delivery.status === "SENT") {
+          await prisma.invitation.update({ where: { id: invitation.id }, data: { sentAt: new Date() } });
+        }
+        return { invitation, delivery };
       })
     );
-    await recordActivity({ orgId: event.orgId, eventId: input.eventId, actorId: userId, action: "INVITATIONS_SENT", target: guestList.id, meta: { count: invitations.filter(Boolean).length } });
-    return { count: invitations.filter(Boolean).length };
+    const prepared = invitations.filter(Boolean).length;
+    const delivered = invitations.filter((item) => item?.delivery.status === "SENT").length;
+    const notConfigured = invitations.filter((item) => item?.delivery.status === "NOT_CONFIGURED").length;
+    const failed = invitations.filter((item) => item?.delivery.status === "FAILED").length;
+    await recordActivity({
+      orgId: event.orgId,
+      eventId: input.eventId,
+      actorId: userId,
+      action: delivered > 0 ? "INVITATIONS_SENT" : "INVITATIONS_PREPARED",
+      target: guestList.id,
+      meta: { prepared, delivered, notConfigured, failed },
+    });
+    return {
+      count: prepared,
+      delivered,
+      status: delivered > 0 ? "SENT" : notConfigured > 0 ? "NOT_CONFIGURED" : failed > 0 ? "FAILED" : "NOT_CONFIGURED",
+      message: delivered > 0
+        ? `${delivered} guest invitation email${delivered === 1 ? "" : "s"} sent through the configured outbound provider.`
+        : failed > 0
+          ? "Guest invitation links were prepared, but outbound email delivery failed; no sent claim was recorded."
+          : "Guest invitation links were prepared, but outbound email is not configured; no guest email was sent by OneHub.",
+    };
   }),
 
   rsvp: publicProcedure.input(z.object({

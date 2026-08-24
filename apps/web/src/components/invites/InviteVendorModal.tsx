@@ -4,6 +4,12 @@ import { useState } from "react";
 import { Button, Input, Label } from "@/components/ui";
 import { X, Mail, Copy, Loader2 } from "lucide-react";
 
+type InviteDelivery = {
+  status: "NOT_CONFIGURED" | "FAILED" | "SENT";
+  provider?: string;
+  providerMessageId?: string;
+};
+
 interface InviteVendorModalProps {
   vendorName: string;
   vendorCategory: string;
@@ -68,6 +74,7 @@ export function InviteVendorModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [delivery, setDelivery] = useState<InviteDelivery | null>(null);
 
   const handleSend = async () => {
     if (!email || !email.includes("@")) {
@@ -96,6 +103,9 @@ export function InviteVendorModal({
         throw new Error(data.error || "Failed to send invite");
       }
 
+      const data = (await response.json()) as { delivery?: InviteDelivery };
+      setDelivery(data.delivery ?? null);
+
       setSuccess(true);
     } catch (err) {
       console.error("Error sending invite:", err);
@@ -120,6 +130,9 @@ export function InviteVendorModal({
   };
 
   if (success) {
+    const sent = delivery?.status === "SENT";
+    const failed = delivery?.status === "FAILED";
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -127,10 +140,19 @@ export function InviteVendorModal({
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Mail className="w-8 h-8 text-green-600" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Invite Copy Prepared</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              {sent ? "Invite Email Sent" : failed ? "Invite Delivery Failed" : "Invite Delivery Not Configured"}
+            </h3>
             <p className="text-sm text-slate-600 mb-4">
-              Invite copy was prepared for {email}. No email was sent by OneHub because outbound invite delivery is not active yet.
+              {sent
+                ? `OneHub sent the invite email to ${email} through ${delivery?.provider || "the configured outbound provider"}.`
+                : failed
+                  ? `Invite copy was prepared for ${email}, but the outbound provider failed and no delivery confirmation was recorded.`
+                  : `Invite copy was prepared for ${email}. Outbound email delivery is not configured, so no email was sent by OneHub.`}
             </p>
+            {sent && delivery?.providerMessageId ? (
+              <p className="text-xs text-slate-500 mb-4">Provider message ID: {delivery.providerMessageId}</p>
+            ) : null}
             <Button onClick={handleSuccessClose} className="w-full">
               Close
             </Button>
