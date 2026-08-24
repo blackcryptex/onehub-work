@@ -1,7 +1,7 @@
 import { LandingHeader } from "@/components/layout/LandingHeader";
 import { Card } from "@/components/ui";
 import Link from "next/link";
-import { Briefcase, Star, Calendar, Building2 } from "lucide-react";
+import { Briefcase, Star, Calendar, Building2, Search } from "lucide-react";
 import { VendorVenueLink } from "@/components/vendor-venue/VendorVenueLink";
 
 export default function Page() {
@@ -75,12 +75,16 @@ export default function Page() {
               </Link>
             </Card>
 
-            {/* Coming Soon */}
+            {/* Marketplace */}
             <Card className="p-6 flex flex-col items-center text-center hover:shadow-lg transition-shadow">
-              <h3 className="text-xl font-semibold mb-4">Coming Soon</h3>
+              <Search className="w-12 h-12 text-indigo-600 mb-3" />
+              <h3 className="text-xl font-semibold mb-4">Explore Marketplace</h3>
               <p className="text-sm text-slate-600 mb-6 flex-grow">
-                Exciting new features on the way!
+                Browse real vendor and venue listings before you shortlist or request a booking.
               </p>
+              <Link href="/marketplace" className="flex items-center gap-1 text-indigo-600 font-medium hover:underline">
+                Browse Providers <span>→</span>
+              </Link>
             </Card>
           </div>
         </section>
