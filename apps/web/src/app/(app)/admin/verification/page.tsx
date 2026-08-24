@@ -128,7 +128,7 @@ export default async function AdminVerificationPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Admin verification</h1>
-          <p className="text-sm text-slate-600">Canonical review surfaces for refunds, disputes, holdbacks, payouts, and overrides.</p>
+          <p className="text-sm text-slate-600">Canonical manual-trust review surfaces for refunds, disputes, holdbacks, payouts, and overrides. Review proposal, contract, payment intent, held-funds, and payout status before any guarded release action.</p>
         </div>
         <Link href="/admin/verification/detail" className="text-sm text-indigo-600 hover:underline">Unified detail →</Link>
       </div>

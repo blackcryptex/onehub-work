@@ -17,6 +17,7 @@ const createIntentSchema = z.object({
 
 const PAYABLE_CONTRACT_STATES = new Set(["FULLY_SIGNED", "IN_PAYMENT"]);
 const PAYABLE_MILESTONE_STATES = new Set(["PENDING", "OVERDUE"]);
+const PAYMENT_READY_PROPOSAL_STATES = new Set(["ACCEPTED", "CONVERTED"]);
 const ACTIVE_PAYMENT_STATES = ["REQUIRES_PAYMENT", "PROCESSING"] as const;
 
 export async function POST(request: NextRequest) {
@@ -88,6 +89,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Contract is not in a payable state" }, { status: 400 });
     }
 
+    if (!PAYMENT_READY_PROPOSAL_STATES.has(contract.proposal.status) || !contract.proposal.listingId || !contract.proposal.listing?.org) {
+      return NextResponse.json({
+        error: "Payment is locked until an accepted provider-backed proposal has a signed contract",
+      }, { status: 400 });
+    }
+
     if (!contract.sellerId) {
       return NextResponse.json({ error: "Contract seller not set" }, { status: 400 });
     }
@@ -130,11 +137,16 @@ export async function POST(request: NextRequest) {
       if (!amountCents) {
         return NextResponse.json({ error: "Either milestoneId or amountCents must be provided" }, { status: 400 });
       }
-      const totalMilestoneAmount = contract.proposal.milestones.reduce((sum: number, milestone: { amountCents: number }) => sum + milestone.amountCents, 0);
-      if (amountCents !== totalMilestoneAmount) {
-        return NextResponse.json({ error: "Amount must match the server-derived contract total" }, { status: 400 });
+      const payableMilestoneAmount = contract.proposal.milestones
+        .filter((milestone: { status: string }) => PAYABLE_MILESTONE_STATES.has(milestone.status))
+        .reduce((sum: number, milestone: { amountCents: number }) => sum + milestone.amountCents, 0);
+      if (payableMilestoneAmount <= 0) {
+        return NextResponse.json({ error: "No payable milestones remain for this contract" }, { status: 400 });
       }
-      amount = totalMilestoneAmount;
+      if (amountCents !== payableMilestoneAmount) {
+        return NextResponse.json({ error: "Amount must match the server-derived payable milestone total" }, { status: 400 });
+      }
+      amount = payableMilestoneAmount;
     }
 
     const feeProfile = resolveFeeProfile({

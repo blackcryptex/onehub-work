@@ -21,6 +21,11 @@ interface ContractPaymentPanelProps {
     milestones?: PaymentMilestone[];
     proposal?: {
       currency: string;
+      event?: { name?: string | null } | null;
+      listing?: {
+        title?: string | null;
+        org?: { name?: string | null } | null;
+      } | null;
     };
   };
   canPay: boolean;
@@ -47,6 +52,9 @@ export function ContractPaymentPanel({
   const heldFundsAmount = calculateHeldFundsAmount(milestones);
   const paidAmount = calculatePaidAmount(milestones);
   const inPayment = isContractInPayment(contract);
+  const currency = contract.proposal?.currency || "USD";
+  const payeeLabel = contract.proposal?.listing?.org?.name || contract.proposal?.listing?.title || "the contracted provider";
+  const eventLabel = contract.proposal?.event?.name || "this event";
 
   const handlePayMilestone = async (milestone: PaymentMilestone) => {
     // Double-click protection: prevent concurrent requests
@@ -147,7 +155,16 @@ export function ContractPaymentPanel({
   return (
     <>
       <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6 space-y-4">
-        <h3 className="text-lg font-semibold">Payment</h3>
+        <h3 className="text-lg font-semibold">Guarded payment readiness</h3>
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-950">
+          <p className="font-medium">What this payment covers</p>
+          <p className="mt-1">
+            Buyer-side payment is for the signed contract milestones for {eventLabel}. Funds are paid by the buyer side and recorded for {payeeLabel}; release remains subject to admin/manual review, holdbacks, refunds, disputes, and provider payout configuration.
+          </p>
+          <p className="mt-2 text-blue-900">
+            OneHub is not marking anything as paid until Stripe confirmation is persisted. Any pending payout or held-funds status is an internal readiness/review state, not a public escrow or legal approval promise.
+          </p>
+        </div>
         <LegalNotice
           label="Payment authorization uses the current guarded MVP payment terms and held-funds policy."
           version={CURRENT_ACCEPTANCE_VERSIONS.payment}
@@ -160,27 +177,27 @@ export function ContractPaymentPanel({
             onChange={(event) => setAcceptedPaymentTerms(event.target.checked)}
             className="mt-1"
           />
-          <span>I acknowledge this payment is authorized under the signed contract and milestone schedule.</span>
+          <span>I acknowledge this payment is authorized under the accepted provider-backed proposal, signed contract, and milestone schedule, with release subject to manual trust review.</span>
         </label>
 
         {/* Payment Summary */}
         <div className="grid grid-cols-3 gap-4">
           <div className="p-3 bg-slate-50 rounded-lg">
-            <div className="text-xs text-slate-600 mb-1">Total Due</div>
+            <div className="text-xs text-slate-600 mb-1">Payable now</div>
             <div className="text-lg font-semibold text-slate-900">
-              {formatCurrency(totalDue, contract.proposal?.currency || "USD")}
+              {formatCurrency(totalDue, currency)}
             </div>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg">
-            <div className="text-xs text-slate-600 mb-1">Funds Held</div>
+            <div className="text-xs text-slate-600 mb-1">Held pending review</div>
             <div className="text-lg font-semibold text-emerald-600">
-              {formatCurrency(heldFundsAmount, contract.proposal?.currency || "USD")}
+              {formatCurrency(heldFundsAmount, currency)}
             </div>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg">
             <div className="text-xs text-slate-600 mb-1">Paid</div>
             <div className="text-lg font-semibold text-slate-900">
-              {formatCurrency(paidAmount, contract.proposal?.currency || "USD")}
+              {formatCurrency(paidAmount, currency)}
             </div>
           </div>
         </div>
@@ -198,7 +215,7 @@ export function ContractPaymentPanel({
                 )}
               </div>
               <div className="text-lg font-semibold">
-                {formatCurrency(nextMilestone.amountCents, contract.proposal?.currency || "USD")}
+                {formatCurrency(nextMilestone.amountCents, currency)}
               </div>
             </div>
             <Button
@@ -206,7 +223,7 @@ export function ContractPaymentPanel({
               disabled={loading || isProcessing || !acceptedPaymentTerms}
               className="w-full mt-3"
             >
-              {loading || isProcessing ? "Processing..." : `Pay ${formatCurrency(nextMilestone.amountCents, contract.proposal?.currency || "USD")}`}
+              {loading || isProcessing ? "Processing..." : `Authorize milestone payment (${formatCurrency(nextMilestone.amountCents, currency)})`}
             </Button>
           </div>
         )}
@@ -236,7 +253,7 @@ export function ContractPaymentPanel({
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-sm font-semibold">
-                        {formatCurrency(milestone.amountCents, contract.proposal?.currency || "USD")}
+                        {formatCurrency(milestone.amountCents, currency)}
                       </div>
                       <span
                         className={`text-xs px-2 py-1 rounded-full ${
@@ -249,7 +266,7 @@ export function ContractPaymentPanel({
                             : "bg-slate-100 text-slate-700"
                         }`}
                       >
-                        {milestone.status === "IN_ESCROW" ? "FUNDS HELD" : milestone.status.replace("_", " ")}
+                        {milestone.status === "IN_ESCROW" ? "HELD PENDING REVIEW" : milestone.status.replace("_", " ")}
                       </span>
                       {isPending && (
                         <Button
@@ -258,7 +275,7 @@ export function ContractPaymentPanel({
                           onClick={() => handlePayMilestone(milestone)}
                           disabled={loading || isProcessing || !acceptedPaymentTerms}
                         >
-                          Pay
+                          Authorize
                         </Button>
                       )}
                     </div>
@@ -277,7 +294,7 @@ export function ContractPaymentPanel({
             disabled={loading || isProcessing || !acceptedPaymentTerms}
             className="w-full"
           >
-            {loading || isProcessing ? "Processing..." : `Pay Full Amount (${formatCurrency(totalDue, contract.proposal?.currency || "USD")})`}
+            {loading || isProcessing ? "Processing..." : `Authorize payable balance (${formatCurrency(totalDue, currency)})`}
           </Button>
         )}
 
@@ -297,7 +314,7 @@ export function ContractPaymentPanel({
             setClientSecret(null);
           }}
           amountCents={selectedMilestone?.amountCents || totalDue}
-          currency={contract.proposal?.currency || "USD"}
+          currency={currency}
           milestoneLabel={selectedMilestone?.title}
           paymentIntentId={paymentIntentId}
           clientSecret={clientSecret}

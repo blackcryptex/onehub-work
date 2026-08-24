@@ -138,10 +138,50 @@ describe("contract delivery and signature readiness clarity", () => {
     );
 
     expect(screen.getByText(/Status: Fully signed — payment-ready \(FULLY_SIGNED\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/accepted provider-backed proposal contract/i)).toBeInTheDocument();
+    expect(screen.getByText(/does not approve live release or bypass manual trust review/i)).toBeInTheDocument();
     expect(screen.getByText(/No signature needed/i)).toBeInTheDocument();
     expect(screen.getByText("Payment entry available")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Enter payment/i })).toBeInTheDocument();
     expect(screen.getByText("Payment panel ready")).toBeInTheDocument();
     expect(screen.queryByText("Signature form ready")).not.toBeInTheDocument();
+  });
+
+  it("keeps payment entry locked for a fully signed contract without accepted provider-backed proposal state", () => {
+    renderContract(
+      {
+        status: "FULLY_SIGNED",
+        buyerSideSigned: true,
+        sellerSideSigned: true,
+        proposal: {
+          id: "proposal-1",
+          status: "SENT",
+          currency: "USD",
+          event: { name: "Smith Wedding Weekend" },
+          listing: { title: "Avery Florals", type: "VENDOR" },
+        },
+        signatures: [
+          {
+            id: "signature-1",
+            signerName: "Pat Planner",
+            signerEmail: "pat@example.com",
+            signedAt: "2027-01-01T00:00:00.000Z",
+            signerSide: "buyer",
+          },
+          {
+            id: "signature-2",
+            signerName: "Sam Seller",
+            signerEmail: "sam@example.com",
+            signedAt: "2027-01-02T00:00:00.000Z",
+            signerSide: "seller",
+          },
+        ],
+      },
+      { canEnterPayment: true },
+    );
+
+    expect(screen.getByText(/Payment locked until accepted proposal and both contract signatures are complete/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Enter payment/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Payment panel ready")).not.toBeInTheDocument();
   });
 });

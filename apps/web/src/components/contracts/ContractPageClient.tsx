@@ -64,13 +64,13 @@ function getContractReadinessCopy({
     case "FULLY_SIGNED":
       return {
         label: "Fully signed — payment-ready",
-        description: "Both required sides have signed. Buyer-side users may enter payment when payment access is available.",
+        description: "Both required sides have signed an accepted provider-backed proposal contract. Buyer-side users may enter the guarded payment step when payment access is available; release remains manual-review gated.",
         tone: "green",
       };
     case "IN_PAYMENT":
       return {
         label: "Payment-ready — payment step open",
-        description: "The signed agreement is in the guarded payment step.",
+        description: "The signed agreement is in the guarded payment step. Payment receipt, held-funds status, and provider release remain explicit states with manual trust oversight.",
         tone: "green",
       };
     default:
@@ -115,7 +115,6 @@ export function ContractPageClient({
   currentUserSignedAt,
 }: ContractPageClientProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const canShowPaymentEntry = canEnterPayment && PAYABLE_CONTRACT_STATUSES.has(contract.status);
   const canShowSignatureForm =
     !CLOSED_CONTRACT_STATUSES.has(contract.status) &&
     !currentUserAlreadySigned;
@@ -123,6 +122,7 @@ export function ContractPageClient({
     contract.proposal?.listing &&
       (contract.proposal?.status === "ACCEPTED" || contract.proposal?.status === "CONVERTED")
   );
+  const canShowPaymentEntry = canEnterPayment && PAYABLE_CONTRACT_STATUSES.has(contract.status) && fromProviderBackedProposal;
   const readinessCopy = getContractReadinessCopy({
     status: contract.status,
     fromProviderBackedProposal,
@@ -287,7 +287,7 @@ export function ContractPageClient({
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Payment entry</h2>
             <p className="text-sm text-slate-600">
-              This payment is tied to this signed agreement and its event milestones.
+              This payment is tied to this accepted provider-backed proposal, signed agreement, buyer-side authority, and event milestones. It does not approve live release or bypass manual trust review.
             </p>
           </div>
           <ContractPaymentPanel

@@ -77,6 +77,7 @@ const contract = {
   eventId: "event-1",
   proposal: {
     id: "proposal-1",
+    status: "CONVERTED",
     currency: "USD",
     bookingClassification: "STANDARD",
     listingId: "listing-1",
@@ -342,6 +343,67 @@ describe("payment intent lifecycle guardrails", () => {
       }),
       expect.any(Object),
     );
+  });
+
+  it("blocks payment intent creation before an accepted provider-backed proposal is attached", async () => {
+    prisma.contract.findUnique.mockResolvedValue({
+      ...contract,
+      proposal: {
+        ...contract.proposal,
+        status: "SENT",
+      },
+    });
+
+    const response = await createIntentPOST(request({
+      contractId: "contract-1",
+      milestoneId: "milestone-1",
+      acceptance: { legalVersion: "payment-v1" },
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: "Payment is locked until an accepted provider-backed proposal has a signed contract",
+    });
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  it("derives full-balance payments from only unpaid payable milestones", async () => {
+    prisma.contract.findUnique.mockResolvedValue({
+      ...contract,
+      proposal: {
+        ...contract.proposal,
+        milestones: [
+          { id: "milestone-1", amountCents: 10000, status: "PENDING" },
+          { id: "milestone-2", amountCents: 5000, status: "IN_ESCROW" },
+          { id: "milestone-3", amountCents: 7000, status: "PAID" },
+        ],
+      },
+    });
+
+    const response = await createIntentPOST(request({
+      contractId: "contract-1",
+      amountCents: 22000,
+      acceptance: { legalVersion: "payment-v1" },
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({ error: "Amount must match the server-derived payable milestone total" });
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+
+    const allowedResponse = await createIntentPOST(request({
+      contractId: "contract-1",
+      amountCents: 10000,
+      acceptance: { legalVersion: "payment-v1" },
+    }));
+
+    expect(allowedResponse.status).toBe(200);
+    expect(prisma.paymentIntent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ amountCents: 10000 }),
+    });
   });
 
   it("confirms a Stripe intent whose amount is the canonical buyer charge, not the gross local amount", async () => {
