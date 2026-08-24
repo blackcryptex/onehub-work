@@ -5,12 +5,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
-const { getCurrentUser, requireAuthorizedEventBySlug, prisma, push, back } = vi.hoisted(() => ({
+const { getCurrentUser, requireAuthorizedEventBySlug, prisma, canViewEvent, isEventSharedWithUser, push, back } = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   requireAuthorizedEventBySlug: vi.fn(),
   prisma: {
     event: { findFirst: vi.fn() },
   },
+  canViewEvent: vi.fn(),
+  isEventSharedWithUser: vi.fn(),
   push: vi.fn(),
   back: vi.fn(),
 }));
@@ -19,8 +21,8 @@ vi.mock("@/lib/auth-helpers", () => ({ getCurrentUser }));
 vi.mock("@/lib/event-access", () => ({ requireAuthorizedEventBySlug }));
 vi.mock("@/lib/prisma", () => ({ prisma }));
 vi.mock("@/lib/rbac", () => ({
-  canViewEvent: vi.fn(() => true),
-  isEventSharedWithUser: vi.fn(() => true),
+  canViewEvent,
+  isEventSharedWithUser,
 }));
 vi.mock("next/navigation", () => ({
   redirect: vi.fn((path: string) => {
@@ -79,6 +81,8 @@ describe("dashboard placeholder cleanup slice 3", () => {
     getCurrentUser.mockResolvedValue({ id: "client-1", role: "CLIENT", name: "Client One", email: "client@test.local" });
     requireAuthorizedEventBySlug.mockResolvedValue({ event: { id: "event-1", name: "Scout Gala", slug: "scout-gala" } });
     prisma.event.findFirst.mockResolvedValue(sharedClientEvent);
+    canViewEvent.mockReturnValue(true);
+    isEventSharedWithUser.mockReturnValue(true);
   });
 
   it("renders the client event messages section as a truthful alternate path", async () => {
@@ -91,6 +95,29 @@ describe("dashboard placeholder cleanup slice 3", () => {
     expect(html).toContain("Use the Message Inbox to coordinate with your planner");
     expect(html).toContain('/messages');
     expect(html).not.toMatch(forbiddenPlaceholderCopy);
+  });
+
+  it("renders attached clients without a shared summary as a useful waiting workspace", async () => {
+    canViewEvent.mockReturnValue(false);
+    isEventSharedWithUser.mockReturnValue(false);
+    prisma.event.findFirst.mockResolvedValue({
+      ...sharedClientEvent,
+      shares: [],
+    });
+    const { default: ClientEventSummaryPage } = await import("../src/app/(app)/client/events/[eventSlug]/page");
+
+    const page = await ClientEventSummaryPage({ params: Promise.resolve({ eventSlug: "scout-gala" }) });
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("Waiting on your planner");
+    expect(html).toContain("You are attached to this event");
+    expect(html).toContain("summary is not shared yet");
+    expect(html).toContain("Open Message Inbox");
+    expect(html).toContain('/messages');
+    expect(html).toContain("Back to dashboard");
+    expect(html).toContain('/app');
+    expect(html).not.toContain("Nothing shared yet");
+    expect(html).not.toContain("Your planner hasn&apos;t shared any information about this event yet");
   });
 
   it("renders event settings as a real review workflow with event context", async () => {

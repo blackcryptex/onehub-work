@@ -57,21 +57,27 @@ describe("client event visibility on app dashboard", () => {
         slug: "shared-gala",
         startAt: new Date("2027-05-01T18:00:00.000Z"),
         org: { name: "Planner Org", slug: "planner-org" },
+        shares: [{ viewerUserId: "client-1", scope: "SUMMARY" }],
       },
     ]);
     prisma.activity.findMany.mockResolvedValue([]);
   });
 
-  it("lists only events where the client is a stakeholder with summary share", async () => {
+  it("fetches client stakeholder events and safely annotates summary shares", async () => {
     await AppPage();
 
     expect(prisma.event.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: {
         stakeholders: { some: { userId: "client-1", role: "CLIENT" } },
-        shares: { some: { viewerUserId: "client-1", scope: "SUMMARY" } },
       },
       take: 5,
       orderBy: { createdAt: "desc" },
+      include: expect.objectContaining({
+        shares: {
+          where: { viewerUserId: "client-1", scope: "SUMMARY" },
+          select: { viewerUserId: true, scope: true },
+        },
+      }),
     }));
   });
 
@@ -82,5 +88,44 @@ describe("client event visibility on app dashboard", () => {
     expect(html).toContain("Shared Gala");
     expect(html).toContain("/client/events/shared-gala");
     expect(html).not.toContain("/app/vault");
+  });
+
+  it("shows pending client event workspaces without create-event or sign-in copy", async () => {
+    prisma.organization.findMany.mockResolvedValue([]);
+    prisma.event.findMany.mockResolvedValue([
+      {
+        id: "event-2",
+        name: "Pending Gala",
+        slug: "pending-gala",
+        startAt: new Date("2027-06-01T18:00:00.000Z"),
+        org: { name: "Planner Org", slug: "planner-org" },
+        shares: [],
+      },
+    ]);
+
+    const page = await AppPage();
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("Pending Gala");
+    expect(html).toContain("Waiting on your planner to share the event summary");
+    expect(html).toContain("Open workspace");
+    expect(html).toContain("/client/events/pending-gala");
+    expect(html).toContain("No planner organization is connected to your client workspace yet");
+    expect(html).not.toContain("Create your first event");
+    expect(html).not.toContain("Create one to get started");
+    expect(html).not.toContain("Sign In");
+  });
+
+  it("distinguishes a client dashboard with no event relationship", async () => {
+    prisma.organization.findMany.mockResolvedValue([]);
+    prisma.event.findMany.mockResolvedValue([]);
+
+    const page = await AppPage();
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("No event relationship exists yet");
+    expect(html).toContain("Your planner will share a client workspace here when they attach you to an event");
+    expect(html).not.toContain("Create your first event");
+    expect(html).not.toContain("Sign In");
   });
 });

@@ -80,18 +80,48 @@ export default async function ClientEventSummaryPage({
     const isShared = isEventSharedWithUser(user, event, "SUMMARY");
 
     if (isStakeholder && !isShared) {
-      // Show "Nothing shared yet" message
+      const plannerName = event.createdBy?.name || event.org?.owner?.name;
+
       return (
         <div className="max-w-4xl mx-auto space-y-6">
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-bold mb-4">{event.name}</h1>
-            <Card className="p-8">
-              <p className="text-slate-600 text-lg">
-                Nothing shared yet.
+          <div className="py-12">
+            <div className="mb-6 text-center">
+              <p className="text-sm font-medium uppercase tracking-wide text-indigo-700">
+                Waiting on your planner
               </p>
-              <p className="text-slate-500 text-sm mt-2">
-                Your planner hasn&apos;t shared any information about this event yet.
+              <h1 className="mt-2 text-2xl font-bold">{event.name}</h1>
+              {event.org && (
+                <p className="mt-1 text-sm text-slate-600">
+                  Event by {event.org.name}
+                </p>
+              )}
+            </div>
+            <Card className="p-8 text-center">
+              <h2 className="text-xl font-semibold text-slate-900">
+                Your client workspace is ready, but the summary is not shared yet.
+              </h2>
+              <p className="mt-3 text-sm text-slate-600">
+                You are attached to this event. Your planner still needs to share the client summary before event details appear here.
               </p>
+              {plannerName && (
+                <p className="mt-2 text-sm text-slate-500">
+                  Planner contact: {plannerName}
+                </p>
+              )}
+              <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Link
+                  href="/messages"
+                  className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                >
+                  Open Message Inbox
+                </Link>
+                <Link
+                  href="/app"
+                  className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Back to dashboard
+                </Link>
+              </div>
             </Card>
           </div>
         </div>

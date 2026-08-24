@@ -75,7 +75,6 @@ export default async function AppPage() {
     role === "CLIENT"
       ? {
           stakeholders: { some: { userId, role: "CLIENT" as const } },
-          shares: { some: { viewerUserId: userId, scope: "SUMMARY" as const } },
         }
       : admin
         ? {}
@@ -85,7 +84,13 @@ export default async function AppPage() {
     where: recentEventWhere,
     take: 5,
     orderBy: { createdAt: "desc" },
-    include: { org: { select: { name: true, slug: true } } },
+    include: {
+      org: { select: { name: true, slug: true } },
+      shares: {
+        where: { viewerUserId: userId, scope: "SUMMARY" as const },
+        select: { viewerUserId: true, scope: true },
+      },
+    },
   });
 
   const recentActivity = await prisma.activity.findMany({
@@ -135,7 +140,11 @@ export default async function AppPage() {
             </Button>
           </div>
           {orgs.length === 0 ? (
-            <p className="text-sm text-slate-600">No organizations yet. Create one to get started!</p>
+            <p className="text-sm text-slate-600">
+              {role === "CLIENT"
+                ? "No planner organization is connected to your client workspace yet. Your planner will connect you when an event relationship is ready."
+                : "No organizations yet. Create one to get started!"}
+            </p>
           ) : (
             <ul className="space-y-2">
               {orgs.map((org) => (
@@ -162,7 +171,11 @@ export default async function AppPage() {
             )}
           </div>
           {recentEvents.length === 0 ? (
-            <p className="text-sm text-slate-600">No events yet. Create your first event to get started!</p>
+            <p className="text-sm text-slate-600">
+              {role === "CLIENT"
+                ? "No event relationship exists yet. Your planner will share a client workspace here when they attach you to an event."
+                : "No events yet. Create your first event to get started!"}
+            </p>
           ) : (
             <ul className="space-y-2">
               {recentEvents.map((event) => (
@@ -172,9 +185,16 @@ export default async function AppPage() {
                     <div className="text-xs text-slate-500">
                       {event.org.name} · {new Date(event.startAt).toLocaleDateString()}
                     </div>
+                    {role === "CLIENT" && event.shares.length === 0 && (
+                      <div className="mt-1 text-xs font-medium text-amber-700">
+                        Waiting on your planner to share the event summary
+                      </div>
+                    )}
                   </div>
                   <Button asChild variant="ghost">
-                    <Link href={vaultDetail(role, event.slug) as any}>View</Link>
+                    <Link href={vaultDetail(role, event.slug) as any}>
+                      {role === "CLIENT" && event.shares.length === 0 ? "Open workspace" : "View"}
+                    </Link>
                   </Button>
                 </li>
               ))}
@@ -185,7 +205,7 @@ export default async function AppPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <GettingStartedCard />
-        <QuickLinks />
+        <QuickLinks isAuthenticated />
       </div>
 
       {recentActivity.length > 0 && (

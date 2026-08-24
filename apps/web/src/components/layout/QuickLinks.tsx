@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui";
 
-export function QuickLinks() {
+export function QuickLinks({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   return (
     <Card className="p-4">
       <h3 className="text-base font-semibold">Quick Links</h3>
@@ -11,11 +11,13 @@ export function QuickLinks() {
             Dashboard
           </Link>
         </li>
-        <li>
-          <Link className="text-indigo-600 hover:underline" href="/signin">
-            Sign In
-          </Link>
-        </li>
+        {!isAuthenticated && (
+          <li>
+            <Link className="text-indigo-600 hover:underline" href="/signin">
+              Sign In
+            </Link>
+          </li>
+        )}
       </ul>
     </Card>
   );
