@@ -13,6 +13,87 @@ import { CURRENT_ACCEPTANCE_VERSIONS } from "@/lib/acceptance-versions";
 import { PUBLIC_LEGAL_PAGES } from "@/lib/legal-surface";
 
 const PAYABLE_CONTRACT_STATUSES = new Set(["FULLY_SIGNED", "IN_PAYMENT"]);
+const CLOSED_CONTRACT_STATUSES = new Set(["FULLY_SIGNED", "ACTIVE", "COMPLETED"]);
+
+type ContractSignerSide = "buyer" | "seller" | "unknown";
+
+const SIGNER_SIDE_LABELS: Record<ContractSignerSide, string> = {
+  buyer: "Planner/client/buyer side",
+  seller: "Vendor/venue/seller side",
+  unknown: "Signer",
+};
+
+function formatStatusLabel(status: string) {
+  return status
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getContractReadinessCopy({
+  status,
+  fromProviderBackedProposal,
+}: {
+  status: string;
+  fromProviderBackedProposal: boolean;
+}) {
+  switch (status) {
+    case "DRAFT":
+      return {
+        label: fromProviderBackedProposal
+          ? "Draft agreement — ready to review and sign"
+          : "Draft agreement",
+        description: fromProviderBackedProposal
+          ? "This contract was generated from an accepted provider-backed proposal. Review the agreement terms, then each side can sign when ready. Payment stays locked until both sides have signed."
+          : "Review the agreement before signatures. Payment stays locked until the contract reaches a signed/payment-ready state.",
+        tone: "amber",
+      };
+    case "OUT_FOR_SIGNATURE":
+      return {
+        label: "Ready/sent for signature",
+        description: "The agreement is ready for signatures. Payment stays locked until both required sides have signed.",
+        tone: "blue",
+      };
+    case "PARTIALLY_SIGNED":
+      return {
+        label: "Partially signed",
+        description: "One side has signed. Payment stays locked until the remaining side signs.",
+        tone: "blue",
+      };
+    case "FULLY_SIGNED":
+      return {
+        label: "Fully signed — payment-ready",
+        description: "Both required sides have signed. Buyer-side users may enter payment when payment access is available.",
+        tone: "green",
+      };
+    case "IN_PAYMENT":
+      return {
+        label: "Payment-ready — payment step open",
+        description: "The signed agreement is in the guarded payment step.",
+        tone: "green",
+      };
+    default:
+      return {
+        label: formatStatusLabel(status),
+        description: "Contract actions depend on the current contract status. Payment stays locked until the contract is signed/payment-ready.",
+        tone: "slate",
+      };
+  }
+}
+
+function getReadinessClasses(tone: string) {
+  switch (tone) {
+    case "green":
+      return "border-green-200 bg-green-50 text-green-950";
+    case "blue":
+      return "border-blue-200 bg-blue-50 text-blue-950";
+    case "amber":
+      return "border-amber-200 bg-amber-50 text-amber-950";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-950";
+  }
+}
 
 interface ContractPageClientProps {
   contract: any;
@@ -36,10 +117,38 @@ export function ContractPageClient({
   const [isEditing, setIsEditing] = useState(false);
   const canShowPaymentEntry = canEnterPayment && PAYABLE_CONTRACT_STATUSES.has(contract.status);
   const canShowSignatureForm =
-    contract.status !== "FULLY_SIGNED" &&
-    contract.status !== "ACTIVE" &&
-    contract.status !== "COMPLETED" &&
+    !CLOSED_CONTRACT_STATUSES.has(contract.status) &&
     !currentUserAlreadySigned;
+  const fromProviderBackedProposal = Boolean(
+    contract.proposal?.listing &&
+      (contract.proposal?.status === "ACCEPTED" || contract.proposal?.status === "CONVERTED")
+  );
+  const readinessCopy = getContractReadinessCopy({
+    status: contract.status,
+    fromProviderBackedProposal,
+  });
+  const buyerSideSigned = Boolean(
+    contract.buyerSideSigned ??
+      contract.signatures?.some(
+        (signature: any) => signature.signedAt && signature.signerSide === "buyer"
+      )
+  );
+  const sellerSideSigned = Boolean(
+    contract.sellerSideSigned ??
+      contract.signatures?.some(
+        (signature: any) => signature.signedAt && signature.signerSide === "seller"
+      )
+  );
+  const nextSignatureSides =
+    contract.status === "FULLY_SIGNED" || contract.status === "IN_PAYMENT"
+      ? []
+      : [
+          !buyerSideSigned ? SIGNER_SIDE_LABELS.buyer : null,
+          !sellerSideSigned ? SIGNER_SIDE_LABELS.seller : null,
+        ].filter(Boolean);
+  const paymentReadinessLabel = canShowPaymentEntry
+    ? "Payment entry available"
+    : "Payment locked until accepted proposal and both contract signatures are complete";
 
   if (isEditing) {
     return (
@@ -65,7 +174,9 @@ export function ContractPageClient({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">{contract.title || "Contract"}</h1>
-          <div className="mt-1 text-sm text-slate-600">Status: {contract.status}</div>
+          <div className="mt-1 text-sm text-slate-600">
+            Status: {readinessCopy.label} ({contract.status})
+          </div>
           {contract.proposal?.event && (
             <div className="mt-2 text-sm text-slate-500">
               Event: {eventVaultHref ? (
@@ -105,6 +216,30 @@ export function ContractPageClient({
         </div>
       </div>
 
+      <Card className={`space-y-4 border p-5 ${getReadinessClasses(readinessCopy.tone)}`}>
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide opacity-80">
+            Contract readiness
+          </div>
+          <h2 className="mt-1 text-lg font-semibold">{readinessCopy.label}</h2>
+          <p className="mt-1 text-sm opacity-90">{readinessCopy.description}</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-lg border border-white/60 bg-white/70 p-3 text-sm text-slate-800">
+            <div className="font-semibold text-slate-950">Who signs next</div>
+            <p className="mt-1">
+              {nextSignatureSides.length > 0
+                ? nextSignatureSides.join(" and ")
+                : "No signature needed — planner/client/buyer and vendor/venue/seller signatures are recorded."}
+            </p>
+          </div>
+          <div className="rounded-lg border border-white/60 bg-white/70 p-3 text-sm text-slate-800">
+            <div className="font-semibold text-slate-950">Payment gate</div>
+            <p className="mt-1">{paymentReadinessLabel}</p>
+          </div>
+        </div>
+      </Card>
+
       <Card className="p-6">
         <div className="prose prose-sm max-w-none">
           <ReactMarkdown>{contract.bodyMd}</ReactMarkdown>
@@ -123,6 +258,9 @@ export function ContractPageClient({
                 <div>
                   <div className="font-medium">{signature.signerName}</div>
                   <div className="text-sm text-slate-500">{signature.signerEmail}</div>
+                  <div className="mt-1 text-xs font-medium text-slate-500">
+                    {SIGNER_SIDE_LABELS[signature.signerSide as ContractSignerSide] ?? SIGNER_SIDE_LABELS.unknown}
+                  </div>
                 </div>
                 {signature.signedAt ? (
                   <div className="flex items-center gap-2 text-sm text-green-600">

@@ -39,6 +39,14 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
               id: true,
               title: true,
               type: true,
+              org: {
+                select: {
+                  ownerId: true,
+                  members: {
+                    select: { userId: true },
+                  },
+                },
+              },
             },
           },
         },
@@ -87,12 +95,43 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
         );
       })
     : null;
+  const buyerMemberIds = new Set([
+    contract.proposal?.event?.org?.ownerId,
+    ...(contract.proposal?.event?.org?.members ?? []).map((member) => member.userId),
+  ].filter(Boolean));
+  const sellerMemberIds = new Set([
+    contract.proposal?.listing?.org?.ownerId,
+    ...(contract.proposal?.listing?.org?.members ?? []).map((member) => member.userId),
+  ].filter(Boolean));
+  const signaturesWithSides = contract.signatures.map((signature) => {
+    const signerSide = signature.signerId
+      ? buyerMemberIds.has(signature.signerId)
+        ? "buyer"
+        : sellerMemberIds.has(signature.signerId)
+          ? "seller"
+          : "unknown"
+      : "unknown";
+
+    return {
+      ...signature,
+      signerSide,
+    };
+  });
+  const buyerSideSigned = signaturesWithSides.some(
+    (signature) => signature.signerSide === "buyer" && signature.signedAt
+  );
+  const sellerSideSigned = signaturesWithSides.some(
+    (signature) => signature.signerSide === "seller" && signature.signedAt
+  );
 
   return (
     <ContractPageClient
       contract={{
         ...contract,
         milestones: contract.proposal?.milestones ?? [],
+        signatures: signaturesWithSides,
+        buyerSideSigned,
+        sellerSideSigned,
       }}
       eventVaultHref={eventVaultHref}
       canEdit={canEdit}
