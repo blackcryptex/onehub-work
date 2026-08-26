@@ -1745,7 +1745,9 @@ export function ProPlannerDashboard({
             <div className="grid gap-3 md:grid-cols-2">
               <Button asChild variant="secondary"><Link href={"/messages" as Route}>Messages and follow-ups</Link></Button>
               <Button asChild variant="secondary"><Link href={"/help" as Route}>Help and support</Link></Button>
-              <Button asChild variant="secondary"><Link href={"/app/billing/connect" as Route}>Billing connection status</Link></Button>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700">
+                Planner billing readiness is status-only in the private pilot; vendor/venue Stripe Connect setup is not available from this workspace.
+              </div>
               <Button asChild variant="secondary"><Link href={"/professional-planner/setup" as Route}>Planner organization setup</Link></Button>
             </div>
           </Panel>

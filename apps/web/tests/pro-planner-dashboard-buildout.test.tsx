@@ -378,6 +378,17 @@ describe("ProPlannerDashboard", () => {
     expect(container).not.toHaveTextContent(forbiddenPanelCopy);
   });
 
+  it("keeps Settings from routing pro planners into vendor or venue Stripe Connect setup", () => {
+    const { container } = renderDashboard();
+
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+
+    expect(screen.queryByRole("link", { name: "Billing connection status" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Planner billing readiness is status-only in the private pilot/i)).toBeInTheDocument();
+    expect(screen.getByText(/vendor\/venue Stripe Connect setup is not available/i)).toBeInTheDocument();
+    expect(container.querySelector('a[href="/app/billing/connect"]')).toBeNull();
+  });
+
   it("creates assistant invites through the guarded team invite endpoint", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
