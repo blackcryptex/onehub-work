@@ -405,6 +405,24 @@ describe("ProPlannerDashboard", () => {
     );
   });
 
+  it("keeps client follow-up form controls readable on light cards", () => {
+    renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: "Clients" }));
+
+    const clientForm = screen.getByRole("heading", { name: "Add client follow-up" }).closest("form");
+    expect(clientForm).not.toBeNull();
+
+    const controls = clientForm?.querySelectorAll("input, select") ?? [];
+    expect(controls.length).toBeGreaterThan(0);
+    controls.forEach((control) => {
+      expect(control).toHaveClass("bg-white");
+      expect(control).toHaveClass("text-slate-950");
+      expect(control).toHaveClass("[color-scheme:light]");
+      expect(control).not.toHaveClass("bg-slate-950");
+      expect(control).not.toHaveClass("text-black");
+    });
+  });
+
   it("creates waiting-on-client tasks through the guarded client command endpoint", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,

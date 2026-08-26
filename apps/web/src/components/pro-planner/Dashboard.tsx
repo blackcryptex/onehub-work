@@ -189,6 +189,11 @@ type PlannerInvite = {
   acceptPath?: string;
 };
 
+
+const FORM_CONTROL_CLASS = "mt-1 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 placeholder:text-slate-400 shadow-sm [color-scheme:light] focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100 disabled:text-slate-500";
+const INLINE_FORM_CONTROL_CLASS = "min-h-10 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 placeholder:text-slate-400 shadow-sm [color-scheme:light] focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100 disabled:text-slate-500";
+const TEXTAREA_CONTROL_CLASS = "mt-1 min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 placeholder:text-slate-400 shadow-sm [color-scheme:light] focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100 disabled:text-slate-500";
+
 interface ProPlannerDashboardProps {
   orgId: string;
   orgName: string;
@@ -1281,7 +1286,7 @@ export function ProPlannerDashboard({
                   value={assistantEmail}
                   onChange={(event) => setAssistantEmail(event.target.value)}
                   aria-describedby="assistant-invite-help"
-                  className="min-h-10 flex-1 rounded-lg border border-slate-300 px-3 text-sm"
+                  className={INLINE_FORM_CONTROL_CLASS}
                 />
                 <Button type="submit" disabled={inviteBusy || !assistantEmail.trim()}>{inviteBusy ? "Creating..." : "Create invite"}</Button>
               </div>
@@ -1331,13 +1336,13 @@ export function ProPlannerDashboard({
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <label className="text-sm font-medium text-slate-800">
                   Event
-                  <select value={clientTaskEventId} onChange={(event) => { setClientTaskEventId(event.target.value); setClientTaskUserId(""); }} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
+                  <select value={clientTaskEventId} onChange={(event) => { setClientTaskEventId(event.target.value); setClientTaskUserId(""); }} className={FORM_CONTROL_CLASS}>
                     {localEvents.map((plannerEvent) => <option key={plannerEvent.id} value={plannerEvent.id}>{plannerEvent.name}</option>)}
                   </select>
                 </label>
                 <label className="text-sm font-medium text-slate-800">
                   Client contact
-                  <select value={clientTaskUserId} onChange={(event) => setClientTaskUserId(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
+                  <select value={clientTaskUserId} onChange={(event) => setClientTaskUserId(event.target.value)} className={FORM_CONTROL_CLASS}>
                     <option value="">Unassigned client follow-up</option>
                     {dashboard.clients.filter((client) => client.event.id === clientTaskEventId).map((client) => (
                       <option key={`${client.event.id}-${client.userId}`} value={client.userId}>{client.name}</option>
@@ -1350,7 +1355,7 @@ export function ProPlannerDashboard({
                     value={clientTaskTitle}
                     onChange={(event) => setClientTaskTitle(event.target.value)}
                     aria-label="Client task title"
-                    className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                    className={FORM_CONTROL_CLASS}
                   />
                 </label>
                 <label className="text-sm font-medium text-slate-800">
@@ -1359,7 +1364,7 @@ export function ProPlannerDashboard({
                     type="date"
                     value={clientTaskDueDate}
                     onChange={(event) => setClientTaskDueDate(event.target.value)}
-                    className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                    className={FORM_CONTROL_CLASS}
                   />
                 </label>
               </div>
@@ -1405,14 +1410,14 @@ export function ProPlannerDashboard({
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <label className="text-sm font-medium text-slate-800">
                   Vendor or venue
-                  <select value={vendorRelationshipListingId} onChange={(event) => setVendorRelationshipListingId(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
+                  <select value={vendorRelationshipListingId} onChange={(event) => setVendorRelationshipListingId(event.target.value)} className={FORM_CONTROL_CLASS}>
                     <option value="">Select from active requests/proposals</option>
                     {dashboard.vendorRelationshipOptions.map((vendor) => <option key={vendor.listingId ?? vendor.id} value={vendor.listingId ?? ""}>{vendor.name}</option>)}
                   </select>
                 </label>
                 <label className="text-sm font-medium text-slate-800">
                   Relationship status
-                  <select value={vendorRelationshipStatus} onChange={(event) => setVendorRelationshipStatus(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
+                  <select value={vendorRelationshipStatus} onChange={(event) => setVendorRelationshipStatus(event.target.value)} className={FORM_CONTROL_CLASS}>
                     <option value="PREFERRED">Preferred</option>
                     <option value="ACTIVE">Active</option>
                     <option value="WATCHLIST">Watchlist / caution</option>
@@ -1421,11 +1426,11 @@ export function ProPlannerDashboard({
                 </label>
                 <label className="text-sm font-medium text-slate-800">
                   Next follow-up
-                  <input type="date" value={vendorRelationshipFollowUp} onChange={(event) => setVendorRelationshipFollowUp(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" />
+                  <input type="date" value={vendorRelationshipFollowUp} onChange={(event) => setVendorRelationshipFollowUp(event.target.value)} className={FORM_CONTROL_CLASS} />
                 </label>
                 <label className="text-sm font-medium text-slate-800 md:col-span-2">
                   Relationship note
-                  <textarea value={vendorRelationshipNotes} onChange={(event) => setVendorRelationshipNotes(event.target.value)} aria-label="Vendor relationship note" className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                  <textarea value={vendorRelationshipNotes} onChange={(event) => setVendorRelationshipNotes(event.target.value)} aria-label="Vendor relationship note" className={TEXTAREA_CONTROL_CLASS} />
                 </label>
               </div>
               <Button type="submit" className="mt-3" disabled={vendorRelationshipBusy || !vendorRelationshipListingId}>{vendorRelationshipBusy ? "Saving..." : "Save relationship"}</Button>
@@ -1455,17 +1460,17 @@ export function ProPlannerDashboard({
               <div className="mt-3 grid gap-3 md:grid-cols-3">
                 <label className="text-sm font-medium text-slate-800">
                   Event
-                  <select value={timelineMilestoneEventId} onChange={(event) => setTimelineMilestoneEventId(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
+                  <select value={timelineMilestoneEventId} onChange={(event) => setTimelineMilestoneEventId(event.target.value)} className={FORM_CONTROL_CLASS}>
                     {localEvents.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}
                   </select>
                 </label>
                 <label className="text-sm font-medium text-slate-800">
                   Milestone title
-                  <input value={timelineMilestoneTitle} onChange={(event) => setTimelineMilestoneTitle(event.target.value)} aria-label="Timeline milestone title" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" />
+                  <input value={timelineMilestoneTitle} onChange={(event) => setTimelineMilestoneTitle(event.target.value)} aria-label="Timeline milestone title" className={FORM_CONTROL_CLASS} />
                 </label>
                 <label className="text-sm font-medium text-slate-800">
                   Due date
-                  <input type="date" value={timelineMilestoneDueDate} onChange={(event) => setTimelineMilestoneDueDate(event.target.value)} aria-label="Timeline milestone due date" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" />
+                  <input type="date" value={timelineMilestoneDueDate} onChange={(event) => setTimelineMilestoneDueDate(event.target.value)} aria-label="Timeline milestone due date" className={FORM_CONTROL_CLASS} />
                 </label>
               </div>
               <Button type="submit" className="mt-3" disabled={timelineMilestoneBusy || !timelineMilestoneTitle.trim() || !timelineMilestoneEventId || !timelineMilestoneDueDate}>{timelineMilestoneBusy ? "Adding..." : "Add milestone"}</Button>
@@ -1530,8 +1535,8 @@ export function ProPlannerDashboard({
               <h3 className="font-semibold text-slate-900">Internal planner notes</h3>
               <p className="mt-1 text-xs text-slate-600">Internal notes stay planner-only in the Pro Planner hub and do not become client/vendor messages.</p>
               <div className="mt-3 grid gap-3 md:grid-cols-[minmax(180px,0.35fr)_minmax(0,1fr)]">
-                <label className="text-sm font-medium text-slate-800">Event<select value={internalNoteEventId} onChange={(event) => setInternalNoteEventId(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">{localEvents.map((plannerEvent) => <option key={plannerEvent.id} value={plannerEvent.id}>{plannerEvent.name}</option>)}</select></label>
-                <label className="text-sm font-medium text-slate-800">Internal planner note<input value={internalNoteBody} onChange={(event) => setInternalNoteBody(event.target.value)} aria-label="Internal planner note" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" /></label>
+                <label className="text-sm font-medium text-slate-800">Event<select value={internalNoteEventId} onChange={(event) => setInternalNoteEventId(event.target.value)} className={FORM_CONTROL_CLASS}>{localEvents.map((plannerEvent) => <option key={plannerEvent.id} value={plannerEvent.id}>{plannerEvent.name}</option>)}</select></label>
+                <label className="text-sm font-medium text-slate-800">Internal planner note<input value={internalNoteBody} onChange={(event) => setInternalNoteBody(event.target.value)} aria-label="Internal planner note" className={FORM_CONTROL_CLASS} /></label>
               </div>
               <Button type="submit" className="mt-3" disabled={internalNoteBusy || !internalNoteEventId || !internalNoteBody.trim()}>{internalNoteBusy ? "Saving..." : "Save internal note"}</Button>
               {internalNoteStatus && <p className="mt-2 text-sm text-slate-700">{internalNoteStatus}</p>}
@@ -1627,12 +1632,12 @@ export function ProPlannerDashboard({
               <h3 className="font-semibold text-slate-900">Add availability or booking hold</h3>
               <p className="mt-1 text-xs text-slate-600">Publish planner availability or hold dates for a service/package. This does not charge clients or confirm bookings.</p>
               <div className="mt-3 grid gap-3 md:grid-cols-4">
-                <label className="text-sm font-medium text-slate-800">Service<select value={availabilityListingId} onChange={(event) => setAvailabilityListingId(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">{localListings.map((listing) => <option key={listing.id} value={listing.id}>{listing.title}</option>)}</select></label>
-                <label className="text-sm font-medium text-slate-800">Start date<input type="date" value={availabilityStartDate} onChange={(event) => setAvailabilityStartDate(event.target.value)} aria-label="Availability start date" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" /></label>
-                <label className="text-sm font-medium text-slate-800">End date<input type="date" value={availabilityEndDate} onChange={(event) => setAvailabilityEndDate(event.target.value)} aria-label="Availability end date" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" /></label>
-                <label className="text-sm font-medium text-slate-800">Status<select value={availabilityStatus} onChange={(event) => setAvailabilityStatus(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"><option value="AVAILABLE">Available</option><option value="HOLD">Hold</option><option value="BOOKED">Booked</option><option value="UNAVAILABLE">Unavailable</option></select></label>
+                <label className="text-sm font-medium text-slate-800">Service<select value={availabilityListingId} onChange={(event) => setAvailabilityListingId(event.target.value)} className={FORM_CONTROL_CLASS}>{localListings.map((listing) => <option key={listing.id} value={listing.id}>{listing.title}</option>)}</select></label>
+                <label className="text-sm font-medium text-slate-800">Start date<input type="date" value={availabilityStartDate} onChange={(event) => setAvailabilityStartDate(event.target.value)} aria-label="Availability start date" className={FORM_CONTROL_CLASS} /></label>
+                <label className="text-sm font-medium text-slate-800">End date<input type="date" value={availabilityEndDate} onChange={(event) => setAvailabilityEndDate(event.target.value)} aria-label="Availability end date" className={FORM_CONTROL_CLASS} /></label>
+                <label className="text-sm font-medium text-slate-800">Status<select value={availabilityStatus} onChange={(event) => setAvailabilityStatus(event.target.value)} className={FORM_CONTROL_CLASS}><option value="AVAILABLE">Available</option><option value="HOLD">Hold</option><option value="BOOKED">Booked</option><option value="UNAVAILABLE">Unavailable</option></select></label>
               </div>
-              <label className="mt-3 block text-sm font-medium text-slate-800">Availability note<input value={availabilityNote} onChange={(event) => setAvailabilityNote(event.target.value)} aria-label="Availability note" className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" /></label>
+              <label className="mt-3 block text-sm font-medium text-slate-800">Availability note<input value={availabilityNote} onChange={(event) => setAvailabilityNote(event.target.value)} aria-label="Availability note" className={FORM_CONTROL_CLASS} /></label>
               <Button type="submit" className="mt-3" disabled={availabilityBusy || !availabilityListingId || !availabilityStartDate || !availabilityEndDate}>{availabilityBusy ? "Adding..." : "Add availability"}</Button>
               {availabilityMessage && <p className="mt-2 text-sm text-slate-700">{availabilityMessage}</p>}
             </form>
