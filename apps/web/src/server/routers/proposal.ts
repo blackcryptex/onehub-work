@@ -7,7 +7,7 @@ import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
 import { logger } from "@/lib/logger";
 import { trackError } from "@/lib/errorTracker";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { canSendProposal, canManageEvent } from "@/lib/rbac";
+import { canSendProposal, canManageEvent, canViewCommercialProposal, commercialProposalAccessInclude } from "@/lib/rbac";
 import {
   PROVIDER_BACKED_PROPOSAL_ERROR,
   hasProviderSubmittedEvidence,
@@ -77,11 +77,17 @@ export const proposalRouter = router({
     
     return proposal;
   }),
-  calculateTotals: publicProcedure.input(z.object({ proposalId: z.string() })).query(async ({ input }) => {
+  calculateTotals: protectedProcedure.input(z.object({ proposalId: z.string() })).query(async ({ input, ctx }) => {
     const proposal = await prisma.proposal.findUniqueOrThrow({
       where: { id: input.proposalId },
-      include: { lineItems: true },
+      include: { ...commercialProposalAccessInclude, lineItems: true },
     });
+    if (!canViewCommercialProposal(ctx.user, proposal)) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "You do not have permission to access this proposal",
+      });
+    }
     const subtotal = proposal.lineItems.reduce((sum, li) => sum + li.totalCents, 0);
     return { subtotalCents: subtotal, taxCents: 0, totalCents: subtotal };
   }),

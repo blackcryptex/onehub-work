@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { Route } from "next";
 import { useState } from "react";
 import { Card, Button, Input, Label } from "@/components/ui";
 import { X, Loader2, CheckCircle2 } from "lucide-react";
@@ -10,6 +11,13 @@ interface BookingRequestModalProps {
   listingId: string;
   listingTitle: string;
   eventId?: string | null;
+  eventName?: string | null;
+  eventStartAt?: string | null;
+  eventEndAt?: string | null;
+  eventGuests?: number | null;
+  eventLocation?: string | null;
+  eventReturnHref?: string | null;
+  responseLabel?: string | null;
   onClose: () => void;
 }
 
@@ -17,6 +25,13 @@ export function BookingRequestModal({
   listingId,
   listingTitle,
   eventId,
+  eventName,
+  eventStartAt,
+  eventEndAt,
+  eventGuests,
+  eventLocation,
+  eventReturnHref,
+  responseLabel,
   onClose,
 }: BookingRequestModalProps) {
   const router = useRouter();
@@ -28,10 +43,12 @@ export function BookingRequestModal({
     contactName: "",
     contactEmail: "",
     contactPhone: "",
-    startAt: "",
-    endAt: "",
-    guests: "",
-    message: "",
+    startAt: eventStartAt ?? "",
+    endAt: eventEndAt ?? "",
+    guests: eventGuests ? String(eventGuests) : "",
+    message: eventName
+      ? `Requesting availability and quote for ${eventName}${eventLocation ? ` in ${eventLocation}` : ""}.`
+      : "",
   });
 
   const hasEventContext = Boolean(eventId);
@@ -84,11 +101,18 @@ export function BookingRequestModal({
             <CheckCircle2 className="w-12 h-12 text-green-600 mb-4" />
             <h2 className="text-xl font-semibold mb-2">Booking Request Sent!</h2>
             <p className="text-sm text-slate-600 mb-4">
-              Your request has been sent to {listingTitle}. They will respond soon.
+              Your request has been sent to {listingTitle}. {responseLabel && responseLabel !== "Response SLA not yet measured" ? responseLabel : "Provider response timing is not guaranteed yet."}
             </p>
-            <Button onClick={onClose} variant="secondary">
-              Close
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              {eventReturnHref ? (
+                <Button asChild>
+                  <Link href={eventReturnHref as Route}>Back to event</Link>
+                </Button>
+              ) : null}
+              <Button onClick={onClose} variant="secondary">
+                Close
+              </Button>
+            </div>
           </div>
         </Card>
       </div>
@@ -122,6 +146,20 @@ export function BookingRequestModal({
             </div>
           </div>
         )}
+
+        {hasEventContext && (eventName || eventLocation || eventGuests || eventStartAt) ? (
+          <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-900">
+            <div className="font-medium">Event context attached</div>
+            <div className="mt-1 text-indigo-800">
+              {eventName ?? "Selected event"}
+              {eventLocation ? ` • ${eventLocation}` : ""}
+              {eventGuests ? ` • ${eventGuests} guests` : ""}
+            </div>
+            <div className="mt-1 text-xs text-indigo-700">
+              Dates and guest count are prefilled from the selected event when OneHub can verify access.
+            </div>
+          </div>
+        ) : null}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

@@ -173,7 +173,7 @@ export function AiSourceVendorsVenuesPanel({ eventId, eventName, eventLocation }
         <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 mb-4">
           <p className="text-xs text-indigo-900 font-medium mb-1">Investor Confidence:</p>
           <p className="text-xs text-indigo-700">
-            <strong>Verified</strong> = On-platform account (trust + held funds).{" "}
+            <strong>Verified</strong> = On-platform account/listing. Contracts and payment readiness require a provider-submitted proposal plus OneHub guardrails.{" "}
             <strong>Unverified</strong> = Lead (growth pipeline).
           </p>
         </div>
@@ -228,7 +228,7 @@ export function AiSourceVendorsVenuesPanel({ eventId, eventName, eventLocation }
                   </div>
                   {result.kind === "VERIFIED" ? (
                     <p className="text-xs text-slate-500 mb-2">
-                      Verified vendors are on OneHub and can accept proposals, contracts, and payments with held funds pending release.
+                      Verified vendors are on OneHub and can receive shortlist/request outreach. Contracts, proposals, and payments are not ready until the provider submits proposal evidence and OneHub guardrails approve the flow.
                     </p>
                   ) : (
                     <p className="text-xs text-slate-500 mb-2">

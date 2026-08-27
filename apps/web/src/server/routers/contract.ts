@@ -5,15 +5,14 @@ import { TRPCError } from "@trpc/server";
 import { resolveContractTemplate } from "@/server/lib/contracts";
 import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { canViewEvent, canManageEvent, isAdmin } from "@/lib/rbac";
+import { canManageEvent, canViewCommercialContract, commercialContractAccessInclude } from "@/lib/rbac";
 import type { AppUser } from "@/lib/auth-helpers";
 
 /**
  * SECURITY: Authorization helper for contract access.
  * Determines if user can access a contract based on:
- * - ADMIN role (full access)
- * - Event view permissions (via canViewEvent - handles org members, planners, stakeholders)
- * - Contract signer status (email match)
+ * - commercial proposal detail readers
+ * - intended contract signers by id or case-insensitive email
  */
 async function assertCanAccessContract({
   user,
@@ -24,28 +23,7 @@ async function assertCanAccessContract({
 }): Promise<void> {
   const contract = await prisma.contract.findUnique({
     where: { id: contractId },
-    include: {
-      signatures: true,
-      proposal: {
-        include: {
-          event: {
-            include: {
-              org: {
-                include: { members: true },
-              },
-              // Phase 1: Include stakeholders for event-scoped client access
-              stakeholders: {
-                select: { userId: true, role: true },
-              },
-              // Phase 2: Include shares for sharing/forwarding
-              shares: {
-                select: { viewerUserId: true, scope: true },
-              },
-            },
-          },
-        },
-      },
-    },
+    include: commercialContractAccessInclude,
   });
 
   if (!contract) {
@@ -55,20 +33,7 @@ async function assertCanAccessContract({
     });
   }
 
-  // ADMIN has full access
-  if (isAdmin(user)) {
-    return;
-  }
-
-  // Check if user can view the event (handles org members, planners, stakeholders with shares)
-  const canView = canViewEvent(user, contract.proposal.event);
-  if (canView) {
-    return;
-  }
-
-  // Check if user is a contract signer (email match)
-  const isSigner = contract.signatures.some((s) => s.signerEmail === user.email);
-  if (isSigner) {
+  if (canViewCommercialContract(user, contract)) {
     return;
   }
 
@@ -242,7 +207,7 @@ export const contractRouter = router({
       },
     });
     // Check if user is the signer OR can manage the event
-    const isSigner = signature.signerEmail === user.email;
+    const isSigner = signature.signerEmail.toLowerCase() === (user.email ?? "").toLowerCase();
     const canManage = canManageEvent(user, signature.contract.proposal.event);
     if (!isSigner && !canManage) {
       throw new TRPCError({

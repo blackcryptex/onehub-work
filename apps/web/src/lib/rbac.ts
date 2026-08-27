@@ -114,6 +114,36 @@ interface CommercialContractLike {
   }>;
 }
 
+export const commercialProposalAccessInclude = {
+  event: {
+    include: {
+      org: {
+        include: { members: true },
+      },
+      stakeholders: {
+        select: { userId: true, role: true },
+      },
+      shares: {
+        select: { viewerUserId: true, scope: true },
+      },
+    },
+  },
+  listing: {
+    include: {
+      org: {
+        include: { members: true },
+      },
+    },
+  },
+} as const;
+
+export const commercialContractAccessInclude = {
+  signatures: true,
+  proposal: {
+    include: commercialProposalAccessInclude,
+  },
+} as const;
+
 /**
  * Returns true if the user is the owner of the org.
  */

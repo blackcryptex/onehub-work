@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { primaryListingDataFromProfile } from "@/lib/marketplace-profile";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-// Validation schema for provider profile data
 const providerProfileSchema = z.object({
   providerType: z.enum(["vendor", "venue"]),
   draft: z.boolean().default(false),
-  // Step 1: Business Profile
   businessName: z.string().min(1).optional(),
   providerCategory: z.string().optional(),
   contactEmail: z.string().email().optional().or(z.literal("")),
@@ -22,21 +22,70 @@ const providerProfileSchema = z.object({
   postalCode: z.string().optional(),
   country: z.string().optional(),
   about: z.string().optional(),
-  // Step 2-6: JSON fields
-  servicesJson: z.any().optional().nullable(),
-  spacesJson: z.any().optional().nullable(),
-  availabilityJson: z.any().optional().nullable(),
-  paymentsJson: z.any().optional().nullable(),
-  mediaJson: z.any().optional().nullable(),
-  notificationsJson: z.any().optional().nullable(),
+  servicesJson: z.unknown().optional().nullable(),
+  spacesJson: z.unknown().optional().nullable(),
+  availabilityJson: z.unknown().optional().nullable(),
+  paymentsJson: z.unknown().optional().nullable(),
+  mediaJson: z.unknown().optional().nullable(),
+  notificationsJson: z.unknown().optional().nullable(),
 });
+
+type ProviderProfileData = Omit<z.infer<typeof providerProfileSchema>, "providerType" | "draft" | "businessName">;
+type ProviderProfileTx = Pick<typeof prisma, "listing" | "organization" | "user">;
+
+function nullableJson(value: unknown) {
+  return value == null ? Prisma.DbNull : value as Prisma.InputJsonValue;
+}
+
+async function syncPrimaryListingFromProfile(
+  tx: ProviderProfileTx,
+  orgId: string,
+  providerType: "vendor" | "venue",
+  businessName: string,
+  profileData: ProviderProfileData,
+) {
+  const listingData = primaryListingDataFromProfile({
+    providerType,
+    businessName,
+    providerCategory: profileData.providerCategory,
+    contactEmail: profileData.contactEmail || null,
+    contactPhone: profileData.contactPhone || null,
+    website: profileData.website || null,
+    city: profileData.city || null,
+    state: profileData.state || null,
+    postalCode: profileData.postalCode || null,
+    country: profileData.country || "US",
+    about: profileData.about || null,
+    servicesJson: profileData.servicesJson,
+    spacesJson: profileData.spacesJson,
+    mediaJson: profileData.mediaJson,
+  });
+  const existingListing = await tx.listing.findFirst({
+    where: { orgId },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (existingListing) {
+    return tx.listing.update({
+      where: { id: existingListing.id },
+      data: listingData,
+    });
+  }
+
+  const slugBase = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 50) || providerType;
+  return tx.listing.create({
+    data: {
+      orgId,
+      slug: `${slugBase}-${Math.random().toString(36).slice(2, 6)}`,
+      ...listingData,
+    },
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     const body = await request.json();
-    
-    // Validate the request body
     const validationResult = providerProfileSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
@@ -48,7 +97,6 @@ export async function POST(request: NextRequest) {
     const data = validationResult.data;
     const { providerType, draft, businessName, ...profileData } = data;
 
-    // If publishing (not draft), require auth
     if (!draft && !session?.user?.id) {
       return NextResponse.json({ error: "Authentication required to publish" }, { status: 401 });
     }
@@ -58,7 +106,6 @@ export async function POST(request: NextRequest) {
     const targetUserRole = providerType === "vendor" ? "VENDOR" : "VENUE";
     const name = businessName || `${providerType} Profile`;
 
-    // For drafts without auth, just return success (could store in sessionStorage or a drafts table later)
     if (draft && !userId) {
       return NextResponse.json({
         success: true,
@@ -74,13 +121,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // For publish or authenticated draft, save to database
     if (userId) {
-      // Generate slug
       const slugBase = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 40);
       const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
 
-      // Check if user already has an org of this type
       const existingOrg = await prisma.organization.findFirst({
         where: {
           ownerId: userId,
@@ -91,8 +135,7 @@ export async function POST(request: NextRequest) {
       const profileStatus = draft ? "DRAFT" : "PUBLISHED";
 
       if (existingOrg) {
-        // Update existing org with all provider profile data
-        const updatedOrg = await prisma.$transaction(async (tx: any) => {
+        const updatedOrg = await prisma.$transaction(async (tx) => {
           if (!draft) {
             await tx.user.update({
               where: { id: userId },
@@ -100,7 +143,7 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          return tx.organization.update({
+          const org = await tx.organization.update({
             where: { id: existingOrg.id },
             data: {
               name: businessName || name,
@@ -116,15 +159,24 @@ export async function POST(request: NextRequest) {
               postalCode: profileData.postalCode || null,
               country: profileData.country || "US",
               about: profileData.about || null,
-              servicesJson: profileData.servicesJson || null,
-              spacesJson: profileData.spacesJson || null,
-              availabilityJson: profileData.availabilityJson || null,
-              paymentsJson: profileData.paymentsJson || null,
-              mediaJson: profileData.mediaJson || null,
-              notificationsJson: profileData.notificationsJson || null,
+              servicesJson: nullableJson(profileData.servicesJson),
+              spacesJson: nullableJson(profileData.spacesJson),
+              availabilityJson: nullableJson(profileData.availabilityJson),
+              paymentsJson: nullableJson(profileData.paymentsJson),
+              mediaJson: nullableJson(profileData.mediaJson),
+              notificationsJson: nullableJson(profileData.notificationsJson),
               profileStatus,
-            } as any, // Type assertion needed until TypeScript server picks up regenerated Prisma types
+            },
           });
+
+          if (!draft) {
+            await syncPrimaryListingFromProfile(tx, org.id, providerType, org.name, {
+              ...profileData,
+              providerCategory: data.providerCategory,
+            });
+          }
+
+          return org;
         });
         return NextResponse.json({
           orgId: updatedOrg.id,
@@ -132,8 +184,8 @@ export async function POST(request: NextRequest) {
           name: updatedOrg.name,
           providerType,
           businessName: updatedOrg.name,
-          status: (updatedOrg as any).profileStatus,
-          // Echo back the JSON fields that were sent (whether saved to DB or not)
+          status: updatedOrg.profileStatus,
+          listingSynced: !draft,
           servicesJson: profileData.servicesJson ?? null,
           spacesJson: profileData.spacesJson ?? null,
           availabilityJson: profileData.availabilityJson ?? null,
@@ -142,8 +194,7 @@ export async function POST(request: NextRequest) {
           notificationsJson: profileData.notificationsJson ?? null,
         });
       } else {
-        // Create new org with all provider profile data
-        const org = await prisma.$transaction(async (tx: any) => {  // typed as any to avoid ambient Prisma type drift in current repo state
+        const org = await prisma.$transaction(async (tx) => {
           if (!draft) {
             await tx.user.update({
               where: { id: userId },
@@ -151,7 +202,7 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          return tx.organization.create({
+          const createdOrg = await tx.organization.create({
             data: {
               name: businessName || name,
               slug,
@@ -169,17 +220,26 @@ export async function POST(request: NextRequest) {
               postalCode: profileData.postalCode || null,
               country: profileData.country || "US",
               about: profileData.about || null,
-              servicesJson: profileData.servicesJson || null,
-              spacesJson: profileData.spacesJson || null,
-              availabilityJson: profileData.availabilityJson || null,
-              paymentsJson: profileData.paymentsJson || null,
-              mediaJson: profileData.mediaJson || null,
-              notificationsJson: profileData.notificationsJson || null,
+              servicesJson: nullableJson(profileData.servicesJson),
+              spacesJson: nullableJson(profileData.spacesJson),
+              availabilityJson: nullableJson(profileData.availabilityJson),
+              paymentsJson: nullableJson(profileData.paymentsJson),
+              mediaJson: nullableJson(profileData.mediaJson),
+              notificationsJson: nullableJson(profileData.notificationsJson),
               profileStatus,
               members: { create: { userId, role: "OWNER" } },
               settings: { create: {} },
-            } as any, // Type assertion needed until TypeScript server picks up regenerated Prisma types
+            },
           });
+
+          if (!draft) {
+            await syncPrimaryListingFromProfile(tx, createdOrg.id, providerType, createdOrg.name, {
+              ...profileData,
+              providerCategory: data.providerCategory,
+            });
+          }
+
+          return createdOrg;
         });
         return NextResponse.json({
           orgId: org.id,
@@ -187,8 +247,8 @@ export async function POST(request: NextRequest) {
           name: org.name,
           providerType,
           businessName: org.name,
-          status: (org as any).profileStatus,
-          // Echo back the JSON fields that were sent (whether saved to DB or not)
+          status: org.profileStatus,
+          listingSynced: !draft,
           servicesJson: profileData.servicesJson ?? null,
           spacesJson: profileData.spacesJson ?? null,
           availabilityJson: profileData.availabilityJson ?? null,

@@ -129,6 +129,49 @@ describe("event RBAC helper", () => {
     expect(canViewCommercialProposal(user("stranger-1", "VENUE"), proposal)).toBe(false);
   });
 
+  it("requires shared clients to be both stakeholders and summary share recipients for proposal details", () => {
+    const client = user("client-1", "CLIENT");
+    const baseProposal = {
+      event: event(),
+      listing: { orgId: "seller-org-1", org: { ownerId: "seller-owner-1", members: [] } },
+    };
+
+    expect(canViewCommercialProposal(client, {
+      ...baseProposal,
+      event: event({
+        stakeholders: [{ userId: "client-1", role: "CLIENT" }],
+        shares: [],
+      }),
+    })).toBe(false);
+
+    expect(canViewCommercialProposal(client, {
+      ...baseProposal,
+      event: event({
+        stakeholders: [],
+        shares: [{ viewerUserId: "client-1", scope: "SUMMARY" }],
+      }),
+    })).toBe(false);
+
+    expect(canViewCommercialProposal(client, {
+      ...baseProposal,
+      event: event({
+        stakeholders: [{ userId: "client-1", role: "CLIENT" }],
+        shares: [{ viewerUserId: "client-1", scope: "SUMMARY" }],
+      }),
+    })).toBe(true);
+  });
+
+  it("allows seller listing org owners and members, but denies unrelated buyer-org strangers", () => {
+    const proposal = {
+      event: event({ org: { ownerId: "owner-1", members: [{ userId: "buyer-member-1" }] } }),
+      listing: { orgId: "seller-org-1", org: { ownerId: "seller-owner-1", members: [{ userId: "seller-member-1" }] } },
+    };
+
+    expect(canViewCommercialProposal(user("seller-owner-1", "VENDOR"), proposal)).toBe(true);
+    expect(canViewCommercialProposal(user("seller-member-1", "VENDOR"), proposal)).toBe(true);
+    expect(canViewCommercialProposal(user("buyer-stranger-1", "PRO_PLANNER"), proposal)).toBe(false);
+  });
+
   it("allows intended contract signers without opening contract details to unrelated users", () => {
     const contract = {
       proposal: {
@@ -141,5 +184,25 @@ describe("event RBAC helper", () => {
     expect(canViewCommercialContract(user("seller-owner-1", "VENUE"), contract)).toBe(true);
     expect(canViewCommercialContract(user("client-signer", "CLIENT"), contract)).toBe(true);
     expect(canViewCommercialContract(user("stranger-1", "CLIENT"), contract)).toBe(false);
+  });
+
+  it("allows intended contract signers by id and case-insensitive email only", () => {
+    const contract = {
+      buyerId: "buyer-org-1",
+      sellerId: "seller-org-1",
+      proposal: {
+        event: event({ org: { ownerId: "buyer-owner-1", members: [] } }),
+        listing: { orgId: "seller-org-1", org: { ownerId: "seller-owner-1", members: [] } },
+      },
+      signatures: [
+        { signerId: "signer-by-id", signerEmail: "different@test.local" },
+        { signerId: null, signerEmail: "Case.Signer@Test.Local" },
+      ],
+    };
+
+    expect(canViewCommercialContract(user("signer-by-id", "CLIENT"), contract)).toBe(true);
+    expect(canViewCommercialContract({ id: "email-signer", role: "CLIENT", email: "case.signer@test.local" }, contract)).toBe(true);
+    expect(canViewCommercialContract(user("buyer-org-1", "PRO_PLANNER"), contract)).toBe(false);
+    expect(canViewCommercialContract(user("seller-org-1", "VENDOR"), contract)).toBe(false);
   });
 });
