@@ -79,6 +79,7 @@ const events = [
         title: "Floral design proposal",
         status: "SENT",
         totalCents: 250000,
+        providerSubmittedEvidence: true,
         listing: { id: "listing-vendor-1", title: "Avery Florals", type: "VENDOR" },
         contract: null,
         milestones: [{ id: "milestone-1", title: "Deposit due", status: "PENDING", amountCents: 125000, dueDate: new Date("2027-04-15T12:00:00.000Z") }],
@@ -387,6 +388,48 @@ describe("ProPlannerDashboard", () => {
     expect(screen.getByText(/Planner billing readiness is status-only in the private pilot/i)).toBeInTheDocument();
     expect(screen.getByText(/vendor\/venue Stripe Connect setup is not available/i)).toBeInTheDocument();
     expect(container.querySelector('a[href="/app/billing/connect"]')).toBeNull();
+  });
+
+  it("does not label planner-sent listing-backed proposals as provider-backed without provider evidence", () => {
+    const listingBackedPlannerProposal = {
+      ...events[0],
+      proposals: [
+        {
+          ...events[0].proposals[0],
+          id: "proposal-planner-sent",
+          title: "Planner assembled proposal",
+          status: "SENT",
+          providerSubmittedEvidence: false,
+        },
+      ],
+      contracts: [],
+    };
+
+    render(
+      <ProPlannerDashboard
+        orgId="org-1"
+        orgName="Atlas Events"
+        events={[listingBackedPlannerProposal]}
+        userId="planner-1"
+        userRole="PRO_PLANNER"
+        orgOwnerId="planner-1"
+        listings={listings}
+        notifications={[]}
+        members={members}
+        invites={[]}
+        vendorRelationships={[]}
+      />,
+    );
+
+    expect(screen.getAllByText("Planner assembled proposal").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/pending provider-submitted proof/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/provider-backed \/ vendor-ready/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/vendor-ready/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/before contract, confirmed-vendor, or payment movement/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Payments" }));
+
+    expect(screen.getAllByText(/pending provider-submitted proof/i).length).toBeGreaterThan(0);
   });
 
   it("creates assistant invites through the guarded team invite endpoint", async () => {

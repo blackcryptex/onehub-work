@@ -7,6 +7,7 @@ import { resolveBookingClassification } from "@/lib/booking-classification";
 import { resolveFeeProfile } from "@/lib/fee-profile";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
 import { getLegalSurface } from "@/lib/legal-surface";
+import { hasProviderSubmittedEvidence } from "@/lib/provider-backed-proposal";
 
 const createIntentSchema = z.object({
   contractId: z.string(),
@@ -89,7 +90,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Contract is not in a payable state" }, { status: 400 });
     }
 
-    if (!PAYMENT_READY_PROPOSAL_STATES.has(contract.proposal.status) || !contract.proposal.listingId || !contract.proposal.listing?.org) {
+    if (
+      !PAYMENT_READY_PROPOSAL_STATES.has(contract.proposal.status) ||
+      !contract.proposal.listingId ||
+      !contract.proposal.listing?.org ||
+      !(await hasProviderSubmittedEvidence(prisma, contract.proposal))
+    ) {
       return NextResponse.json({
         error: "Payment is locked until an accepted provider-backed proposal has a signed contract",
       }, { status: 400 });

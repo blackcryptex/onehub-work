@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ContractPageClient } from "@/components/contracts/ContractPageClient";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent, canViewCommercialContract } from "@/lib/rbac";
+import { hasProviderSubmittedEvidence } from "@/lib/provider-backed-proposal";
 
 export default async function ContractPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -127,11 +128,20 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
   const sellerSideSigned = signaturesWithSides.some(
     (signature) => signature.signerSide === "seller" && signature.signedAt
   );
+  const hasProviderBackedEvidence = contract.proposal
+    ? await hasProviderSubmittedEvidence(prisma, contract.proposal)
+    : false;
 
   return (
     <ContractPageClient
       contract={{
         ...contract,
+        proposal: contract.proposal
+          ? {
+              ...contract.proposal,
+              providerBackedEvidence: hasProviderBackedEvidence,
+            }
+          : null,
         milestones: contract.proposal?.milestones ?? [],
         signatures: signaturesWithSides,
         buyerSideSigned,

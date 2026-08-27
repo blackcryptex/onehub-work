@@ -15,6 +15,7 @@ const { getCurrentUser, prisma, requireAuthorizedEventBySlug, redirect, notFound
   }),
   prisma: {
     event: { findUnique: vi.fn() },
+    activity: { findMany: vi.fn() },
   },
 }));
 
@@ -85,6 +86,7 @@ describe("Pro planner event workspace polish", () => {
     getCurrentUser.mockResolvedValue({ id: "planner-1", role: "PRO_PLANNER", email: "planner@example.com", name: "Planner" });
     requireAuthorizedEventBySlug.mockResolvedValue({ event: { id: event.id, slug: event.slug, name: event.name } });
     prisma.event.findUnique.mockResolvedValue(event);
+    prisma.activity.findMany.mockResolvedValue([]);
   });
 
   it("explains the event workspace in plain planner language with direct next-click lanes", async () => {
@@ -102,5 +104,58 @@ describe("Pro planner event workspace polish", () => {
     expect(html).toContain("Timeline");
     expect(html).toContain("Open messages");
     expect(html).toContain("Open event files");
+  });
+
+  it("does not count planner/listing-backed proposals as provider-backed or vendor-ready", async () => {
+    prisma.event.findUnique.mockResolvedValue({
+      ...event,
+      proposals: [
+        {
+          id: "proposal-planner-sent",
+          title: "Planner floral draft",
+          status: "SENT",
+          listingId: "listing-1",
+          totalCents: 250000,
+          milestones: [],
+          listing: { id: "listing-1", title: "Avery Florals", type: "VENDOR" },
+          contract: null,
+        },
+      ],
+    });
+    prisma.activity.findMany.mockResolvedValue([]);
+
+    const page = await ProVaultDetailPage({ params: Promise.resolve({ eventSlug: "smith-wedding-weekend" }) });
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("0 provider-backed");
+    expect(html).toContain("1 draft/planner/listing-backed request");
+    expect(html).toContain("No provider-backed proposals are attached yet.");
+    expect(html).toContain("listing-backed draft not counted as vendor-ready");
+  });
+
+  it("counts proposals as provider-backed only when provider-submitted evidence exists", async () => {
+    prisma.event.findUnique.mockResolvedValue({
+      ...event,
+      proposals: [
+        {
+          id: "proposal-provider-submitted",
+          title: "Provider floral quote",
+          status: "SENT",
+          listingId: "listing-1",
+          totalCents: 250000,
+          milestones: [],
+          listing: { id: "listing-1", title: "Avery Florals", type: "VENDOR" },
+          contract: null,
+        },
+      ],
+    });
+    prisma.activity.findMany.mockResolvedValue([{ target: "proposal-provider-submitted" }]);
+
+    const page = await ProVaultDetailPage({ params: Promise.resolve({ eventSlug: "smith-wedding-weekend" }) });
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("1 provider-backed");
+    expect(html).toContain("Provider-backed / Status: SENT / $2500.00");
+    expect(html).not.toContain("No provider-backed proposals are attached yet.");
   });
 });

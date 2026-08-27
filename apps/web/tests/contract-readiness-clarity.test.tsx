@@ -44,6 +44,7 @@ function contract(overrides: Record<string, unknown> = {}) {
       id: "proposal-1",
       status: "CONVERTED",
       currency: "USD",
+      providerBackedEvidence: true,
       event: { name: "Smith Wedding Weekend" },
       listing: { title: "Avery Florals", type: "VENDOR" },
     },
@@ -83,7 +84,7 @@ describe("contract delivery and signature readiness clarity", () => {
     expect(screen.getByText("Who signs next")).toBeInTheDocument();
     expect(screen.getByText(/Planner\/client\/buyer side and Vendor\/venue\/seller side/i)).toBeInTheDocument();
     expect(screen.getByText("Payment gate")).toBeInTheDocument();
-    expect(screen.getByText(/Payment locked until accepted proposal and both contract signatures are complete/i)).toBeInTheDocument();
+    expect(screen.getByText(/Payment locked until provider-backed proposal evidence, accepted proposal state, and both contract signatures are complete/i)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Enter payment/i })).not.toBeInTheDocument();
     expect(screen.queryByText("Payment panel ready")).not.toBeInTheDocument();
     expect(screen.getByText("Signature form ready")).toBeInTheDocument();
@@ -157,6 +158,7 @@ describe("contract delivery and signature readiness clarity", () => {
           id: "proposal-1",
           status: "SENT",
           currency: "USD",
+          providerBackedEvidence: false,
           event: { name: "Smith Wedding Weekend" },
           listing: { title: "Avery Florals", type: "VENDOR" },
         },
@@ -180,7 +182,46 @@ describe("contract delivery and signature readiness clarity", () => {
       { canEnterPayment: true },
     );
 
-    expect(screen.getByText(/Payment locked until accepted proposal and both contract signatures are complete/i)).toBeInTheDocument();
+    expect(screen.getByText(/Payment locked until provider-backed proposal evidence, accepted proposal state, and both contract signatures are complete/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Enter payment/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Payment panel ready")).not.toBeInTheDocument();
+  });
+
+  it("keeps payment entry locked for converted listing-backed contracts without provider evidence", () => {
+    renderContract(
+      {
+        status: "FULLY_SIGNED",
+        buyerSideSigned: true,
+        sellerSideSigned: true,
+        proposal: {
+          id: "proposal-1",
+          status: "CONVERTED",
+          currency: "USD",
+          providerBackedEvidence: false,
+          event: { name: "Smith Wedding Weekend" },
+          listing: { title: "Avery Florals", type: "VENDOR" },
+        },
+        signatures: [
+          {
+            id: "signature-1",
+            signerName: "Pat Planner",
+            signerEmail: "pat@example.com",
+            signedAt: "2027-01-01T00:00:00.000Z",
+            signerSide: "buyer",
+          },
+          {
+            id: "signature-2",
+            signerName: "Sam Seller",
+            signerEmail: "sam@example.com",
+            signedAt: "2027-01-02T00:00:00.000Z",
+            signerSide: "seller",
+          },
+        ],
+      },
+      { canEnterPayment: true },
+    );
+
+    expect(screen.getByText(/Payment locked until provider-backed proposal evidence/i)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Enter payment/i })).not.toBeInTheDocument();
     expect(screen.queryByText("Payment panel ready")).not.toBeInTheDocument();
   });

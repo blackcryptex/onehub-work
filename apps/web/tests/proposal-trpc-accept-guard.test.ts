@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { auth, getCurrentUser, canManageEvent, canSendProposal, prisma, recordActivity, logger, trackError } = vi.hoisted(() => {
   const prisma = {
     proposal: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
+    activity: { findFirst: vi.fn() },
     contract: { create: vi.fn() },
     escrowAccount: { create: vi.fn() },
   };
@@ -65,6 +66,7 @@ describe("legacy tRPC proposal.accept provider-backed guard", () => {
     canSendProposal.mockReturnValue(true);
     prisma.proposal.findUniqueOrThrow.mockResolvedValue(proposal());
     prisma.proposal.update.mockResolvedValue(proposal({ status: "ACCEPTED" }));
+    prisma.activity.findFirst.mockResolvedValue({ id: "activity-provider-submitted" });
     prisma.contract.create.mockResolvedValue({ id: "contract-1" });
     prisma.escrowAccount.create.mockResolvedValue({ id: "escrow-1" });
     recordActivity.mockResolvedValue(undefined);
@@ -98,10 +100,30 @@ describe("legacy tRPC proposal.accept provider-backed guard", () => {
     expect(recordActivity).not.toHaveBeenCalled();
   });
 
+  it("rejects planner-sent proposals without provider-submitted evidence before side effects", async () => {
+    prisma.activity.findFirst.mockResolvedValue(null);
+
+    await expect(caller().accept({ proposalId: "proposal-1" })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "Only provider-submitted proposals with listing context can be approved",
+    });
+
+    expect(prisma.contract.create).not.toHaveBeenCalled();
+    expect(prisma.escrowAccount.create).not.toHaveBeenCalled();
+    expect(prisma.proposal.update).not.toHaveBeenCalled();
+    expect(recordActivity).not.toHaveBeenCalled();
+  });
+
   it("accepts provider-backed SENT proposals with listing context", async () => {
     const result = await caller().accept({ proposalId: "proposal-1" });
 
     expect(result).toEqual(expect.objectContaining({ id: "proposal-1", status: "ACCEPTED" }));
+    expect(prisma.activity.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        action: "PROVIDER_PROPOSAL_SUBMITTED",
+        target: "proposal-1",
+      }),
+    }));
     expect(prisma.contract.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ proposalId: "proposal-1", orgId: "org-1", eventId: "event-1" }),
     }));

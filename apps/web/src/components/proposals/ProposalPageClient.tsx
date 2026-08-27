@@ -37,7 +37,8 @@ export function ProposalPageClient({
 }: ProposalPageClientProps) {
   const [isEditing, setIsEditing] = useState(false);
   const hasListingContext = Boolean(proposal.listing?.id || proposal.listingId);
-  const isProviderBacked = proposal.status !== "DRAFT" && hasListingContext;
+  const hasProviderSubmittedEvidence = Boolean(proposal.providerBackedEvidence);
+  const isProviderBacked = hasListingContext && hasProviderSubmittedEvidence;
   const canApproveProviderBackedProposal = proposal.status === "SENT" && isProviderBacked;
   
   if (isEditing) {
@@ -72,7 +73,7 @@ export function ProposalPageClient({
           <div className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-semibold ${isProviderBacked ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}`}>
             {isProviderBacked
               ? "Provider-backed proposal — vendor-ready"
-              : "Draft/generated proposal — not provider-backed"}
+              : "Draft/generated/listing-backed proposal — not provider-backed"}
           </div>
           {proposal.event && (
             <div className="mt-2 text-sm text-slate-500">
@@ -183,7 +184,7 @@ export function ProposalPageClient({
         <Card className="p-4 space-y-2 border-amber-200 bg-amber-50">
           <h3 className="font-semibold text-amber-950">Approval locked</h3>
           <p className="text-sm text-amber-900">
-            This proposal cannot be approved until a provider or venue submits it as a non-draft proposal with real listing context.
+            This proposal cannot be approved until it is sent, has real listing context, and has provider-submitted proposal evidence.
           </p>
         </Card>
       )}
@@ -202,12 +203,20 @@ export function ProposalPageClient({
         </Card>
       )}
       {(proposal.status === "ACCEPTED" || proposal.status === "CONVERTED") && !proposal.contract && (
-        <Card className="p-4">
-          <h3 className="mb-2 font-semibold">Generate Contract</h3>
-          <p className="mb-4 text-sm text-slate-600">
-            This proposal has been accepted. Generate a formal contract for e-signing.
-          </p>
-          <GenerateContractButton proposalId={proposal.id} />
+        <Card className="p-4 space-y-3">
+          <h3 className="font-semibold">Generate Contract</h3>
+          {isProviderBacked ? (
+            <>
+              <p className="text-sm text-slate-600">
+                This provider-backed proposal has been accepted. Generate a formal contract for e-signing.
+              </p>
+              <GenerateContractButton proposalId={proposal.id} />
+            </>
+          ) : (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900">
+              Contract generation is unavailable until provider-submitted proposal evidence is present.
+            </p>
+          )}
         </Card>
       )}
       {proposal.contract && (

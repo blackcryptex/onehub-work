@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { auth, prisma, stripe, recordAcceptance, requireAcceptanceProof, recordActivity, evaluateHoldbackForPaymentIntent } = vi.hoisted(() => {
   const mockPrisma = {
     $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(mockPrisma)),
+    activity: { findFirst: vi.fn() },
     contract: { findUnique: vi.fn(), update: vi.fn() },
     escrowAccount: { create: vi.fn(), update: vi.fn() },
     paymentIntent: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
@@ -82,7 +83,7 @@ const contract = {
     bookingClassification: "STANDARD",
     listingId: "listing-1",
     escrowAccount: { id: "escrow-1", balanceCents: 0, status: "EMPTY", stripeIntent: null },
-    listing: { org: { ownerId: "seller-user-1" } },
+    listing: { id: "listing-1", org: { ownerId: "seller-user-1" } },
     milestones: [{ id: "milestone-1", amountCents: 10000, status: "PENDING" }],
     event: { orgId: "buyer-org-1", org: { type: "CLIENT" } },
   },
@@ -123,6 +124,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   auth.mockResolvedValue({ user: { id: "buyer-user-1", role: "CLIENT" } });
   prisma.contract.findUnique.mockResolvedValue(contract);
+  prisma.activity.findFirst.mockResolvedValue({ id: "activity-provider-submitted" });
   prisma.paymentIntent.findFirst.mockResolvedValue(null);
   prisma.paymentIntent.create.mockResolvedValue({ id: "pi-local-new" });
   prisma.paymentIntent.update.mockResolvedValue({});
@@ -353,6 +355,24 @@ describe("payment intent lifecycle guardrails", () => {
         status: "SENT",
       },
     });
+
+    const response = await createIntentPOST(request({
+      contractId: "contract-1",
+      milestoneId: "milestone-1",
+      acceptance: { legalVersion: "payment-v1" },
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: "Payment is locked until an accepted provider-backed proposal has a signed contract",
+    });
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  it("blocks payment intent creation when the accepted proposal lacks provider-submitted evidence", async () => {
+    prisma.activity.findFirst.mockResolvedValue(null);
 
     const response = await createIntentPOST(request({
       contractId: "contract-1",

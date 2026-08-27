@@ -6,6 +6,10 @@ import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
 import { resolveBookingClassification } from "@/lib/booking-classification";
 import { resolveFeeProfile } from "@/lib/fee-profile";
+import {
+  PROVIDER_BACKED_CONTRACT_ERROR,
+  hasProviderSubmittedEvidence,
+} from "@/lib/provider-backed-proposal";
 
 /**
  * POST /api/contracts/from-proposal
@@ -105,6 +109,14 @@ export async function POST(request: NextRequest) {
           error:
             "Proposal is missing listing context and cannot be converted into a contract.",
         },
+        { status: 400 }
+      );
+    }
+
+    const hasProviderEvidence = await hasProviderSubmittedEvidence(prisma, proposal);
+    if (!hasProviderEvidence) {
+      return NextResponse.json(
+        { error: PROVIDER_BACKED_CONTRACT_ERROR },
         { status: 400 }
       );
     }

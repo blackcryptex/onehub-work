@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ProposalPageClient } from "@/components/proposals/ProposalPageClient";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent, canViewCommercialProposal } from "@/lib/rbac";
+import { hasProviderSubmittedEvidence } from "@/lib/provider-backed-proposal";
 
 type ThreadMessage = {
   id: string;
@@ -73,10 +74,14 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
   
   const hasContent = Boolean(proposal.summary || (proposal.sections && proposal.sections.length > 0) || (proposal.lineItems && proposal.lineItems.length > 0));
   const canEdit = Boolean(user && canManageEvent(user, proposal.event) && (proposal.status === "DRAFT" || proposal.status === "SENT"));
+  const hasProviderBackedEvidence = await hasProviderSubmittedEvidence(prisma, proposal);
   
   return (
     <ProposalPageClient
-      proposal={proposal}
+      proposal={{
+        ...proposal,
+        providerBackedEvidence: hasProviderBackedEvidence,
+      }}
       eventVaultHref={eventVaultHref}
       hasContent={hasContent}
       canEdit={canEdit}

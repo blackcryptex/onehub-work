@@ -6,6 +6,10 @@ import { canManageEvent } from "@/lib/rbac";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
 import { resolveBookingClassification } from "@/lib/booking-classification";
 import { getLegalSurface } from "@/lib/legal-surface";
+import {
+  PROVIDER_BACKED_PROPOSAL_ERROR,
+  hasProviderSubmittedEvidence,
+} from "@/lib/provider-backed-proposal";
 
 /**
  * POST /api/proposals/[id]/approve
@@ -82,10 +86,12 @@ export async function POST(
       });
     }
 
-    const isProviderSubmitted = proposal.status === "SENT" && Boolean(proposal.listingId && proposal.listing?.id);
+    const isProviderSubmitted =
+      proposal.status === "SENT" &&
+      (await hasProviderSubmittedEvidence(prisma, proposal));
     if (!isProviderSubmitted) {
       return NextResponse.json(
-        { error: "Only provider-submitted proposals with listing context can be approved" },
+        { error: PROVIDER_BACKED_PROPOSAL_ERROR },
         { status: 400 }
       );
     }

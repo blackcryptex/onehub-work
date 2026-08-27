@@ -119,7 +119,8 @@ export function ContractPageClient({
     !CLOSED_CONTRACT_STATUSES.has(contract.status) &&
     !currentUserAlreadySigned;
   const fromProviderBackedProposal = Boolean(
-    contract.proposal?.listing &&
+    contract.proposal?.providerBackedEvidence &&
+      contract.proposal?.listing &&
       (contract.proposal?.status === "ACCEPTED" || contract.proposal?.status === "CONVERTED")
   );
   const canShowPaymentEntry = canEnterPayment && PAYABLE_CONTRACT_STATUSES.has(contract.status) && fromProviderBackedProposal;
@@ -148,7 +149,7 @@ export function ContractPageClient({
         ].filter(Boolean);
   const paymentReadinessLabel = canShowPaymentEntry
     ? "Payment entry available"
-    : "Payment locked until accepted proposal and both contract signatures are complete";
+    : "Payment locked until provider-backed proposal evidence, accepted proposal state, and both contract signatures are complete";
 
   if (isEditing) {
     return (

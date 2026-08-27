@@ -46,6 +46,10 @@ import { AiSourceVendorsVenuesPanel } from "@/components/vault/AiSourceVendorsVe
 import { AddToShortlistButtonClient } from "@/components/shortlist/AddToShortlistButtonClient";
 import { getVaultBasePath, proposalDetail, contractDetail } from "@/lib/routes";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
+import {
+  PROVIDER_PROPOSAL_SUBMITTED_ACTION,
+  hasProviderListingContext,
+} from "@/lib/provider-backed-proposal";
 
 /**
  * Pro Planner Event Vault Detail Page
@@ -155,7 +159,7 @@ export default async function ProVaultDetailPage({
             milestones: {
               select: { id: true, status: true, amountCents: true },
             },
-            listing: { select: { title: true, type: true } },
+            listing: { select: { id: true, title: true, type: true } },
             contract: { select: { id: true, title: true, status: true } },
           },
           orderBy: { createdAt: "desc" },
@@ -229,7 +233,7 @@ export default async function ProVaultDetailPage({
               milestones: {
                 select: { id: true, status: true, amountCents: true },
               },
-              listing: { select: { title: true, type: true } },
+              listing: { select: { id: true, title: true, type: true } },
               contract: { select: { id: true, title: true, status: true } },
             },
             orderBy: { createdAt: "desc" },
@@ -300,11 +304,34 @@ export default async function ProVaultDetailPage({
   );
   const shortlistCount = shortlistItems.length;
   const bookingRequestCount = event.bookingRequests.length;
+  const proposalIds = event.proposals.map((proposal) => proposal.id);
+  const providerSubmittedActivities = proposalIds.length > 0
+    ? await prisma.activity.findMany({
+        where: {
+          action: PROVIDER_PROPOSAL_SUBMITTED_ACTION,
+          target: { in: proposalIds },
+          eventId: event.id,
+          orgId: event.orgId,
+        },
+        select: { target: true },
+      })
+    : [];
+  const providerSubmittedProposalIds = new Set(
+    providerSubmittedActivities
+      .map((activity) => activity.target)
+      .filter(Boolean),
+  );
+  const isProviderBackedProposal = (proposal: any) =>
+    hasProviderListingContext(proposal) && providerSubmittedProposalIds.has(proposal.id);
   const draftProposalCount = event.proposals.filter((proposal) => proposal.status === "DRAFT").length;
-  const realProposalCount = event.proposals.filter((proposal) => proposal.status !== "DRAFT").length;
+  const realProposalCount = event.proposals.filter(isProviderBackedProposal).length;
+  const listingBackedDraftProposalCount = event.proposals.filter(
+    (proposal) => proposal.status !== "DRAFT" && !isProviderBackedProposal(proposal),
+  ).length;
   const acceptedProposalCount = event.proposals.filter(
     (proposal) =>
-      proposal.status === "ACCEPTED" || proposal.status === "CONVERTED",
+      (proposal.status === "ACCEPTED" || proposal.status === "CONVERTED") &&
+      isProviderBackedProposal(proposal),
   ).length;
   const signedOrActiveContracts = contracts.filter((contract) =>
     ["FULLY_SIGNED", "ACCEPTED", "IN_PAYMENT", "ACTIVE", "COMPLETED"].includes(
@@ -323,7 +350,7 @@ export default async function ProVaultDetailPage({
     : bookingRequestCount === 0 && draftProposalCount === 0 && realProposalCount === 0
       ? "Turn a shortlisted vendor into a request."
       : realProposalCount === 0
-        ? "Track requests; draft proposals are not vendor-ready."
+        ? "Track requests; draft and listing-backed planner proposals are not vendor-ready."
         : contracts.length === 0
           ? "Review real proposals and advance only accepted work to contract."
           : signedOrActiveContracts === 0
@@ -359,9 +386,9 @@ export default async function ProVaultDetailPage({
     {
       label: "Proposal",
       state: realProposalCount > 0 ? "Happened" : "Pending",
-      detail: `${realProposalCount} non-draft proposal${realProposalCount === 1 ? "" : "s"}; drafts are not counted as vendor-ready.`,
+      detail: `${realProposalCount} provider-backed proposal${realProposalCount === 1 ? "" : "s"}; ${listingBackedDraftProposalCount} listing-backed draft${listingBackedDraftProposalCount === 1 ? "" : "s"} not counted as vendor-ready.`,
       blocked: bookingRequestCount === 0 && draftProposalCount === 0,
-      next: realProposalCount > 0 ? "Review proposal status and accepted scope." : "Wait for or prepare a real proposal from request state.",
+      next: realProposalCount > 0 ? "Review provider-submitted proposal status and accepted scope." : "Wait for provider-submitted proposal evidence before treating proposals as vendor-ready.",
     },
     {
       label: "Contract",
@@ -495,7 +522,7 @@ export default async function ProVaultDetailPage({
   const confirmedVendorItems = event.proposals
     .filter(
       (proposal) =>
-        proposal.listing &&
+        isProviderBackedProposal(proposal) &&
         (proposal.status === "ACCEPTED" ||
           proposal.status === "CONVERTED" ||
           proposal.contract),
@@ -591,8 +618,8 @@ export default async function ProVaultDetailPage({
       icon: ShieldCheck,
       summary:
         confirmedVendorCount > 0
-          ? `${confirmedVendorCount} vendor${confirmedVendorCount === 1 ? "" : "s"} backed by accepted proposal or contract state.`
-          : "No vendors are confirmed until accepted proposal or contract state supports it.",
+          ? `${confirmedVendorCount} vendor${confirmedVendorCount === 1 ? "" : "s"} backed by provider-submitted evidence plus accepted proposal or contract state.`
+          : "No vendors are confirmed until provider-submitted evidence plus accepted proposal or contract state supports it.",
       status: confirmedVendorCount > 0 ? "Happened" : "Pending",
       action: "Review confirmed",
       href: "#workspace-confirmed-vendors-detail",
@@ -601,7 +628,7 @@ export default async function ProVaultDetailPage({
       id: "workspace-proposals",
       title: "Proposals",
       icon: FileText,
-      summary: `${realProposalCount} non-draft; ${draftProposalCount} draft request${draftProposalCount === 1 ? "" : "s"}.`,
+      summary: `${realProposalCount} provider-backed; ${draftProposalCount + listingBackedDraftProposalCount} draft/planner/listing-backed request${draftProposalCount + listingBackedDraftProposalCount === 1 ? "" : "s"}.`,
       status: commerceSpine[3]?.state ?? "Pending",
       action: "Open proposals",
       href: "#workspace-proposals-detail",
@@ -1025,7 +1052,7 @@ export default async function ProVaultDetailPage({
                   <span className="text-sm font-medium text-slate-500">{confirmedVendorCount} confirmed</span>
                 </div>
                 <p className="mt-2 text-sm text-slate-600">
-                  Confirmed vendors require accepted proposal or contract-backed state. Shortlisted vendors are not counted here.
+                  Confirmed vendors require provider-submitted evidence plus accepted proposal or contract-backed state. Shortlisted and planner-generated proposals are not counted here.
                 </p>
                 <div className="mt-4 space-y-3">
                   {confirmedVendorItems.length > 0 ? (
@@ -1037,7 +1064,7 @@ export default async function ProVaultDetailPage({
                     ))
                   ) : (
                     <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-                      No confirmed vendors yet. Accepted proposals or contracts will appear here.
+                      No confirmed vendors yet. Provider-backed accepted proposals or contracts will appear here.
                     </p>
                   )}
                 </div>
@@ -1078,19 +1105,19 @@ export default async function ProVaultDetailPage({
               <Card id="workspace-proposals-detail" className="scroll-mt-24 p-5">
                 <h3 className="text-lg font-semibold">Proposals</h3>
                 <p className="mt-2 text-sm text-slate-600">
-                  Proposals only count as proposal state when they are no longer draft requests.
+                  Proposals only count as vendor-ready when provider-submitted evidence exists; planner-generated or listing-backed drafts remain request state.
                 </p>
                 <div className="mt-4 space-y-3">
-                  {event.proposals.filter((proposal) => proposal.status !== "DRAFT").length > 0 ? (
+                  {event.proposals.filter(isProviderBackedProposal).length > 0 ? (
                     event.proposals
-                      .filter((proposal) => proposal.status !== "DRAFT")
+                      .filter(isProviderBackedProposal)
                       .map((proposal) => (
                         <div key={proposal.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="font-semibold">{proposal.title}</p>
                           <p className="mt-1 text-xs text-slate-600">
-                            Status: {proposal.status} / ${(proposal.totalCents / 100).toFixed(2)}
+                            Provider-backed / Status: {proposal.status} / ${(proposal.totalCents / 100).toFixed(2)}
                           </p>
                         </div>
                         <Button asChild size="sm" variant="secondary">
@@ -1101,7 +1128,7 @@ export default async function ProVaultDetailPage({
                       ))
                   ) : (
                     <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-                      No non-draft proposals are attached yet.
+                      No provider-backed proposals are attached yet.
                     </p>
                   )}
                 </div>

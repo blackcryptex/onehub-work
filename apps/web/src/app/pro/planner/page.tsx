@@ -2,6 +2,7 @@ import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import { ProPlannerDashboard } from "@/components/pro-planner/Dashboard";
 import { prisma } from "@/lib/prisma";
+import { PROVIDER_PROPOSAL_SUBMITTED_ACTION } from "@/lib/provider-backed-proposal";
 import { canAccessDashboard, isPlanner } from "@/lib/rbac";
 
 export default async function ProPlannerPage() {
@@ -183,6 +184,30 @@ export default async function ProPlannerPage() {
       orderBy: [{ nextFollowUpAt: "asc" }, { updatedAt: "desc" }],
     }),
     ]);
+
+    const proposalIds = events.flatMap((event) => (event.proposals ?? []).map((proposal) => proposal.id));
+    const providerSubmittedActivities = proposalIds.length > 0
+      ? await prisma.activity.findMany({
+          where: {
+            action: PROVIDER_PROPOSAL_SUBMITTED_ACTION,
+            target: { in: proposalIds },
+            orgId: org.id,
+          },
+          select: { target: true },
+        })
+      : [];
+    const providerSubmittedProposalIds = new Set(
+      providerSubmittedActivities
+        .map((activity) => activity.target)
+        .filter(Boolean),
+    );
+    events = events.map((event) => ({
+      ...event,
+      proposals: (event.proposals ?? []).map((proposal) => ({
+        ...proposal,
+        providerSubmittedEvidence: providerSubmittedProposalIds.has(proposal.id),
+      })),
+    }));
   } catch (error) {
     console.error(
       "[ProPlannerPage] detailed dashboard query failed; rendering safe fallback",

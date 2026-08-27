@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { canManageEvent } from "@/lib/rbac";
 import { computePayoutAmountFromProposal } from "@/lib/payout-lock-helpers";
 import { setLocked } from "@/lib/payments/payoutLock";
+import {
+  PROVIDER_PROPOSAL_SUBMITTED_ACTION,
+  hasProviderListingContext,
+} from "@/lib/provider-backed-proposal";
 
 /**
  * POST /api/payments/plan/from-accepted-proposals
@@ -64,11 +68,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const proposalIds = event.proposals.map((proposal) => proposal.id);
+    const providerSubmittedActivities = await prisma.activity.findMany({
+      where: {
+        action: PROVIDER_PROPOSAL_SUBMITTED_ACTION,
+        target: { in: proposalIds },
+        eventId: event.id,
+        orgId: event.orgId,
+      },
+      select: { target: true },
+    });
+    const providerSubmittedProposalIds = new Set(
+      providerSubmittedActivities
+        .map((activity) => activity.target)
+        .filter(Boolean),
+    );
+    const providerBackedProposals = event.proposals.filter(
+      (proposal) => hasProviderListingContext(proposal) && providerSubmittedProposalIds.has(proposal.id),
+    );
+
+    if (providerBackedProposals.length === 0) {
+      return NextResponse.json(
+        { error: "No accepted provider-backed proposals found for this event" },
+        { status: 400 }
+      );
+    }
+
     let created = 0;
     let updated = 0;
 
     // For each accepted proposal, create or update payout line
-    for (const proposal of event.proposals) {
+    for (const proposal of providerBackedProposals) {
       // Find existing payout for this proposal (using proposalId to match)
       // For SINGLE mode, we expect one payout per proposal
       const existingPayout = await prisma.payout.findFirst({

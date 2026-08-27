@@ -13,6 +13,7 @@ const {
 } = vi.hoisted(() => {
   const prisma = {
     proposal: { findUnique: vi.fn(), update: vi.fn() },
+    activity: { findFirst: vi.fn() },
     contract: { create: vi.fn() },
     escrowAccount: { create: vi.fn() },
   };
@@ -102,6 +103,7 @@ beforeEach(() => {
   canManageEvent.mockReturnValue(true);
   prisma.proposal.findUnique.mockResolvedValue(proposal());
   prisma.proposal.update.mockResolvedValue(proposal({ status: "ACCEPTED" }));
+  prisma.activity.findFirst.mockResolvedValue({ id: "activity-provider-submitted" });
   prisma.contract.create.mockResolvedValue({ id: "contract-1" });
   prisma.escrowAccount.create.mockResolvedValue({ id: "escrow-1" });
   recordAcceptance.mockResolvedValue({ id: "acceptance-1" });
@@ -134,12 +136,30 @@ describe("provider-backed proposal approval guard", () => {
     expect(recordAcceptance).not.toHaveBeenCalled();
   });
 
+  it("rejects planner-sent proposals without provider-submitted evidence", async () => {
+    prisma.activity.findFirst.mockResolvedValue(null);
+
+    const response = await POST(request(), params);
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({ error: "Only provider-submitted proposals with listing context can be approved" });
+    expect(prisma.proposal.update).not.toHaveBeenCalled();
+    expect(recordAcceptance).not.toHaveBeenCalled();
+  });
+
   it("approves a sent provider-backed proposal with listing context", async () => {
     const response = await POST(request(), params);
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.status).toBe("ACCEPTED");
+    expect(prisma.activity.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        action: "PROVIDER_PROPOSAL_SUBMITTED",
+        target: "proposal-1",
+      }),
+    }));
     expect(prisma.proposal.update).toHaveBeenCalledWith({ where: { id: "proposal-1" }, data: { status: "ACCEPTED" } });
     expect(recordAcceptance).toHaveBeenCalledWith(expect.objectContaining({ proposalId: "proposal-1" }));
   });
@@ -165,15 +185,61 @@ describe("proposal detail provider-backed status copy", () => {
     );
 
     expect(screen.getByText("Status: DRAFT")).toBeInTheDocument();
-    expect(screen.getByText(/Draft\/generated proposal — not provider-backed/i)).toBeInTheDocument();
+    expect(screen.getByText(/Draft\/generated\/listing-backed proposal — not provider-backed/i)).toBeInTheDocument();
     expect(screen.queryByText("Approve Proposal")).not.toBeInTheDocument();
+  });
+
+  it("locks planner-sent listing-backed proposals without provider evidence", () => {
+    render(
+      <ProposalPageClient
+        proposal={{
+          ...proposal({ providerBackedEvidence: false }),
+          lineItems: [],
+          milestones: [],
+          sections: [],
+          contract: null,
+          summary: "Planner sent draft against a marketplace listing",
+        }}
+        eventVaultHref="/pro/planner/vault/smith-wedding-weekend"
+        hasContent
+        canEdit
+        thread={null}
+      />,
+    );
+
+    expect(screen.getByText(/Draft\/generated\/listing-backed proposal — not provider-backed/i)).toBeInTheDocument();
+    expect(screen.getByText(/provider-submitted proposal evidence/i)).toBeInTheDocument();
+    expect(screen.queryByText("Approve Proposal")).not.toBeInTheDocument();
+  });
+
+  it("does not expose contract generation for accepted listing-backed proposals without provider evidence", () => {
+    render(
+      <ProposalPageClient
+        proposal={{
+          ...proposal({ status: "ACCEPTED", providerBackedEvidence: false }),
+          lineItems: [],
+          milestones: [],
+          sections: [],
+          contract: null,
+          summary: "Accepted planner draft without provider handoff evidence",
+        }}
+        eventVaultHref="/pro/planner/vault/smith-wedding-weekend"
+        hasContent
+        canEdit
+        thread={null}
+      />,
+    );
+
+    expect(screen.getByText("Generate Contract")).toBeInTheDocument();
+    expect(screen.getByText(/Contract generation is unavailable until provider-submitted proposal evidence is present/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Generate Contract" })).not.toBeInTheDocument();
   });
 
   it("labels provider-backed proposals as vendor-ready", () => {
     render(
       <ProposalPageClient
         proposal={{
-          ...proposal(),
+          ...proposal({ providerBackedEvidence: true }),
           lineItems: [],
           milestones: [],
           sections: [],

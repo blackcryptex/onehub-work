@@ -8,6 +8,10 @@ import { logger } from "@/lib/logger";
 import { trackError } from "@/lib/errorTracker";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canSendProposal, canManageEvent } from "@/lib/rbac";
+import {
+  PROVIDER_BACKED_PROPOSAL_ERROR,
+  hasProviderSubmittedEvidence,
+} from "@/lib/provider-backed-proposal";
 
 const lineItemSchema = z.object({
   label: z.string(),
@@ -154,11 +158,13 @@ export const proposalRouter = router({
         message: "You do not have permission to accept this proposal",
       });
     }
-    const isProviderSubmitted = proposal.status === "SENT" && Boolean(proposal.listingId && proposal.listing?.id);
+    const isProviderSubmitted =
+      proposal.status === "SENT" &&
+      (await hasProviderSubmittedEvidence(prisma, proposal));
     if (!isProviderSubmitted) {
       throw new TRPCError({
         code: "BAD_REQUEST",
-        message: "Only provider-submitted proposals with listing context can be approved",
+        message: PROVIDER_BACKED_PROPOSAL_ERROR,
       });
     }
     // Create contract

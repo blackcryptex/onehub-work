@@ -79,6 +79,7 @@ type PlannerProposal = {
   description?: string | null;
   status: string;
   totalCents: number;
+  providerSubmittedEvidence?: boolean;
   contract?: { id: string; status: string } | null;
   milestones?: { id: string; title?: string; status: string; amountCents: number; dueDate: Date | string | null }[];
   listing?: { id: string; title: string; type: string } | null;
@@ -241,9 +242,14 @@ function isPaymentAtRiskStatus(status: string) {
 }
 
 function proposalTrustLabel(proposal: PlannerProposal) {
-  return proposal.status.toUpperCase() !== "DRAFT" && Boolean(proposal.listing?.id)
+  if (!proposal.listing?.id) return "missing provider context";
+  return proposal.providerSubmittedEvidence
     ? "provider-backed / vendor-ready"
-    : "draft or missing provider context";
+    : "pending provider-submitted proof";
+}
+
+function isProviderBackedProposal(proposal: PlannerProposal) {
+  return Boolean(proposal.listing?.id && proposal.providerSubmittedEvidence);
 }
 
 function signatureProgress(contract: PlannerContract) {
@@ -583,9 +589,13 @@ export function ProPlannerDashboard({
         .filter((proposal) => !proposal.contract)
         .map((proposal) => ({
           id: `next-contract-${proposal.id}`,
-          label: "Missing contract or signature action",
+          label: isProviderBackedProposal(proposal)
+            ? "Missing contract or signature action"
+            : "Provider proof pending",
           event,
-          detail: `${proposal.title} has proposal value ${formatMoney(proposal.totalCents)} and needs contract/signature movement before booking confidence.`,
+          detail: isProviderBackedProposal(proposal)
+            ? `${proposal.title} has provider-backed proposal value ${formatMoney(proposal.totalCents)} and needs contract/signature movement before booking confidence.`
+            : `${proposal.title} has proposal value ${formatMoney(proposal.totalCents)} but is pending provider-submitted proof before contract, confirmed-vendor, or payment movement.`,
           href: `/pro/planner/vault/${event.slug}#workspace-proposals-detail`,
         }))).slice(0, 2),
       ...localEvents.flatMap((event) => (event.proposals ?? [])
@@ -1687,7 +1697,7 @@ export function ProPlannerDashboard({
               {dashboard.proposalPaymentPlanQueue.length > 0 ? dashboard.proposalPaymentPlanQueue.map((proposal) => (
                 <Link key={proposal.id} href={proposal.href as Route} className="block rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-emerald-200">
                   <p className="font-semibold text-slate-900">{proposal.title}</p>
-                  <p className="mt-1 text-sm text-slate-700">{proposal.event.name} / {proposal.status} / {formatMoney(proposal.amountCents)} / {proposal.openMilestones.length} open milestone{proposal.openMilestones.length === 1 ? "" : "s"}</p>
+                  <p className="mt-1 text-sm text-slate-700">{proposal.event.name} / {proposal.status} / {proposal.trustLabel} / {formatMoney(proposal.amountCents)} / {proposal.openMilestones.length} open milestone{proposal.openMilestones.length === 1 ? "" : "s"}</p>
                 </Link>
               )) : (
                 <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No proposal payment plans currently need planner attention.</p>
