@@ -20,7 +20,7 @@ import CalendarPane from "@/components/panes/CalendarPane";
 import { Overview } from "@/components/overview/Overview";
 import { EventWizard } from "@/components/event-wizard/EventWizard";
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { EventItem } from "@/lib/types";
 import { EventItem as EventItemExtended } from "@/lib/types.event";
 import { adaptEventToNewFormat, adaptEventToOldFormat } from "@/lib/eventAdapter";
@@ -65,6 +65,7 @@ function toEventManagementTab(tab: string): EventManagementTab {
 // Wrapper component to handle useSearchParams (must be in a client component with Suspense)
 export function DIYPlannerDashboard() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [eventsError, setEventsError] = useState<string | null>(null);
@@ -170,6 +171,10 @@ export function DIYPlannerDashboard() {
   };
 
   const handleShare = () => {
+    if (selectedEvent?.slug) {
+      router.push(`/diy-planner/vault/${selectedEvent.slug}` as any);
+      return;
+    }
     setUiRoute("shareAccess");
   };
 
@@ -508,10 +513,10 @@ export function DIYPlannerDashboard() {
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div className="max-w-2xl">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Share access</p>
-                  <h2 className="mt-2 text-xl font-semibold text-slate-950">Sharing is not connected yet</h2>
+                  <h2 className="mt-2 text-xl font-semibold text-slate-950">Open canonical client sharing</h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    No private share or access-control flow is wired for DIY events in this cockpit yet.
-                    Keep this event private here; use proposals or contracts when you need vendor-facing records.
+                    Client sharing is managed from the event vault detail page so access control, stakeholder records,
+                    and client-safe summaries stay in one persisted path. Open the vault detail when this event has a route.
                   </p>
                 </div>
                 {selectedEvent.slug && (
@@ -534,14 +539,14 @@ export function DIYPlannerDashboard() {
                   onClick={() => setUiRoute("eventDetail")}
                   className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
                 >
-                  Back to event
+                  Back to event cockpit
                 </button>
                 <button
                   type="button"
-                  onClick={() => setUiRoute("proposals")}
+                  onClick={() => selectedEvent.slug ? router.push(`/diy-planner/vault/${selectedEvent.slug}` as any) : setUiRoute("eventDetail")}
                   className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 >
-                  Review proposals
+                  Open event vault sharing
                 </button>
               </div>
             </div>

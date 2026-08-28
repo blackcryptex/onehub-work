@@ -1,7 +1,10 @@
+import { LegalMetadataNotice } from "@/lib/legal-content";
+
 export default function LegalPaymentsPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-12 space-y-6">
       <h1 className="text-3xl font-bold">Payments and held funds</h1>
+      <LegalMetadataNotice surface="payment" />
       <p className="text-slate-600">OneHub uses held-funds wording for the guarded MVP. Client payments are collected against approved proposal and contract terms, then held pending milestone release or admin review.</p>
       <section className="space-y-2">
         <h2 className="text-xl font-semibold">Release controls</h2>

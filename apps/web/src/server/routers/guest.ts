@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { recordActivity } from "@/server/lib/activity";
 import { sendOutboundEmail } from "@/lib/outbound";
 import { randomBytes } from "crypto";
+import { submitGuestRsvp } from "@/lib/guest-rsvp";
 
 export const guestRouter = router({
   list: publicProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
@@ -176,19 +177,6 @@ export const guestRouter = router({
     dietary: z.string().optional(),
     notes: z.string().optional(),
   })).mutation(async ({ input }) => {
-    const invitation = await prisma.invitation.findUniqueOrThrow({ where: { token: input.token }, include: { guest: { include: { guestList: true } } } });
-    const guest = invitation.guest;
-    await prisma.guest.update({
-      where: { id: guest.id },
-      data: {
-        status: input.status,
-        dietary: input.dietary,
-        notes: input.notes,
-      },
-    });
-    await prisma.invitation.update({ where: { id: invitation.id }, data: { respondedAt: new Date() } });
-    const rsvpCount = await prisma.guest.count({ where: { guestListId: guest.guestListId, status: { in: ["ACCEPTED", "DECLINED"] } } });
-    await prisma.guestList.update({ where: { id: guest.guestListId }, data: { rsvped: rsvpCount } });
-    return { success: true, guestId: guest.id };
+    return submitGuestRsvp(input);
   }),
 });

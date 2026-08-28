@@ -5,7 +5,7 @@
   "packageManager": "pnpm@9.0.0",
   "scripts": {
     "dev": "pnpm -C apps/web dev",
-    "build": "pnpm db:generate && pnpm -C apps/web build",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 pnpm db:generate && NODE_OPTIONS=--max-old-space-size=4096 pnpm -C apps/web build",
     "start": "pnpm -C apps/web start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

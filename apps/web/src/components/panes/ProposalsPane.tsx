@@ -4,7 +4,6 @@ import { useMemo, useState, useEffect } from 'react';
 
 import { EventItem, Proposal, ProposalLine, Vendor, VendorCategory } from '@/lib/types.event';
 import { aiProposalChecklist, aiGenerateProposals, aiProposalFromVendor, aiProposalFromCategory } from '@/lib/ai.service';
-import { sendProposalEmail } from '@/lib/email.service';
 import ProposalPreviewModal from '@/components/ProposalPreviewModal';
 import { useShortlist } from '@/hooks/useShortlist';
 
@@ -77,7 +76,7 @@ export default function ProposalsPane({ event, onUpdate }:{ event: EventItem; on
     setPreviewedIds(prev => new Set([...prev, id]));
   }
 
-  async function send(p: Proposal) {
+  function send(p: Proposal) {
     if (!previewedIds.has(p.id)) {
       alert('Please preview the proposal before sending.');
       return;
@@ -89,13 +88,9 @@ export default function ProposalsPane({ event, onUpdate }:{ event: EventItem; on
       return;
     }
 
-    // Update status & email vendor (if available)
+    // Draft-only cockpit status. This does not create or send a canonical provider-backed proposal.
     const next = drafts.map(d => d.id===p.id ? { ...d, status:'sent' as const, lastUpdated: new Date().toISOString() } : d);
     setDrafts(next); onUpdate({ proposals: next });
-    const to = vendors.find(v=>v.id===p.vendorId)?.email;
-    if (to) {
-      await sendProposalEmail(to, `Proposal for ${event.name}`, 'Please review the attached proposal.');
-    }
   }
 
   function approve(p: Proposal) {
@@ -129,6 +124,10 @@ export default function ProposalsPane({ event, onUpdate }:{ event: EventItem; on
             {loading ? 'Generating…' : 'Generate from Shortlist'}
           </button>
         </div>
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+          DIY cockpit proposals are draft planning aids only. They do not create provider-submitted evidence,
+          vendor acceptance, contract readiness, signatures, or payment movement.
+        </p>
       </div>
 
       {/* Legacy Checklist (keep for backwards compatibility) */}
@@ -157,13 +156,13 @@ export default function ProposalsPane({ event, onUpdate }:{ event: EventItem; on
 
       {/* Proposal Drafts */}
       <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-5">
-        <h3 className="font-semibold">Proposal Drafts &amp; Status</h3>
+        <h3 className="font-semibold">Proposal Drafts &amp; Planning Status</h3>
         <ul className="mt-3 space-y-3">
           {drafts.map(p=>(
             <li key={p.id} className="rounded-xl border p-3">
               <div className="flex items-center justify-between">
                 <div className="font-medium">{p.vendorName || 'Unassigned vendor'}</div>
-                <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 capitalize">{p.status}</span>
+                <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 capitalize">local draft: {p.status}</span>
               </div>
               {p.lines.map((ln, idx)=>(
                 <div key={ln.id} className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -184,17 +183,17 @@ export default function ProposalsPane({ event, onUpdate }:{ event: EventItem; on
                   onClick={() => send(p)}
                   disabled={!previewedIds.has(p.id) || p.lines.every(l => !l.title)}
                   className="rounded-lg px-3 py-1.5 text-sm border hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={!previewedIds.has(p.id) ? 'Preview required before sending' : ''}
+                  title={!previewedIds.has(p.id) ? 'Preview required before staging the draft' : ''}
                 >
-                  Send
+                  Stage draft
                 </button>
                 {p.status === 'pending' && (
                   <>
                     <button onClick={() => approve(p)} className="rounded-lg px-3 py-1.5 text-sm border bg-green-50 hover:bg-green-100 text-green-700">
-                      Approve
+                      Mark preferred draft
                     </button>
                     <button onClick={() => reject(p)} className="rounded-lg px-3 py-1.5 text-sm border bg-red-50 hover:bg-red-100 text-red-700">
-                      Reject
+                      Remove from plan
                     </button>
                   </>
                 )}

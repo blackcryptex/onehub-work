@@ -40,6 +40,7 @@ export default async function ProPlannerPage() {
   let members: NonNullable<ProPlannerDashboardProps["members"]> = [];
   let invites: NonNullable<ProPlannerDashboardProps["invites"]> = [];
   let vendorRelationships: NonNullable<ProPlannerDashboardProps["vendorRelationships"]> = [];
+  let crisisIssues: NonNullable<ProPlannerDashboardProps["crisisIssues"]> = [];
 
   try {
     [events, listings, notifications, members, invites, vendorRelationships] = await Promise.all([
@@ -83,10 +84,13 @@ export default async function ProPlannerPage() {
             id: true,
             subject: true,
             createdAt: true,
+            updatedAt: true,
+            visibility: true,
+            purpose: true,
             participants: { select: { email: true, roleHint: true } },
             messages: { select: { id: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 1 },
           },
-          orderBy: { createdAt: "desc" },
+          orderBy: { updatedAt: "desc" },
           take: 8,
         },
         bookingRequests: {
@@ -185,6 +189,15 @@ export default async function ProPlannerPage() {
     }),
     ]);
 
+    const eventIds = events.map((event) => event.id);
+    crisisIssues = eventIds.length > 0
+      ? await prisma.crisisIssue.findMany({
+          where: { eventId: { in: eventIds }, status: { in: ["OPEN", "IMPACT_REVIEW", "REPLACEMENT_STARTED"] } },
+          orderBy: [{ severity: "desc" }, { createdAt: "desc" }],
+          take: 20,
+        })
+      : [];
+
     const proposalIds = events.flatMap((event) => (event.proposals ?? []).map((proposal) => proposal.id));
     const providerSubmittedActivities = proposalIds.length > 0
       ? await prisma.activity.findMany({
@@ -257,6 +270,7 @@ export default async function ProPlannerPage() {
       members={members}
       invites={invites}
       vendorRelationships={vendorRelationships}
+      crisisIssues={crisisIssues}
     />
   );
 }

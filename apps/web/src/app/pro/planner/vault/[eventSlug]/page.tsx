@@ -254,6 +254,12 @@ export default async function ProVaultDetailPage({
     return notFound();
   }
 
+  const crisisIssues = await prisma.crisisIssue.findMany({
+    where: { eventId: event.id, status: { in: ["OPEN", "IMPACT_REVIEW", "REPLACEMENT_STARTED"] } },
+    orderBy: [{ severity: "desc" }, { createdAt: "desc" }],
+    take: 10,
+  });
+
   const canManage = canManageEvent(user, event);
   const canDelete = canDeleteEvent(user, event);
 
@@ -415,6 +421,7 @@ export default async function ProVaultDetailPage({
 
   const eventWorkspaceTabs = [
     { label: "Overview", href: "#event-workspace" },
+    { label: "Crisis", href: "#workspace-crisis-detail" },
     { label: "Sourcing", href: "#workspace-sourcing" },
     { label: "Shortlist", href: "#workspace-shortlist-detail" },
     { label: "Requests", href: "#workspace-requests-detail" },
@@ -588,6 +595,15 @@ export default async function ProVaultDetailPage({
       href: "#workspace-timeline-detail",
       icon: CalendarDays,
     },
+    {
+      title: "Crisis recovery",
+      summary: crisisIssues.length > 0
+        ? `${crisisIssues.length} active issue${crisisIssues.length === 1 ? "" : "s"}; impact and replacement actions require manual review.`
+        : "Record cancellations or provider problems and start replacement recovery with event context.",
+      action: "Open crisis workflow",
+      href: "#workspace-crisis-detail",
+      icon: AlertTriangle,
+    },
   ];
 
   const operationCards = [
@@ -662,6 +678,17 @@ export default async function ProVaultDetailPage({
       status: commerceSpine[6]?.state ?? "Pending",
       action: "Open tasks",
       href: `/events/${eventSlug}/checklists`,
+    },
+    {
+      id: "workspace-crisis",
+      title: "Crisis recovery",
+      icon: AlertTriangle,
+      summary: crisisIssues.length > 0
+        ? `${crisisIssues.length} active cancellation/problem record${crisisIssues.length === 1 ? "" : "s"}; review impact before contract, refund, or payment decisions.`
+        : "No active crisis issue. Use this when a vendor, venue, contract, payment, or milestone problem appears.",
+      status: crisisIssues.length > 0 ? "Blocked" : "Pending",
+      action: "Review crisis lane",
+      href: "#workspace-crisis-detail",
     },
     {
       id: "workspace-guests",
@@ -961,6 +988,41 @@ export default async function ProVaultDetailPage({
                 })}
               </div>
             </section>
+
+            <Card id="workspace-crisis-detail" className="scroll-mt-24 p-5">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">Crisis recovery</p>
+                  <h3 className="mt-1 text-lg font-semibold">Cancellation/problem impact and replacement start</h3>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Records vendor, venue, contract, payment, and milestone issues for this event. Impact is status-only and manual-review oriented; OneHub does not auto-cancel contracts, move money, promise refunds, or make legal claims.
+                  </p>
+                </div>
+                <Button asChild size="sm" variant="secondary">
+                  <Link href="/pro/planner">Record or start replacement</Link>
+                </Button>
+              </div>
+              <div className="mt-4 space-y-3">
+                {crisisIssues.length > 0 ? (
+                  crisisIssues.map((issue) => (
+                    <div key={issue.id} className="rounded-xl border border-rose-100 bg-rose-50 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-semibold text-slate-950">{issue.title}</p>
+                        <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-rose-700">{issue.severity} / {issue.status.replace(/_/g, " ")}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-rose-900">{issue.issueType.replace(/_/g, " ")}</p>
+                      <p className="mt-2 text-sm text-slate-700">{issue.impactSummary}</p>
+                      <p className="mt-2 text-sm font-medium text-slate-900">{issue.recommendedNextAction}</p>
+                      {issue.replacementBookingRequestId && <p className="mt-2 text-xs font-semibold text-emerald-700">Replacement request started: {issue.replacementBookingRequestId}</p>}
+                    </div>
+                  ))
+                ) : (
+                  <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                    No active crisis issues are recorded for this event. If a provider cancels or a contract/payment/milestone problem appears, record it from the Pro Planner crisis lane and preserve this event context.
+                  </p>
+                )}
+              </div>
+            </Card>
 
             <section id="workspace-sourcing" className="scroll-mt-24 space-y-4">
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

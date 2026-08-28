@@ -128,10 +128,54 @@ describe("core dashboard destination routes", () => {
     expect(findThread).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
         id: "thread-1",
-        org: { members: { some: { userId: "planner-1" } } },
+        OR: expect.arrayContaining([
+          { org: { ownerId: "planner-1" } },
+          { org: { members: { some: { userId: "planner-1" } } } },
+          { participants: { some: { userId: "planner-1" } } },
+          { listing: { org: { ownerId: "planner-1" } } },
+          { listing: { org: { members: { some: { userId: "planner-1" } } } } },
+        ]),
       }),
     }));
     expect(document.body.textContent).not.toMatch(forbiddenPlaceholderCopy);
+  });
+
+  it("keeps admin /messages list and /messages/[threadId] detail access in parity", async () => {
+    getCurrentUser.mockResolvedValue({ id: "admin-1", role: "ADMIN", name: "Admin", email: "admin@example.com" });
+    findThreads.mockResolvedValue([{ id: "thread-1", subject: "Proposal Discussion", org: { name: "Atlas Events" }, event: null, listing: null, proposal: null, participants: [], messages: [] }]);
+    const { default: MessagesPage } = await import("../src/app/(app)/messages/page");
+    const { default: MessageThreadPage } = await import("../src/app/(app)/messages/[threadId]/page");
+
+    render(await MessagesPage());
+    expect(screen.getByRole("link", { name: /proposal discussion/i })).toHaveAttribute("href", "/messages/thread-1");
+    expect(findThreads).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
+
+    render(await MessageThreadPage({ params: Promise.resolve({ threadId: "thread-1" }) }));
+    expect(screen.getByRole("heading", { name: /proposal discussion/i })).toBeInTheDocument();
+    expect(findThread).toHaveBeenLastCalledWith(expect.objectContaining({
+      where: { id: "thread-1" },
+    }));
+  });
+
+  it("preserves non-admin /messages/[threadId] isolation for unrelated users", async () => {
+    getCurrentUser.mockResolvedValue({ id: "outsider-1", role: "PRO_PLANNER", name: "Outsider", email: "outsider@example.com" });
+    findThread.mockResolvedValue(null);
+    const { default: MessageThreadPage } = await import("../src/app/(app)/messages/[threadId]/page");
+
+    await expect(MessageThreadPage({ params: Promise.resolve({ threadId: "thread-1" }) })).rejects.toThrow("not-found");
+    expect(findThread).toHaveBeenLastCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        id: "thread-1",
+        OR: expect.arrayContaining([
+          { org: { ownerId: "outsider-1" } },
+          { org: { members: { some: { userId: "outsider-1" } } } },
+          { participants: { some: { userId: "outsider-1" } } },
+          { participants: { some: { email: { equals: "outsider@example.com", mode: "insensitive" } } } },
+          { listing: { org: { ownerId: "outsider-1" } } },
+          { listing: { org: { members: { some: { userId: "outsider-1" } } } } },
+        ]),
+      }),
+    }));
   });
 
   it("renders /notifications as a useful notification center with a truthful empty state", async () => {

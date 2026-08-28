@@ -45,6 +45,7 @@ type UIRoute =
   | "team"
   | "clients"
   | "vendors"
+  | "crisis"
   | "timeline"
   | "contracts"
   | "payments"
@@ -71,6 +72,27 @@ type PlannerBookingRequest = {
   createdAt: Date | string;
   contactName: string;
   listing?: { id: string; title: string; type: string; category: string } | null;
+};
+
+type PlannerCrisisIssue = {
+  id: string;
+  createdAt: Date | string;
+  issueType: string;
+  severity: string;
+  status: string;
+  title: string;
+  description?: string | null;
+  eventId: string;
+  listingId?: string | null;
+  bookingRequestId?: string | null;
+  proposalId?: string | null;
+  contractId?: string | null;
+  paymentMilestoneId?: string | null;
+  replacementListingId?: string | null;
+  replacementBookingRequestId?: string | null;
+  impactSummary: string;
+  recommendedNextAction: string;
+  manualReviewNotes?: string | null;
 };
 
 type PlannerProposal = {
@@ -107,6 +129,9 @@ type PlannerThread = {
   id: string;
   subject: string;
   createdAt: Date | string;
+  updatedAt?: Date | string;
+  visibility?: "INTERNAL" | "CLIENT_VISIBLE" | "PROVIDER_VISIBLE" | "ALL_PARTIES";
+  purpose?: "EVENT_COORDINATION" | "PROPOSAL" | "BOOKING_REQUEST" | "INTERNAL_NOTE" | "DOCUMENT_REVIEW" | "ADMIN_REVIEW";
   participants?: { email: string; roleHint: string | null }[];
   messages?: PlannerThreadMessage[];
 };
@@ -207,6 +232,7 @@ interface ProPlannerDashboardProps {
   members?: PlannerMember[];
   invites?: PlannerInvite[];
   vendorRelationships?: PlannerVendorRelationship[];
+  crisisIssues?: PlannerCrisisIssue[];
 }
 
 function formatDate(value: Date | string | null | undefined) {
@@ -279,6 +305,7 @@ function documentKind(value: string) {
 }
 
 function isInternalThread(thread: PlannerThread) {
+  if (thread.visibility) return thread.visibility === "INTERNAL";
   const text = `${thread.subject} ${(thread.messages ?? []).map((message) => message.bodyMd ?? "").join(" ")}`.toLowerCase();
   const internalParticipant = (thread.participants ?? []).some((participant) => (participant.roleHint ?? "").toLowerCase().includes("internal"));
   return internalParticipant || text.includes("internal") || text.includes("planner-only") || text.includes("private note");
@@ -296,6 +323,7 @@ export function ProPlannerDashboard({
   members = [],
   invites = [],
   vendorRelationships = [],
+  crisisIssues = [],
 }: ProPlannerDashboardProps) {
   const [uiRoute, setUiRoute] = useState<UIRoute>("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -334,6 +362,18 @@ export function ProPlannerDashboard({
   const [internalNoteBody, setInternalNoteBody] = useState("");
   const [internalNoteStatus, setInternalNoteStatus] = useState<string | null>(null);
   const [internalNoteBusy, setInternalNoteBusy] = useState(false);
+  const [localCrisisIssues, setLocalCrisisIssues] = useState<PlannerCrisisIssue[]>(crisisIssues);
+  const [crisisEventId, setCrisisEventId] = useState(events[0]?.id ?? "");
+  const [crisisTitle, setCrisisTitle] = useState("");
+  const [crisisType, setCrisisType] = useState("VENDOR_CANCELLATION");
+  const [crisisSeverity, setCrisisSeverity] = useState("HIGH");
+  const [crisisListingId, setCrisisListingId] = useState("");
+  const [crisisProposalId, setCrisisProposalId] = useState("");
+  const [crisisContractId, setCrisisContractId] = useState("");
+  const [crisisReplacementListingId, setCrisisReplacementListingId] = useState("");
+  const [crisisDescription, setCrisisDescription] = useState("");
+  const [crisisStatus, setCrisisStatus] = useState<string | null>(null);
+  const [crisisBusy, setCrisisBusy] = useState(false);
 
   const canManageEvent = (event: PlannerEvent): boolean => {
     if (userRole === "ADMIN") return true;
@@ -453,6 +493,8 @@ export function ProPlannerDashboard({
         href: `/pro/planner/vault/${event.slug}#workspace-proposals-detail`,
       }))).slice(0, 12);
     const moneyAtRiskCents = paymentRiskQueue.reduce((sum, item) => sum + item.amountCents, 0) + contractQueue.reduce((sum, item) => sum + item.unpaidCents, 0);
+    const openCrisisIssues = localCrisisIssues.filter((issue) => !["RESOLVED", "CANCELED"].includes(issue.status.toUpperCase()));
+    const criticalCrisisIssues = openCrisisIssues.filter((issue) => issue.severity === "CRITICAL");
     const unreadNotifications = notifications.filter((notification) => !notification.read);
     const eventDates = upcomingActiveEvents.slice(0, 4);
     const teamMembers = [
@@ -566,7 +608,7 @@ export function ProPlannerDashboard({
         ...thread,
         event,
         latestBody: latestMessage?.bodyMd ?? "No messages yet",
-        latestAt: latestMessage?.createdAt ?? thread.createdAt,
+        latestAt: latestMessage?.createdAt ?? thread.updatedAt ?? thread.createdAt,
         internal,
         href: `/messages/${thread.id}`,
       };
@@ -665,9 +707,11 @@ export function ProPlannerDashboard({
       },
       {
         label: "Next safe planner action",
-        title: nextSafeAction?.label ?? "Open event work",
-        detail: nextSafeAction?.detail ?? "Review the next event command center; OneHub will not send messages, approve contracts, or move money automatically.",
-        href: nextSafeAction?.href ?? "/pro/planner/vault",
+        title: criticalCrisisIssues[0]?.title ?? nextSafeAction?.label ?? "Open event work",
+        detail: criticalCrisisIssues[0]?.recommendedNextAction ?? nextSafeAction?.detail ?? "Review the next event command center; OneHub will not send messages, approve contracts, or move money automatically.",
+        href: criticalCrisisIssues[0]
+          ? `/pro/planner/vault/${localEvents.find((event) => event.id === criticalCrisisIssues[0]?.eventId)?.slug ?? ""}#workspace-crisis-detail`
+          : nextSafeAction?.href ?? "/pro/planner/vault",
       },
     ];
     const serviceReadiness = localListings.map((listing) => {
@@ -765,9 +809,11 @@ export function ProPlannerDashboard({
       messageTemplates,
       followUpReminders,
       nextActions,
+      openCrisisIssues,
+      criticalCrisisIssues,
       reportMetrics,
     };
-  }, [localEvents, localListings, localVendorRelationships, members, notifications, vendorRelationships.length]);
+  }, [localCrisisIssues, localEvents, localListings, localVendorRelationships, members, notifications, vendorRelationships.length]);
 
   const setupItems = [
     {
@@ -999,6 +1045,50 @@ export function ProPlannerDashboard({
       setInternalNoteStatus(error instanceof Error ? error.message : "Could not save internal planner note");
     } finally {
       setInternalNoteBusy(false);
+    }
+  };
+
+  const createCrisisIssue = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCrisisStatus(null);
+    const eventId = crisisEventId || localEvents[0]?.id;
+    const title = crisisTitle.trim();
+    if (!eventId || !title) return;
+    setCrisisBusy(true);
+    try {
+      const response = await fetch("/api/pro-planner/crisis/issues", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId,
+          issueType: crisisType,
+          severity: crisisSeverity,
+          title,
+          description: crisisDescription.trim() || undefined,
+          listingId: crisisListingId || undefined,
+          proposalId: crisisProposalId || undefined,
+          contractId: crisisContractId || undefined,
+          replacementListingId: crisisReplacementListingId || undefined,
+          replacementMessage: crisisReplacementListingId
+            ? `Replacement recovery request started from crisis issue: ${title}`
+            : undefined,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not record crisis issue");
+      const issue = payload.issue as PlannerCrisisIssue;
+      setLocalCrisisIssues((current) => [issue, ...current.filter((existing) => existing.id !== issue.id)]);
+      setCrisisTitle("");
+      setCrisisDescription("");
+      setCrisisListingId("");
+      setCrisisProposalId("");
+      setCrisisContractId("");
+      setCrisisReplacementListingId("");
+      setCrisisStatus(payload.replacementBookingRequestId ? "Crisis issue recorded and replacement provider request started." : "Crisis issue recorded with impact review and manual next action.");
+    } catch (error) {
+      setCrisisStatus(error instanceof Error ? error.message : "Could not record crisis issue");
+    } finally {
+      setCrisisBusy(false);
     }
   };
 
@@ -1458,6 +1548,40 @@ export function ProPlannerDashboard({
               )}
             </div>
             <Button asChild><Link href={"/explore/vendors" as Route}>Explore vendors and venues</Link></Button>
+          </Panel>
+        );
+      case "crisis":
+        return (
+          <Panel title="Crisis recovery workflow" icon={AlertTriangle}>
+            <p className="text-sm text-slate-600">Record vendor or venue cancellations/problems, see event commercial impact, and start replacement recovery without moving money or making legal claims.</p>
+            <div className="grid gap-3 md:grid-cols-3">
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Open issues</p><p className="mt-2 text-2xl font-semibold">{dashboard.openCrisisIssues.length}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Critical issues</p><p className="mt-2 text-2xl font-semibold">{dashboard.criticalCrisisIssues.length}</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase text-slate-500">Replacement requests</p><p className="mt-2 text-2xl font-semibold">{dashboard.openCrisisIssues.filter((issue) => issue.replacementBookingRequestId).length}</p></Card>
+            </div>
+            <form onSubmit={createCrisisIssue} className="rounded-xl border border-rose-100 bg-rose-50 p-4">
+              <h3 className="font-semibold text-slate-900">Record cancellation or provider problem</h3>
+              <p className="mt-1 text-xs text-slate-600">Creates a real crisis record and manual review task. Optional replacement selection starts a new provider request with event context.</p>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <label className="text-sm font-medium text-slate-800">Event<select value={crisisEventId} onChange={(event) => setCrisisEventId(event.target.value)} className={FORM_CONTROL_CLASS}>{localEvents.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}</select></label>
+                <label className="text-sm font-medium text-slate-800">Issue type<select value={crisisType} onChange={(event) => setCrisisType(event.target.value)} className={FORM_CONTROL_CLASS}><option value="VENDOR_CANCELLATION">Vendor cancellation</option><option value="VENUE_CANCELLATION">Venue cancellation</option><option value="PROVIDER_PROBLEM">Provider problem</option><option value="PAYMENT_PROBLEM">Payment problem</option><option value="CONTRACT_PROBLEM">Contract problem</option><option value="MILESTONE_RISK">Milestone risk</option><option value="OTHER">Other</option></select></label>
+                <label className="text-sm font-medium text-slate-800">Severity<select value={crisisSeverity} onChange={(event) => setCrisisSeverity(event.target.value)} className={FORM_CONTROL_CLASS}><option value="HIGH">High</option><option value="CRITICAL">Critical</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option></select></label>
+                <label className="text-sm font-medium text-slate-800">Impacted provider/listing<select value={crisisListingId} onChange={(event) => setCrisisListingId(event.target.value)} className={FORM_CONTROL_CLASS}><option value="">Infer from proposal/request or leave open</option>{dashboard.vendorRelationshipOptions.map((vendor) => <option key={vendor.listingId ?? vendor.id} value={vendor.listingId ?? ""}>{vendor.name}</option>)}</select></label>
+                <label className="text-sm font-medium text-slate-800">Impacted proposal<select value={crisisProposalId} onChange={(event) => setCrisisProposalId(event.target.value)} className={FORM_CONTROL_CLASS}><option value="">No proposal link</option>{localEvents.flatMap((event) => event.proposals ?? []).map((proposal) => <option key={proposal.id} value={proposal.id}>{proposal.title}</option>)}</select></label>
+                <label className="text-sm font-medium text-slate-800">Impacted contract<select value={crisisContractId} onChange={(event) => setCrisisContractId(event.target.value)} className={FORM_CONTROL_CLASS}><option value="">No contract link</option>{localEvents.flatMap((event) => event.contracts ?? []).map((contract) => <option key={contract.id} value={contract.id}>{contract.title}</option>)}</select></label>
+                <label className="text-sm font-medium text-slate-800">Replacement provider<select value={crisisReplacementListingId} onChange={(event) => setCrisisReplacementListingId(event.target.value)} className={FORM_CONTROL_CLASS}><option value="">Start with discovery only</option>{localListings.map((listing) => <option key={listing.id} value={listing.id}>{listing.title}</option>)}</select></label>
+                <label className="text-sm font-medium text-slate-800 md:col-span-2">Issue title<input value={crisisTitle} onChange={(event) => setCrisisTitle(event.target.value)} aria-label="Crisis issue title" className={FORM_CONTROL_CLASS} /></label>
+                <label className="text-sm font-medium text-slate-800 md:col-span-2">Known facts / careful wording<textarea value={crisisDescription} onChange={(event) => setCrisisDescription(event.target.value)} aria-label="Crisis issue description" className={TEXTAREA_CONTROL_CLASS} /></label>
+              </div>
+              <Button type="submit" className="mt-3" disabled={crisisBusy || !crisisEventId || !crisisTitle.trim()}>{crisisBusy ? "Recording..." : "Record crisis issue"}</Button>
+              {crisisStatus && <p className="mt-2 text-sm text-slate-700">{crisisStatus}</p>}
+            </form>
+            <div id="workspace-crisis-detail" className="space-y-3">
+              {dashboard.openCrisisIssues.length > 0 ? dashboard.openCrisisIssues.map((issue) => {
+                const event = localEvents.find((candidate) => candidate.id === issue.eventId);
+                return <div key={issue.id} className="rounded-xl border border-rose-100 bg-white p-4"><p className="font-semibold text-slate-900">{issue.title}</p><p className="mt-1 text-sm text-rose-900">{event?.name ?? "Event"} / {issue.issueType.replace(/_/g, " ")} / {issue.severity} / {issue.status.replace(/_/g, " ")}</p><p className="mt-2 text-sm text-slate-600">{issue.impactSummary}</p><p className="mt-2 text-sm font-medium text-slate-800">{issue.recommendedNextAction}</p>{issue.replacementBookingRequestId && <p className="mt-2 text-xs text-emerald-700">Replacement booking request: {issue.replacementBookingRequestId}</p>}<p className="mt-2 text-xs text-slate-500">Manual review only: no automatic refund, payout release, contract cancellation, or legal conclusion.</p></div>;
+              }) : <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No active crisis issues recorded. Use this lane when a vendor, venue, payment, contract, or milestone problem appears.</p>}
+            </div>
           </Panel>
         );
       case "timeline":

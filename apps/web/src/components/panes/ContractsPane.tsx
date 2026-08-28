@@ -4,7 +4,6 @@ import { useMemo, useState, useEffect } from 'react';
 
 import { EventItem, Proposal, Contract } from '@/lib/types.event';
 import { aiContractFromProposal } from '@/lib/ai.service';
-import { sendContractForESign } from '@/lib/esign.service';
 import ContractPreviewModal from '@/components/ContractPreviewModal';
 
 export default function ContractsPane({ event, onUpdate }:{ event: EventItem; onUpdate:(patch: Partial<EventItem>)=>void }) {
@@ -41,7 +40,7 @@ export default function ContractsPane({ event, onUpdate }:{ event: EventItem; on
     setPreviewedIds(prev => new Set([...prev, id]));
   }
 
-  async function sendForESign(c: Contract) {
+  function sendForESign(c: Contract) {
     if (!previewedIds.has(c.id)) {
       alert('Please preview the contract before sending.');
       return;
@@ -50,15 +49,16 @@ export default function ContractsPane({ event, onUpdate }:{ event: EventItem; on
     const next = drafts.map(d => d.id === c.id ? { ...d, status: 'sent' as const, lastUpdated: new Date().toISOString() } : d);
     setDrafts(next);
     onUpdate({ contracts: next });
-    
-    // Stub: would send to counterparty email if available
-    await sendContractForESign();
   }
 
   return (
     <section className="space-y-6">
       <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-5">
-        <h3 className="font-semibold">Generate from Accepted Proposals</h3>
+        <h3 className="font-semibold">Generate planning contracts from preferred drafts</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          These are local draft aids. They do not send an e-signature packet, create a signed contract,
+          confirm provider acceptance, or unlock payment readiness.
+        </p>
         <ul className="mt-3 space-y-2">
           {accepted.map(p=>(
             <li key={p.id} className="flex items-center justify-between rounded-lg border p-2">
@@ -66,18 +66,18 @@ export default function ContractsPane({ event, onUpdate }:{ event: EventItem; on
               <button onClick={()=>gen(p)} disabled={busy[p.id]} className="rounded-lg px-3 py-1.5 text-sm border hover:bg-slate-50">{busy[p.id]?'Generating…':'Generate Contract'}</button>
             </li>
           ))}
-          {accepted.length===0 && <li className="text-sm text-slate-500">No accepted proposals yet.</li>}
+          {accepted.length===0 && <li className="text-sm text-slate-500">No preferred proposal drafts yet.</li>}
         </ul>
       </div>
 
       <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-5">
-        <h3 className="font-semibold">Contract Drafts</h3>
+        <h3 className="font-semibold">Contract Planning Drafts</h3>
         <ul className="mt-3 space-y-3">
           {drafts.map(c=>(
             <li key={c.id} className="rounded-xl border p-3">
               <div className="flex items-center justify-between">
                 <div className="font-medium">{c.counterparty}</div>
-                <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 capitalize">{c.status}</span>
+                <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 capitalize">local draft: {c.status}</span>
               </div>
               <div className="mt-2 space-y-2">
                 {c.clauses.map((cl, idx)=>(
@@ -98,9 +98,9 @@ export default function ContractsPane({ event, onUpdate }:{ event: EventItem; on
                   onClick={() => sendForESign(c)}
                   disabled={!previewedIds.has(c.id)}
                   className="rounded-lg px-3 py-1.5 text-sm border hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={!previewedIds.has(c.id) ? 'Preview required before sending' : ''}
+                  title={!previewedIds.has(c.id) ? 'Preview required before staging the draft' : ''}
                 >
-                  Send for e-sign
+                  Stage draft for review
                 </button>
               </div>
             </li>

@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { constructEvent, getStripeOrThrow, headersMock, prisma } = vi.hoisted(() => ({
+const { constructEvent, getStripeOrThrow, headersMock, prisma, requireAcceptanceProof, recordActivity, evaluateHoldbackForPaymentIntent } = vi.hoisted(() => ({
   constructEvent: vi.fn(),
   getStripeOrThrow: vi.fn(),
   headersMock: vi.fn(),
+  requireAcceptanceProof: vi.fn(),
+  recordActivity: vi.fn(),
+  evaluateHoldbackForPaymentIntent: vi.fn(),
   prisma: {
     webhookEvent: {
       findUnique: vi.fn(),
@@ -22,14 +25,33 @@ const { constructEvent, getStripeOrThrow, headersMock, prisma } = vi.hoisted(() 
 vi.mock("next/headers", () => ({ headers: headersMock }));
 vi.mock("@/server/lib/stripe", () => ({ getStripeOrThrow }));
 vi.mock("@/lib/prisma", () => ({ prisma }));
+vi.mock("@/lib/acceptance", () => ({ requireAcceptanceProof }));
+vi.mock("@/server/lib/activity", () => ({
+  ACTIVITY_ACTIONS: { PAYMENT_CONFIRMED: "PAYMENT_CONFIRMED" },
+  recordActivity,
+}));
+vi.mock("@/lib/holdback", () => ({ evaluateHoldbackForPaymentIntent }));
+vi.mock("@/lib/booking-classification", () => ({ resolveBookingClassification: () => "standard" }));
+vi.mock("@/lib/fee-profile", () => ({
+  resolveFeeProfile: () => ({
+    platformFeeAmountCents: 300,
+    netAmountCents: 9700,
+    totalChargeAmountCents: 5000,
+    payoutBasisAmountCents: 4700,
+  }),
+}));
 
 import { POST } from "../src/app/api/stripe/webhook/route";
 
 const paymentIntent = {
   id: "pi_test_123",
   object: "payment_intent",
+  status: "succeeded",
   payment_method: "pm_test_123",
-  metadata: { paymentIntentId: "internal-pi-1" },
+  amount: 5000,
+  currency: "usd",
+  latest_charge: "ch_test_123",
+  metadata: { paymentIntentId: "internal-pi-1", contractId: "contract-1", milestoneId: "milestone-1" },
 };
 
 const stripeEvent = {
@@ -59,21 +81,36 @@ describe("stripe webhook idempotency", () => {
     prisma.paymentIntent.findUnique.mockResolvedValue({
       id: "internal-pi-1",
       amountCents: 5000,
+      currency: "USD",
       status: "REQUIRES_PAYMENT",
       contractId: "contract-1",
       milestoneId: "milestone-1",
+      payerId: "payer-1",
+      payeeId: "payee-1",
       contract: {
         id: "contract-1",
         proposalId: "proposal-1",
         status: "FULLY_SIGNED",
+        eventId: "event-1",
+        proposal: {
+          id: "proposal-1",
+          bookingClassification: "STANDARD",
+          listingId: "listing-1",
+          escrowAccount: { id: "escrow-1", balanceCents: 0, status: "OPEN" },
+          event: { orgId: "org-1", org: { type: "CLIENT" } },
+        },
       },
-      milestone: { id: "milestone-1" },
+      milestone: { id: "milestone-1", status: "PENDING" },
     });
+    requireAcceptanceProof.mockResolvedValue({ id: "acceptance-1" });
+    recordActivity.mockResolvedValue(undefined);
+    evaluateHoldbackForPaymentIntent.mockResolvedValue(undefined);
     prisma.$transaction.mockImplementation(async (fn) => fn({
-      paymentIntent: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
-      escrowAccount: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      paymentIntent: { findUnique: prisma.paymentIntent.findUnique, update: vi.fn().mockResolvedValue({}) },
+      escrowAccount: { update: vi.fn().mockResolvedValue({}) },
       paymentMilestone: { update: vi.fn().mockResolvedValue({}) },
       contract: { update: vi.fn().mockResolvedValue({}) },
+      transaction: { create: vi.fn().mockResolvedValue({}) },
     }));
   });
 

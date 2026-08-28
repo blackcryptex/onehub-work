@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { db } from "@/server/db";
 import type { AppUser } from "@/lib/auth-helpers";
 import { isAdmin } from "@/lib/auth-helpers";
+import { canManageEvent } from "@/lib/rbac";
 
 /**
  * Shared resource-level authorization helpers for tRPC routers.
@@ -54,6 +55,40 @@ export async function requireEventAccess(user: AppUser, eventId: string) {
   if (!event) throw notFound("Event not found");
   await requireOrgMembership(user, event.orgId);
   return event;
+}
+
+export const eventAccessInclude = {
+  org: { include: { members: true } },
+  stakeholders: { select: { userId: true, role: true } },
+  shares: { select: { viewerUserId: true, scope: true } },
+} as const;
+
+export async function requireEventManageAccess(user: AppUser, eventId: string) {
+  const event = await db.event.findUnique({
+    where: { id: eventId },
+    include: eventAccessInclude,
+  });
+  if (!event) throw notFound("Event not found");
+  if (!canManageEvent(user, event)) throw forbidden();
+  return event;
+}
+
+export async function requireAllowedEventAssignee(eventId: string, assigneeId: string | null | undefined) {
+  if (!assigneeId) return;
+  const event = await db.event.findUnique({
+    where: { id: eventId },
+    include: {
+      org: { include: { members: true } },
+      stakeholders: { select: { userId: true } },
+    },
+  });
+  if (!event) throw notFound("Event not found");
+  const allowed =
+    event.createdById === assigneeId ||
+    event.org.ownerId === assigneeId ||
+    event.org.members.some((member) => member.userId === assigneeId) ||
+    event.stakeholders.some((stakeholder) => stakeholder.userId === assigneeId);
+  if (!allowed) throw forbidden("Assignee must belong to the event organization or stakeholder list");
 }
 
 /**

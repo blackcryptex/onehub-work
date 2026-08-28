@@ -66,12 +66,27 @@ export default async function ClientEventSummaryPage({
           notes: true,
         },
       },
+      crisisIssues: {
+        where: { status: { in: ["OPEN", "IMPACT_REVIEW", "REPLACEMENT_STARTED"] } },
+        orderBy: [{ severity: "desc" }, { createdAt: "desc" }],
+        select: {
+          id: true,
+          title: true,
+          issueType: true,
+          severity: true,
+          status: true,
+          recommendedNextAction: true,
+        },
+        take: 5,
+      },
     },
   });
 
   if (!event) {
-    notFound();
+    return notFound();
   }
+
+  const crisisIssues = event.crisisIssues ?? [];
 
   // Check if user can view this event (stakeholder + shared)
   if (!canViewEvent(user, event)) {
@@ -241,6 +256,24 @@ export default async function ClientEventSummaryPage({
           notes: d.notes,
         }))}
       />
+
+      {crisisIssues.length > 0 && (
+        <Card className="p-6 border-amber-200 bg-amber-50">
+          <h3 className="text-lg font-semibold text-amber-950">Event issue updates</h3>
+          <p className="mt-2 text-sm text-amber-900">
+            Your planner has recorded an issue that may affect vendor, venue, schedule, contract, or payment planning. Details are manual-review only; no refund, payment release, cancellation, or legal outcome is automatic.
+          </p>
+          <div className="mt-4 space-y-3">
+            {crisisIssues.map((issue) => (
+              <div key={issue.id} className="rounded-xl border border-amber-200 bg-white p-3">
+                <p className="font-semibold text-slate-900">{issue.title}</p>
+                <p className="mt-1 text-xs text-amber-900">{issue.issueType.replace(/_/g, " ")} / {issue.severity} / {issue.status.replace(/_/g, " ")}</p>
+                <p className="mt-2 text-sm text-slate-700">{issue.recommendedNextAction}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Messages Section */}
       <Card className="p-6">

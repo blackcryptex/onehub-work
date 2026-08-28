@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripeOrThrow } from "@/server/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { applyConfirmedPaymentIntent, findInternalPaymentIntentByStripeIntent } from "@/lib/payments/confirm-payment";
 
 type WebhookReservation =
   | { status: "reserved"; id: string }
@@ -46,82 +47,20 @@ async function releaseWebhookReservation(reservationId: string) {
   });
 }
 
-async function findInternalPaymentIntent(paymentIntent: Stripe.PaymentIntent) {
-  const stripeIntentId = paymentIntent.id;
-  const metadataPaymentIntentId = paymentIntent.metadata?.paymentIntentId;
-
-  const internalPaymentIntent = await prisma.paymentIntent.findUnique({
-    where: { stripeIntentId },
-    include: {
-      contract: true,
-      milestone: true,
-    },
-  });
-
-  if (internalPaymentIntent) return internalPaymentIntent;
-  if (!metadataPaymentIntentId) return null;
-
-  return prisma.paymentIntent.update({
-    where: { id: metadataPaymentIntentId },
-    data: { stripeIntentId },
-    include: {
-      contract: true,
-      milestone: true,
-    },
-  });
-}
-
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  const internalPaymentIntent = await findInternalPaymentIntent(paymentIntent);
+  const internalPaymentIntent = await findInternalPaymentIntentByStripeIntent(paymentIntent);
 
   if (!internalPaymentIntent) return;
   if (internalPaymentIntent.status === "SUCCEEDED") return;
 
-  await prisma.$transaction(async (tx: any) => {
-    const fundingApplied = await tx.paymentIntent.updateMany({
-      where: {
-        id: internalPaymentIntent.id,
-        status: {
-          not: "SUCCEEDED",
-        },
-      },
-      data: {
-        status: "SUCCEEDED",
-        paymentMethod: paymentIntent.payment_method ? String(paymentIntent.payment_method) : undefined,
-      },
-    });
-    if (fundingApplied.count === 0) return;
-
-    await tx.escrowAccount.updateMany({
-      where: { proposalId: internalPaymentIntent.contract.proposalId },
-      data: {
-        status: "FUNDED",
-        balanceCents: {
-          increment: internalPaymentIntent.amountCents,
-        },
-      },
-    });
-
-    if (internalPaymentIntent.milestoneId) {
-      await tx.paymentMilestone.update({
-        where: { id: internalPaymentIntent.milestoneId },
-        data: { status: "IN_ESCROW" },
-      });
-    }
-
-    await tx.contract.update({
-      where: { id: internalPaymentIntent.contractId },
-      data: {
-        status: internalPaymentIntent.contract.status === "FULLY_SIGNED"
-          ? "IN_PAYMENT"
-          : internalPaymentIntent.contract.status,
-      },
-    });
+  await applyConfirmedPaymentIntent({
+    paymentIntentId: internalPaymentIntent.id,
+    stripeIntent: paymentIntent,
   });
 }
 
 async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
-  const internalPaymentIntent = await findInternalPaymentIntent(paymentIntent);
+  const internalPaymentIntent = await findInternalPaymentIntentByStripeIntent(paymentIntent);
 
   if (!internalPaymentIntent) return;
   if (internalPaymentIntent.status === "FAILED" || internalPaymentIntent.status === "SUCCEEDED") return;

@@ -29,6 +29,7 @@ import { seatingRouter } from "@/server/routers/seating";
 import { adminRouter } from "@/server/routers/admin";
 import { aiRouter } from "@/server/routers/ai";
 import { shortlistRouter } from "@/server/routers/shortlist";
+import { crisisRouter } from "@/server/routers/crisis";
 import { performHealthChecks } from "@/lib/health";
 
 export const appRouter = router({
@@ -71,6 +72,7 @@ export const appRouter = router({
   admin: adminRouter,
   ai: aiRouter,
   shortlist: shortlistRouter,
+  crisis: crisisRouter,
 });
 
 export type AppRouter = typeof appRouter;

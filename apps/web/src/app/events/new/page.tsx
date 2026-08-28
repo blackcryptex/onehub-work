@@ -388,7 +388,7 @@ export default function EventWizardPage() {
                     <p className="mt-1 text-sm text-rose-600">{errors.date}</p>
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <div>
                     <Label htmlFor="city">City *</Label>
                     <Input
@@ -554,8 +554,8 @@ export default function EventWizardPage() {
           </div>
 
           {/* Step 1: Submit Button */}
-          <div className="mt-8 flex justify-end">
-            <Button type="submit" disabled={loading} className="px-8 py-2">
+          <div className="mt-8 flex flex-col justify-end gap-3 sm:flex-row">
+            <Button type="submit" disabled={loading} className="w-full px-8 py-2 sm:w-auto">
               {session?.user?.role === "PRO_PLANNER" ? (
                 <>Next: Client Intake <ChevronRight className="w-4 h-4 ml-2" /></>
               ) : (
@@ -577,17 +577,18 @@ export default function EventWizardPage() {
               />
               
               {/* Step 2: Navigation Buttons */}
-              <div className="mt-8 flex justify-between">
+              <div className="mt-8 flex flex-col-reverse justify-between gap-3 sm:flex-row">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={handleBack}
                   disabled={loading}
+                  className="w-full sm:w-auto"
                 >
                   <ChevronLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
-                <Button type="submit" disabled={loading} className="px-8 py-2">
+                <Button type="submit" disabled={loading} className="w-full px-8 py-2 sm:w-auto">
                   {loading ? "Creating Event..." : "Create Event"}
                 </Button>
               </div>

@@ -9,24 +9,28 @@ export function RSVPForm({ token, currentStatus }: { token: string; currentStatu
   const [dietary, setDietary] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (s: "ACCEPTED" | "DECLINED") => {
     setLoading(true);
+    setError(null);
     try {
-      // TODO: Create /api/trpc endpoint handler for tRPC requests
-      // The tRPC router is defined but the API handler is missing
-      const res = await fetch("/api/trpc/guest.rsvp", {
+      const res = await fetch(`/api/rsvp/${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, status: s, dietary, notes }),
+        body: JSON.stringify({ status: s, dietary, notes }),
       });
       if (res.ok) {
         setStatus(s);
         router.refresh();
+      } else {
+        const body = await res.json().catch(() => null);
+        setError(body?.error || "We could not record your RSVP. Please try again.");
       }
     } catch (err) {
       console.error(err);
+      setError("We could not record your RSVP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -71,6 +75,7 @@ export function RSVPForm({ token, currentStatus }: { token: string; currentStatu
           Decline
         </Button>
       </div>
+      {error && <div className="text-sm text-red-600">{error}</div>}
     </div>
   );
 }

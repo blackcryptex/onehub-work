@@ -20,6 +20,9 @@ const { getCurrentUser, redirect, canAccessDashboard, prisma } = vi.hoisted(() =
     paymentHoldback: { count: vi.fn(), findFirst: vi.fn() },
     payout: { count: vi.fn(), findFirst: vi.fn() },
     abuseReport: { count: vi.fn(), findFirst: vi.fn() },
+    paymentIntent: { count: vi.fn() },
+    webhookEvent: { count: vi.fn() },
+    auditLog: { count: vi.fn() },
   },
 }));
 
@@ -58,6 +61,9 @@ beforeEach(() => {
   prisma.paymentHoldback.count.mockResolvedValue(1);
   prisma.payout.count.mockResolvedValue(4);
   prisma.abuseReport.count.mockResolvedValue(1);
+  prisma.paymentIntent.count.mockResolvedValue(2);
+  prisma.webhookEvent.count.mockResolvedValue(1);
+  prisma.auditLog.count.mockResolvedValue(42);
   prisma.dispute.findFirst.mockResolvedValue({ id: "dispute-1", title: "Venue cancellation claim", status: "UNDER_ADMIN_REVIEW", freezeState: "ADMIN_REVIEW", proposalId: "proposal-1" });
   prisma.refundRequest.findFirst.mockResolvedValue({ id: "refund-1", status: "OPEN", proposalId: "proposal-2", amountRequestedCents: 25000, currency: "USD" });
   prisma.paymentHoldback.findFirst.mockResolvedValue({ id: "holdback-1", paymentIntentId: "pi_1", state: "ACTIVE", proposalId: "proposal-3", triggerSummary: "manual risk review" });
@@ -78,8 +84,9 @@ describe("Admin overview trust and risk command workflow", () => {
     expect(screen.getByText(/2 admins • 3 event dreamers to verify/i)).toBeInTheDocument();
     expect(screen.getByText("Payments needing oversight")).toBeInTheDocument();
     expect(screen.getByText(/4 pending payouts • 1 refund request • 1 holdback/i)).toBeInTheDocument();
-    expect(screen.getByText("Platform safety route")).toBeInTheDocument();
+    expect(screen.getByText("Support operations queue")).toBeInTheDocument();
     expect(screen.getByText(/1 open abuse report/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 failed payments • 1 unprocessed webhook event • 42 audit trail entries/i)).toBeInTheDocument();
     expect(screen.getByText("Next safe admin action")).toBeInTheDocument();
     expect(screen.getByText(/Open the dispute detail and verify context before any override/i)).toBeInTheDocument();
     expect(screen.getByText(/Oversight only: no live money movement or credential changes from this dashboard/i)).toBeInTheDocument();
@@ -97,6 +104,9 @@ describe("Admin overview trust and risk command workflow", () => {
     prisma.paymentHoldback.count.mockResolvedValue(0);
     prisma.payout.count.mockResolvedValue(0);
     prisma.abuseReport.count.mockResolvedValue(0);
+    prisma.paymentIntent.count.mockResolvedValue(0);
+    prisma.webhookEvent.count.mockResolvedValue(0);
+    prisma.auditLog.count.mockResolvedValue(0);
     prisma.dispute.findFirst.mockResolvedValue(null);
     prisma.refundRequest.findFirst.mockResolvedValue(null);
     prisma.paymentHoldback.findFirst.mockResolvedValue(null);
@@ -109,7 +119,7 @@ describe("Admin overview trust and risk command workflow", () => {
     expect(screen.getByText(/No open trust queue item needs immediate admin review/i)).toBeInTheDocument();
     expect(screen.getByText(/Role roster is visible; keep admin access limited and review event dreamer conversions/i)).toBeInTheDocument();
     expect(screen.getByText(/No pending payouts, refund requests, or active holdbacks/i)).toBeInTheDocument();
-    expect(screen.getByText(/No open abuse reports; continue monitoring verification and user-role changes/i)).toBeInTheDocument();
+    expect(screen.getByText(/No open abuse reports. 0 failed payments • 0 unprocessed webhook events • 0 audit trail entries/i)).toBeInTheDocument();
     expect(screen.getByText(/Scan verification overview and user roles before changing platform settings/i)).toBeInTheDocument();
     expect(container.querySelector('a[href="/admin/verification"]')).not.toBeNull();
     expect(container.querySelector('a[href="/admin/users"]')).not.toBeNull();

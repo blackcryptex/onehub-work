@@ -21,6 +21,7 @@ type AdminRefund = { id: string; amountRequestedCents?: number | null; currency?
 type AdminHoldback = { id: string; paymentIntentId?: string | null; triggerSummary?: string | null };
 type AdminPayout = { id: string; amountCents?: number | null };
 type AdminAbuseReport = { id: string; reason?: string | null; targetType?: string | null };
+type AdminCrisisIssue = { id: string; title: string; severity: string; status: string };
 
 type AdminPrisma = typeof prisma & {
   dispute: {
@@ -43,6 +44,25 @@ type AdminPrisma = typeof prisma & {
     count(args: unknown): Promise<number>;
     findFirst(args: unknown): Promise<AdminAbuseReport | null>;
   };
+  crisisIssue?: {
+    count(args: unknown): Promise<number>;
+    findFirst(args: unknown): Promise<AdminCrisisIssue | null>;
+  };
+  paymentIntent?: {
+    count(args: unknown): Promise<number>;
+  };
+  webhookEvent?: {
+    count(args: unknown): Promise<number>;
+  };
+  auditLog?: {
+    count(args: unknown): Promise<number>;
+  };
+  task: {
+    count(args: unknown): Promise<number>;
+  };
+  milestone: {
+    count(args: unknown): Promise<number>;
+  };
 };
 
 export default async function AdminOverviewPage() {
@@ -51,6 +71,8 @@ export default async function AdminOverviewPage() {
     redirect("/app");
   }
   const adminPrisma = prisma as unknown as AdminPrisma;
+  const executionTaskModel = adminPrisma.task;
+  const executionMilestoneModel = adminPrisma.milestone;
   const [
     metrics,
     orgs,
@@ -68,6 +90,15 @@ export default async function AdminOverviewPage() {
     urgentHoldback,
     urgentPayout,
     urgentAbuseReport,
+    blockedTasks,
+    criticalOpenTasks,
+    overdueTasks,
+    overdueMilestones,
+    openCrisisIssues,
+    urgentCrisisIssue,
+    failedPaymentIntents,
+    unprocessedWebhookEvents,
+    auditTrailEntries,
   ] = await Promise.all([
     prisma.metricDaily.findMany({ orderBy: { date: "desc" }, take: 30 }),
     prisma.organization.count(),
@@ -88,11 +119,21 @@ export default async function AdminOverviewPage() {
     adminPrisma.paymentHoldback.findFirst({ where: { state: "ACTIVE" }, orderBy: { updatedAt: "asc" } }),
     adminPrisma.payout.findFirst({ where: { status: "PENDING" }, orderBy: { createdAt: "asc" } }),
     adminPrisma.abuseReport.findFirst({ where: { status: "OPEN" }, orderBy: { createdAt: "asc" } }),
+    executionTaskModel?.count({ where: { status: "BLOCKED" } }) ?? Promise.resolve(0),
+    executionTaskModel?.count({ where: { status: { in: ["TODO", "IN_PROGRESS", "BLOCKED"] }, priority: "CRITICAL" } }) ?? Promise.resolve(0),
+    executionTaskModel?.count({ where: { status: { in: ["TODO", "IN_PROGRESS", "BLOCKED"] }, dueAt: { lt: new Date() } } }) ?? Promise.resolve(0),
+    executionMilestoneModel?.count({ where: { done: false, dueAt: { lt: new Date() } } }) ?? Promise.resolve(0),
+    adminPrisma.crisisIssue?.count({ where: { status: { in: ["OPEN", "IMPACT_REVIEW", "REPLACEMENT_STARTED"] } } }) ?? Promise.resolve(0),
+    adminPrisma.crisisIssue?.findFirst({ where: { status: { in: ["OPEN", "IMPACT_REVIEW", "REPLACEMENT_STARTED"] } }, orderBy: [{ severity: "desc" }, { createdAt: "desc" }] }) ?? Promise.resolve(null),
+    adminPrisma.paymentIntent?.count({ where: { status: "FAILED" } }) ?? Promise.resolve(0),
+    adminPrisma.webhookEvent?.count({ where: { processedAt: null } }) ?? Promise.resolve(0),
+    adminPrisma.auditLog?.count({ where: {} }) ?? Promise.resolve(0),
   ]);
 
   const latest = metrics[0];
   const trustQueueSummary = `${openDisputes} open disputes • ${openRefunds} refund request${openRefunds === 1 ? "" : "s"} • ${activeHoldbacks} active holdback${activeHoldbacks === 1 ? "" : "s"}`;
   const moneyQueueSummary = `${pendingPayouts} pending payout${pendingPayouts === 1 ? "" : "s"} • ${openRefunds} refund request${openRefunds === 1 ? "" : "s"} • ${activeHoldbacks} holdback${activeHoldbacks === 1 ? "" : "s"}`;
+  const operationsSummary = `${failedPaymentIntents} failed payment${failedPaymentIntents === 1 ? "" : "s"} • ${unprocessedWebhookEvents} unprocessed webhook event${unprocessedWebhookEvents === 1 ? "" : "s"} • ${auditTrailEntries} audit trail entr${auditTrailEntries === 1 ? "y" : "ies"}`;
 
   const reviewNowCard = buildReviewNowCard(urgentDispute, urgentRefund, urgentHoldback, trustQueueSummary);
   const userRoleCard: CommandCard = {
@@ -113,15 +154,33 @@ export default async function AdminOverviewPage() {
     cta: "Open verification queues",
   };
   const safetyCard: CommandCard = {
-    title: "Platform safety route",
-    eyebrow: "Safety metric",
+    title: "Support operations queue",
+    eyebrow: "Failed sends, payment risks, audit trail",
     body: openAbuseReports
-      ? `${openAbuseReports} open abuse report${openAbuseReports === 1 ? "" : "s"}: ${urgentAbuseReport?.reason || "needs admin triage"}`
-      : "No open abuse reports; continue monitoring verification and user-role changes.",
+      ? `${openAbuseReports} open abuse report${openAbuseReports === 1 ? "" : "s"}: ${urgentAbuseReport?.reason || "needs admin triage"}. ${operationsSummary}.`
+      : `No open abuse reports. ${operationsSummary}. Continue monitoring verification, failed payment/webhook events, and user-role changes.`,
     href: "/admin/abuse",
-    cta: "Open abuse reports",
+    cta: "Open support queue",
   };
-  const nextActionCard: CommandCard = buildNextActionCard(urgentDispute, urgentRefund, urgentHoldback, urgentPayout, urgentAbuseReport);
+  const executionRiskCard: CommandCard = {
+    title: "Execution accountability",
+    eyebrow: "Tasks & milestones",
+    body:
+      blockedTasks || criticalOpenTasks || overdueTasks || overdueMilestones || openCrisisIssues
+        ? `${blockedTasks} blocked task${blockedTasks === 1 ? "" : "s"} • ${criticalOpenTasks} critical open task${criticalOpenTasks === 1 ? "" : "s"} • ${overdueTasks + overdueMilestones} overdue task/milestone item${overdueTasks + overdueMilestones === 1 ? "" : "s"} • ${openCrisisIssues} crisis issue${openCrisisIssues === 1 ? "" : "s"}`
+        : "No blocked, critical, or overdue execution tasks/milestones. Continue reviewing money movement only through verification queues.",
+    href: "/admin/verification",
+    cta: "Open verification context",
+  };
+  const nextActionCard: CommandCard = urgentCrisisIssue
+    ? {
+        title: "Next safe admin action",
+        eyebrow: "Crisis oversight",
+        body: `Review crisis issue ${urgentCrisisIssue.title} before any refund, payout, contract cancellation, or legal decision.`,
+        href: "/admin/verification",
+        cta: "Review crisis context",
+      }
+    : buildNextActionCard(urgentDispute, urgentRefund, urgentHoldback, urgentPayout, urgentAbuseReport);
 
   return (
     <div className="space-y-6">
@@ -143,8 +202,8 @@ export default async function AdminOverviewPage() {
         </div>
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-5" aria-label="Admin first-screen command cards">
-        {[reviewNowCard, userRoleCard, moneyCard, safetyCard, nextActionCard].map((card) => (
+      <section className="grid gap-4 lg:grid-cols-6" aria-label="Admin first-screen command cards">
+        {[reviewNowCard, userRoleCard, moneyCard, safetyCard, executionRiskCard, nextActionCard].map((card) => (
           <AdminCommandCard key={card.title} card={card} />
         ))}
       </section>
@@ -154,6 +213,7 @@ export default async function AdminOverviewPage() {
         <KPIStat label="Users" value={users} />
         <KPIStat label="Events" value={events} />
         <KPIStat label="Open trust queue" value={openDisputes + openRefunds + activeHoldbacks + openAbuseReports} />
+        <KPIStat label="Execution risk" value={blockedTasks + criticalOpenTasks + overdueTasks + overdueMilestones + openCrisisIssues} />
       </div>
       {latest && (
         <Card className="p-4">

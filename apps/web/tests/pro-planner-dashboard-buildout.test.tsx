@@ -15,6 +15,7 @@ vi.mock("../src/components/pro-planner/Sidebar", () => ({
       <button onClick={() => onRoute("team")}>Team</button>
       <button onClick={() => onRoute("clients")}>Clients</button>
       <button onClick={() => onRoute("vendors")}>Vendors</button>
+      <button onClick={() => onRoute("crisis")}>Crisis</button>
       <button onClick={() => onRoute("timeline")}>Timeline</button>
       <button onClick={() => onRoute("contracts")}>Contracts</button>
       <button onClick={() => onRoute("payments")}>Payments</button>
@@ -184,6 +185,28 @@ const vendorRelationships = [
   },
 ];
 
+const crisisIssues = [
+  {
+    id: "crisis-1",
+    createdAt: new Date("2027-04-06T12:00:00.000Z"),
+    eventId: "event-1",
+    issueType: "VENDOR_CANCELLATION",
+    severity: "CRITICAL",
+    status: "REPLACEMENT_STARTED",
+    title: "Florist canceled week of event",
+    description: "Provider cannot staff the date.",
+    listingId: "listing-vendor-1",
+    proposalId: "proposal-1",
+    contractId: "contract-1",
+    paymentMilestoneId: "milestone-1",
+    replacementListingId: "listing-1",
+    replacementBookingRequestId: "replacement-request-1",
+    impactSummary: "vendor cancellation recorded for Avery Florals. Impact review should check proposal, contract, milestone, and payment state. No refund, release, cancellation, or legal conclusion is automatic.",
+    recommendedNextAction: "Replacement recovery started with a new provider request. Review responses manually before any refund, payout, contract cancellation, or legal decision.",
+    manualReviewNotes: "Manual review required.",
+  },
+];
+
 const forbiddenPanelCopy = new RegExp(["coming", "soon"].join(" ") + "|" + "place" + "holder" + "|" + ["Content", "for"].join(" "), "i");
 
 function renderDashboard() {
@@ -200,6 +223,7 @@ function renderDashboard() {
       members={members}
       invites={invites}
       vendorRelationships={vendorRelationships}
+      crisisIssues={crisisIssues}
     />,
   );
 }
@@ -312,6 +336,12 @@ describe("ProPlannerDashboard", () => {
     expect(screen.getByText("Save vendor relationship note")).toBeInTheDocument();
     expect(screen.getAllByText("Avery Florals").length).toBeGreaterThan(0);
     expect(screen.getByText("Reliable floral partner for luxury weddings.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Crisis" }));
+    expect(screen.getByText("Crisis recovery workflow")).toBeInTheDocument();
+    expect(screen.getByText("Record cancellation or provider problem")).toBeInTheDocument();
+    expect(screen.getByText("Florist canceled week of event")).toBeInTheDocument();
+    expect(screen.getByText(/no automatic refund, payout release, contract cancellation, or legal conclusion/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Timeline" }));
     expect(screen.getByText("Timeline, milestones & readiness")).toBeInTheDocument();

@@ -26,19 +26,32 @@ export default async function MessagesPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/signin");
 
+  const userEmail = user.email?.toLowerCase();
+
   const threads = await prisma.thread.findMany({
     where: {
-      org: { members: { some: { userId: user.id } } },
+      ...(user.role === "ADMIN"
+        ? {}
+        : {
+            OR: [
+              { org: { ownerId: user.id } },
+              { org: { members: { some: { userId: user.id } } } },
+              { participants: { some: { userId: user.id } } },
+              ...(userEmail ? [{ participants: { some: { email: { equals: userEmail, mode: "insensitive" as const } } } }] : []),
+              { listing: { org: { ownerId: user.id } } },
+              { listing: { org: { members: { some: { userId: user.id } } } } },
+            ],
+          }),
     },
     include: {
       org: { select: { name: true } },
       event: { select: { name: true, slug: true } },
       listing: { select: { title: true, type: true } },
       proposal: { select: { title: true, status: true } },
-      participants: { select: { email: true, roleHint: true } },
+      participants: { select: { email: true, roleHint: true, userId: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 1 },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { updatedAt: "desc" },
     take: 50,
   });
 

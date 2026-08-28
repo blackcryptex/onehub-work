@@ -319,6 +319,7 @@ model Event {
   calendarEvents     CalendarEvent[]
   checklists         Checklist[]
   contracts          Contract[]
+  crisisIssues       CrisisIssue[]
   deposits           Deposit[]
   disputes           Dispute[]
   escrowAccounts     EscrowAccount[]
@@ -892,26 +893,48 @@ model Deposit {
 model Thread {
   id           String              @id @default(cuid())
   createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
   orgId        String
   eventId      String?
   proposalId   String?
   listingId    String?
   subject      String
+  visibility   ThreadVisibility    @default(INTERNAL)
+  purpose      ThreadPurpose       @default(EVENT_COORDINATION)
   messages     Message[]
   event        Event?              @relation(fields: [eventId], references: [id])
   listing      Listing?            @relation(fields: [listingId], references: [id])
   org          Organization        @relation(fields: [orgId], references: [id])
   proposal     Proposal?           @relation(fields: [proposalId], references: [id])
   participants ThreadParticipant[]
+
+  @@index([updatedAt])
 }
 
 model ThreadParticipant {
-  id       String  @id @default(cuid())
-  threadId String
-  userId   String?
-  email    String
-  roleHint String?
-  thread   Thread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  threadId   String
+  userId     String?
+  email      String
+  roleHint   String?
+  lastReadAt DateTime?
+  thread     Thread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+}
+
+enum ThreadVisibility {
+  INTERNAL
+  CLIENT_VISIBLE
+  PROVIDER_VISIBLE
+  ALL_PARTIES
+}
+
+enum ThreadPurpose {
+  EVENT_COORDINATION
+  PROPOSAL
+  BOOKING_REQUEST
+  INTERNAL_NOTE
+  DOCUMENT_REVIEW
+  ADMIN_REVIEW
 }
 
 model Message {
@@ -1165,6 +1188,40 @@ model AbuseReport {
   reason     String
   status     String   @default("OPEN")
   notes      String?
+}
+
+model CrisisIssue {
+  id                          String             @id @default(cuid())
+  createdAt                   DateTime           @default(now())
+  updatedAt                   DateTime           @updatedAt
+  orgId                       String
+  eventId                     String
+  reportedById                String?
+  issueType                   CrisisIssueType
+  severity                    CrisisIssueSeverity @default(HIGH)
+  status                      CrisisIssueStatus   @default(OPEN)
+  title                       String
+  description                 String?
+  listingId                   String?
+  bookingRequestId            String?
+  proposalId                  String?
+  contractId                  String?
+  paymentMilestoneId          String?
+  impactSummary               String
+  recommendedNextAction       String
+  replacementSearchStartedAt  DateTime?
+  replacementListingId        String?
+  replacementBookingRequestId String?
+  manualReviewNotes           String?
+  auditTrail                  Json?
+  event                       Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, status, severity, createdAt])
+  @@index([orgId, status, createdAt])
+  @@index([listingId, status])
+  @@index([proposalId, status])
+  @@index([contractId, status])
+  @@index([paymentMilestoneId, status])
 }
 
 enum Role {
@@ -1447,6 +1504,31 @@ enum RefundFeeTreatment {
   BUYER_ABSORBS
   REFUND_TO_BUYER
   NON_REFUNDABLE
+}
+
+enum CrisisIssueType {
+  VENDOR_CANCELLATION
+  VENUE_CANCELLATION
+  PROVIDER_PROBLEM
+  PAYMENT_PROBLEM
+  CONTRACT_PROBLEM
+  MILESTONE_RISK
+  OTHER
+}
+
+enum CrisisIssueSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum CrisisIssueStatus {
+  OPEN
+  IMPACT_REVIEW
+  REPLACEMENT_STARTED
+  RESOLVED
+  CANCELED
 }
 
 enum RSVPStatus {

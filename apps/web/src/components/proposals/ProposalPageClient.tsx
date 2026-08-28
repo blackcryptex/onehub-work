@@ -7,7 +7,7 @@ import { ApproveProposalButton } from "@/components/proposals/ApproveProposalBut
 import { ProposalEditor } from "@/components/proposals/ProposalEditor";
 import { DeleteProposalButton } from "@/components/proposals/DeleteProposalButton";
 import Link from "next/link";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2 } from "lucide-react";
 import { contractDetail } from "@/lib/routes";
 import { LegalNotice } from "@/components/legal/LegalNotice";
 import { CURRENT_ACCEPTANCE_VERSIONS } from "@/lib/acceptance-versions";
@@ -229,7 +229,6 @@ export function ProposalPageClient({
       {thread && (
         <ThreadPanel
           messages={thread.messages}
-          onSend={() => {}}
         />
       )}
     </div>

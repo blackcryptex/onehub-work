@@ -29,11 +29,15 @@ export default async function RequestsPage() {
   const orgs = await prisma.organization.findMany({
     where: { members: { some: { userId } } },
   });
+  const orgIds = orgs.map((o) => o.id);
+  const providerOrgTypes = new Set(["VENDOR", "VENUE"]);
+  const providerOrgIds = orgs.filter((o) => providerOrgTypes.has(o.type)).map((o) => o.id);
+  const hasProviderOrg = providerOrgIds.length > 0;
   const requests = await prisma.bookingRequest.findMany({
     where: {
       OR: [
-        { orgId: { in: orgs.map((o) => o.id) } },
-        { listing: { orgId: { in: orgs.map((o) => o.id) } } },
+        { orgId: { in: orgIds } },
+        { listing: { orgId: { in: orgIds } } },
       ],
     },
     include: { listing: true, event: true, org: true },
@@ -49,9 +53,11 @@ export default async function RequestsPage() {
 
       {requests.length === 0 ? (
         <Card className="p-12 text-center">
-          <div className="text-slate-500 mb-2">No booking requests yet.</div>
+          <div className="text-slate-500 mb-2">{hasProviderOrg ? "No leads or sent booking requests yet." : "No sent booking requests yet."}</div>
           <div className="text-sm text-slate-400">
-            Booking requests from vendors will appear here.
+            {hasProviderOrg
+              ? "Provider leads for your listings and requests your team sent will appear here with clear direction labels."
+              : "Requests you send to vendors and venues will appear here. Start from marketplace discovery when you are ready to ask for availability or a quote."}
           </div>
         </Card>
       ) : (
@@ -62,6 +68,9 @@ export default async function RequestsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
                     <h3 className="text-lg font-semibold">{r.listing.title}</h3>
+                    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                      {providerOrgIds.includes(r.listing.orgId) ? "Lead received" : "Request sent"}
+                    </span>
                     <span
                       className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeColor(
                         r.status

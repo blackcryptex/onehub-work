@@ -15,10 +15,11 @@ import {
   ClipboardList,
   FileText,
   BarChart3,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type UIRoute = "overview" | "team" | "clients" | "vendors" | "timeline" | "contracts" | "payments" | "files" | "services" | "availability" | "portfolio" | "reports" | "settings";
+type UIRoute = "overview" | "team" | "clients" | "vendors" | "crisis" | "timeline" | "contracts" | "payments" | "files" | "services" | "availability" | "portfolio" | "reports" | "settings";
 
 type Props = {
   currentRoute: UIRoute;
@@ -42,6 +43,7 @@ export function ProPlannerSidebar({
     { route: "team" as UIRoute, label: "Team", icon: Users },
     { route: "clients" as UIRoute, label: "Clients", icon: HeartHandshake },
     { route: "vendors" as UIRoute, label: "Vendors", icon: Store },
+    { route: "crisis" as UIRoute, label: "Crisis", icon: AlertTriangle },
     { route: "timeline" as UIRoute, label: "Timeline", icon: ClipboardList },
     { route: "contracts" as UIRoute, label: "Contracts", icon: FileText },
     { route: "payments" as UIRoute, label: "Payments", icon: DollarSign },

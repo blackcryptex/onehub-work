@@ -138,12 +138,10 @@ describe("DIYPlannerDashboard cockpit", () => {
 
     expect(consoleSpy).not.toHaveBeenCalledWith("Share link");
     expect(infoToast).not.toHaveBeenCalled();
-    expect(screen.getByRole("heading", { name: "Sharing is not connected yet" })).toBeInTheDocument();
-    expect(screen.getByText(/No private share or access-control flow is wired/i)).toBeInTheDocument();
+    expect(routerPush).toHaveBeenCalledWith("/diy-planner/vault/scout-gala");
+    expect(screen.queryByRole("heading", { name: "Sharing is not connected yet" })).not.toBeInTheDocument();
     expect(screen.queryByText(/Event actions/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/invite or manage access safely/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
   });
 
   it("opens a real Messages empty state instead of only showing a toast", async () => {

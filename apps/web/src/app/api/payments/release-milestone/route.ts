@@ -238,6 +238,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Amount override at release is disallowed in guarded MVP" }, { status: 409 });
     }
 
+    if (!stripe) {
+      return NextResponse.json({
+        error: "Release requires Stripe transfer evidence before local paid state can be finalized",
+      }, { status: 503 });
+    }
+
+    if (!canonicalRecipient.stripeAccountId) {
+      return NextResponse.json({
+        error: "Release blocked: seller Stripe Connect account is required before payout or paid status can be finalized",
+      }, { status: 409 });
+    }
+
     // First transaction: make the local debit/reservation durable before any external transfer.
     const reservation = await prisma.$transaction(async (tx) => {
       const currentMilestone = await tx.paymentMilestone.findUnique({
@@ -357,7 +369,7 @@ export async function POST(request: NextRequest) {
       grossAmountCents: releasedAmountCents,
     });
 
-    // If Stripe Connect account exists, create transfer only after durable local reservation.
+    // Create transfer only after durable local reservation. Local paid/SENT state is not finalized without transfer evidence.
     let stripeTransferId: string | undefined;
     if (canonicalRecipient.stripeAccountId && stripe) {
       try {

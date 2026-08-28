@@ -49,14 +49,18 @@ vi.mock("@/components/proposals/ProposalEditor", () => ({ ProposalEditor: () => 
 vi.mock("@/components/proposals/DeleteProposalButton", () => ({ DeleteProposalButton: () => <button>Delete Proposal</button> }));
 vi.mock("@/components/legal/LegalNotice", () => ({ LegalNotice: () => <div>Legal notice</div> }));
 vi.mock("next/link", () => ({ default: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a> }));
-vi.mock("@onehub/ui", async () => {
-  const React = await import("react");
+vi.mock("@onehub/ui", () => {
   return {
     Card: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
     Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button {...props}>{children}</button>,
     LineItemsTable: () => <div>Line items</div>,
     TotalsSummary: () => <div>Totals</div>,
-    ThreadPanel: () => <div>Thread</div>,
+    ThreadPanel: ({ onSend }: { onSend?: (body: string) => void }) => (
+      <div>
+        <div>Thread</div>
+        {typeof onSend === "function" ? <button>Send</button> : <p>Read-only proposal thread</p>}
+      </div>
+    ),
   };
 });
 
@@ -255,5 +259,37 @@ describe("proposal detail provider-backed status copy", () => {
 
     expect(screen.getByText(/Provider-backed proposal — vendor-ready/i)).toBeInTheDocument();
     expect(screen.getAllByText("Approve Proposal").length).toBeGreaterThan(0);
+  });
+
+  it("renders proposal thread context as read-only instead of exposing a fake send path", () => {
+    render(
+      <ProposalPageClient
+        proposal={{
+          ...proposal({ providerBackedEvidence: true }),
+          lineItems: [],
+          milestones: [],
+          sections: [],
+          contract: null,
+          summary: "Provider submitted quote",
+        }}
+        eventVaultHref="/pro/planner/vault/smith-wedding-weekend"
+        hasContent
+        canEdit
+        thread={{
+          messages: [
+            {
+              id: "message-1",
+              bodyMd: "Recorded provider question",
+              createdAt: new Date("2026-08-28T00:00:00.000Z"),
+              senderId: "provider-1",
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Thread")).toBeInTheDocument();
+    expect(screen.getByText("Read-only proposal thread")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Send" })).not.toBeInTheDocument();
   });
 });

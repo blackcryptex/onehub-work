@@ -16,6 +16,7 @@ const { getCurrentUser, prisma, requireAuthorizedEventBySlug, redirect, notFound
   prisma: {
     event: { findUnique: vi.fn() },
     activity: { findMany: vi.fn() },
+    crisisIssue: { findMany: vi.fn() },
   },
 }));
 
@@ -87,6 +88,7 @@ describe("Pro planner event workspace polish", () => {
     requireAuthorizedEventBySlug.mockResolvedValue({ event: { id: event.id, slug: event.slug, name: event.name } });
     prisma.event.findUnique.mockResolvedValue(event);
     prisma.activity.findMany.mockResolvedValue([]);
+    prisma.crisisIssue.findMany.mockResolvedValue([]);
   });
 
   it("explains the event workspace in plain planner language with direct next-click lanes", async () => {
@@ -102,6 +104,8 @@ describe("Pro planner event workspace polish", () => {
     expect(html).toContain("Guests");
     expect(html).toContain("Budget");
     expect(html).toContain("Timeline");
+    expect(html).toContain("Crisis recovery");
+    expect(html).toContain("No active crisis issues are recorded for this event");
     expect(html).toContain("Open messages");
     expect(html).toContain("Open event files");
   });
@@ -157,5 +161,28 @@ describe("Pro planner event workspace polish", () => {
     expect(html).toContain("1 provider-backed");
     expect(html).toContain("Provider-backed / Status: SENT / $2500.00");
     expect(html).not.toContain("No provider-backed proposals are attached yet.");
+  });
+
+  it("shows active crisis impact and replacement-start context without promising money or legal outcomes", async () => {
+    prisma.crisisIssue.findMany.mockResolvedValue([
+      {
+        id: "crisis-1",
+        title: "Florist canceled week of event",
+        issueType: "VENDOR_CANCELLATION",
+        severity: "CRITICAL",
+        status: "REPLACEMENT_STARTED",
+        impactSummary: "vendor cancellation recorded for Avery Florals. No refund, release, cancellation, or legal conclusion is automatic.",
+        recommendedNextAction: "Replacement recovery started with a new provider request. Review responses manually before any refund, payout, contract cancellation, or legal decision.",
+        replacementBookingRequestId: "replacement-request-1",
+      },
+    ]);
+
+    const page = await ProVaultDetailPage({ params: Promise.resolve({ eventSlug: "smith-wedding-weekend" }) });
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("Cancellation/problem impact and replacement start");
+    expect(html).toContain("Florist canceled week of event");
+    expect(html).toContain("Replacement request started: replacement-request-1");
+    expect(html).toContain("does not auto-cancel contracts, move money, promise refunds, or make legal claims");
   });
 });

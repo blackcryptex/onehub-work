@@ -3,46 +3,13 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { stripe } from "@/server/lib/stripe";
-import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
 import { getRequestLogger } from "@/lib/logger";
 import { trackError } from "@/lib/errorTracker";
-import { resolveBookingClassification } from "@/lib/booking-classification";
-import { resolveFeeProfile } from "@/lib/fee-profile";
-import { requireAcceptanceProof } from "@/lib/acceptance";
-import { evaluateHoldbackForPaymentIntent } from "@/lib/holdback";
+import { applyConfirmedPaymentIntent, ConfirmPaymentError } from "@/lib/payments/confirm-payment";
 
 const confirmPaymentSchema = z.object({
   paymentIntentId: z.string(),
 });
-
-const CONFIRMABLE_PAYMENT_STATES = new Set(["REQUIRES_PAYMENT", "PROCESSING"]);
-
-function stripeIntentMatchesLocal(
-  stripeIntent: {
-    amount?: number;
-    currency?: string;
-    metadata?: Record<string, string | undefined> | null;
-  },
-  paymentIntent: {
-    id: string;
-    contractId: string;
-    milestoneId?: string | null;
-    amountCents: number;
-    currency: string;
-  },
-  expectedStripeAmountCents: number
-) {
-  const metadata = stripeIntent.metadata ?? {};
-  const expectedMilestoneId = paymentIntent.milestoneId ?? "";
-
-  return {
-    amountMatches: stripeIntent.amount === expectedStripeAmountCents &&
-      stripeIntent.currency?.toUpperCase() === paymentIntent.currency.toUpperCase(),
-    metadataMatches: metadata.paymentIntentId === paymentIntent.id &&
-      metadata.contractId === paymentIntent.contractId &&
-      (metadata.milestoneId ?? "") === expectedMilestoneId,
-  };
-}
 
 export async function POST(request: NextRequest) {
   const requestId = request.headers.get("x-request-id") || undefined;
@@ -105,30 +72,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (!CONFIRMABLE_PAYMENT_STATES.has(paymentIntent.status)) {
+    if (!["REQUIRES_PAYMENT", "PROCESSING"].includes(paymentIntent.status)) {
       return NextResponse.json({ error: "Payment intent is not confirmable" }, { status: 409 });
     }
 
     if (!paymentIntent.stripeIntentId) {
       return NextResponse.json({ error: "Payment intent is missing Stripe reference" }, { status: 409 });
     }
-
-    const bookingClassification = resolveBookingClassification({
-      proposal: {
-        bookingClassification: paymentIntent.contract.proposal.bookingClassification,
-        listingId: paymentIntent.contract.proposal.listingId,
-      },
-      event: paymentIntent.contract.proposal.event,
-    });
-    const feeProfile = resolveFeeProfile({
-      bookingClassification,
-      grossAmountCents: paymentIntent.amountCents,
-    });
-
-    await requireAcceptanceProof({
-      paymentIntentId,
-      legalSurface: `payment.${bookingClassification}`,
-    });
 
     // Check if Stripe is configured
     if (!stripe) {
@@ -141,169 +91,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Stripe payment intent not found" }, { status: 404 });
     }
 
-    const stripeMatch = stripeIntentMatchesLocal(stripeIntent, paymentIntent, feeProfile.totalChargeAmountCents);
-    if (!stripeMatch.metadataMatches) {
-      return NextResponse.json({ error: "Stripe payment intent does not match local payment record" }, { status: 409 });
-    }
+    const applied = await applyConfirmedPaymentIntent({
+      paymentIntentId,
+      stripeIntent,
+      actorId: userId,
+    });
 
-    if (!stripeMatch.amountMatches) {
-      return NextResponse.json({ error: "Stripe payment intent amount or currency mismatch" }, { status: 409 });
-    }
-
-    if (stripeIntent.status !== "succeeded") {
-      // Update status to processing if not already processing
-      if (paymentIntent.status !== "PROCESSING") {
-        await (prisma as any).paymentIntent.update({
-          where: { id: paymentIntentId },
-          data: { status: "PROCESSING" },
-        });
-      }
+    if (applied.processing) {
       return NextResponse.json({ 
         status: "processing",
         message: "Payment is being processed",
       });
     }
-
-    // Wrap all updates in a transaction for atomicity
-    await prisma.$transaction(async (tx) => {
-      // Re-fetch payment intent within transaction to check status atomically
-      const currentPaymentIntent = await (tx as any).paymentIntent.findUnique({
-        where: { id: paymentIntentId },
-        include: {
-          contract: {
-            include: {
-              proposal: {
-                include: {
-                  milestones: true,
-                  escrowAccount: true,
-                  event: {
-                    select: {
-                      orgId: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          milestone: true,
-        },
-      });
-
-      if (!currentPaymentIntent) {
-        throw new Error("Payment intent not found");
-      }
-
-      // Idempotency guard: check status again within transaction
-      if (currentPaymentIntent.status === "SUCCEEDED") {
-        return; // Already processed, exit early
-      }
-
-      if (!CONFIRMABLE_PAYMENT_STATES.has(currentPaymentIntent.status)) {
-        throw new Error("Payment intent is not confirmable");
-      }
-
-      const bookingClassification = resolveBookingClassification({
-        proposal: {
-          bookingClassification: currentPaymentIntent.contract.proposal.bookingClassification,
-          listingId: currentPaymentIntent.contract.proposal.listingId,
-        },
-        event: currentPaymentIntent.contract.proposal.event,
-      });
-
-      // Update payment intent status atomically
-      await (tx as any).paymentIntent.update({
-        where: { id: paymentIntentId },
-        data: {
-          status: "SUCCEEDED",
-          paymentMethod: stripeIntent.payment_method_types?.[0] || "card",
-        },
-      });
-
-      // Payment succeeded - update milestone and escrow
-      // Note: IN_ESCROW status will be available after Prisma migration
-      if (currentPaymentIntent.milestoneId) {
-        await tx.paymentMilestone.update({
-          where: { id: currentPaymentIntent.milestoneId },
-          data: { status: "IN_ESCROW" as any },
-        });
-      }
-
-      // Update escrow account balance
-      const escrowAccount = currentPaymentIntent.contract.proposal.escrowAccount;
-      if (escrowAccount) {
-        await tx.escrowAccount.update({
-          where: { id: escrowAccount.id },
-          data: {
-            balanceCents: { increment: currentPaymentIntent.amountCents },
-            status: escrowAccount.balanceCents === 0 ? "FUNDED" : "PARTIALLY_RELEASED",
-          },
-        });
-      }
-
-      // Create transaction record (unique constraint on paymentIntentId prevents duplicates)
-      const feeProfile = resolveFeeProfile({
-        bookingClassification,
-        grossAmountCents: currentPaymentIntent.amountCents,
-      });
-      const platformFeeCents = feeProfile.platformFeeAmountCents;
-      const netAmountCents = feeProfile.netAmountCents;
-
-      await (tx as any).transaction.create({
-        data: {
-          paymentIntentId: currentPaymentIntent.id,
-          payerId: currentPaymentIntent.payerId,
-          payeeId: currentPaymentIntent.payeeId,
-          netAmountCents,
-          platformFeeCents,
-          totalAmountCents: currentPaymentIntent.amountCents,
-          currency: currentPaymentIntent.currency,
-          stripeChargeId: stripeIntent.latest_charge as string | undefined,
-          processedAt: new Date(),
-        },
-      });
-
-      await evaluateHoldbackForPaymentIntent({
-        paymentIntentId: currentPaymentIntent.id,
-        tx,
-      });
-
-      // Update contract status if needed
-      // Note: IN_PAYMENT status will be available after Prisma migration
-      if (currentPaymentIntent.contract.status === "FULLY_SIGNED") {
-        await tx.contract.update({
-          where: { id: currentPaymentIntent.contractId },
-          data: { status: "IN_PAYMENT" as any },
-        });
-      }
-
-      // Audit: Log that payment was confirmed and funds moved to escrow
-      await recordActivity({
-        orgId: currentPaymentIntent.contract.proposal.event.orgId,
-        eventId: currentPaymentIntent.contract.eventId,
-        actorId: userId,
-        action: ACTIVITY_ACTIONS.PAYMENT_CONFIRMED,
-        target: currentPaymentIntent.id,
-        meta: {
-          paymentIntentId: currentPaymentIntent.id,
-          milestoneId: currentPaymentIntent.milestoneId,
-          amountCents: currentPaymentIntent.amountCents,
-          currency: currentPaymentIntent.currency,
-          platformFeeCents,
-          netAmountCents,
-          stripeChargeId: stripeIntent.latest_charge as string | undefined,
-          milestoneStatusBefore: currentPaymentIntent.milestone?.status,
-          milestoneStatusAfter: "IN_ESCROW",
-          escrowStatusBefore: escrowAccount?.status,
-          escrowStatusAfter: escrowAccount?.balanceCents === 0 ? "FUNDED" : "PARTIALLY_RELEASED",
-          contractStatusBefore: currentPaymentIntent.contract.status,
-          contractStatusAfter: currentPaymentIntent.contract.status === "FULLY_SIGNED"
-            ? "IN_PAYMENT"
-            : currentPaymentIntent.contract.status,
-          bookingClassification,
-          feeProfile,
-        },
-      });
-    });
 
     // Structured logging for successful payment confirmation
     logger.info({
@@ -343,6 +142,9 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid request", details: error.issues }, { status: 400 });
+    }
+    if (error instanceof ConfirmPaymentError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     return NextResponse.json({ error: "Failed to confirm payment" }, { status: 500 });
   }

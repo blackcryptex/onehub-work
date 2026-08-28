@@ -207,6 +207,29 @@ describe("release milestone payment guardrails", () => {
     expect(stripe.transfers.create).not.toHaveBeenCalled();
   });
 
+  it("blocks local paid finalization when the seller has no Stripe Connect account", async () => {
+    prisma.paymentMilestone.findUnique.mockResolvedValue({
+      ...milestone,
+      proposal: {
+        ...milestone.proposal,
+        listing: { org: { id: "seller-org-1", owner: { id: "seller-user-1" }, stripeConnectAccountId: null } },
+      },
+    });
+
+    const response = await POST(request());
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body).toEqual({
+      error: "Release blocked: seller Stripe Connect account is required before payout or paid status can be finalized",
+    });
+    expect(recordAcceptance).toHaveBeenCalled();
+    expect(prisma.escrowAccount.updateMany).not.toHaveBeenCalled();
+    expect(prisma.payout.create).not.toHaveBeenCalled();
+    expect(prisma.paymentMilestone.update).not.toHaveBeenCalled();
+    expect(stripe.transfers.create).not.toHaveBeenCalled();
+  });
+
   it("blocks release when the atomic escrow debit reservation cannot decrement the balance", async () => {
     prisma.escrowAccount.updateMany.mockResolvedValue({ count: 0 });
 
