@@ -3,6 +3,7 @@ import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
+import { safePrismaResult } from "@/lib/runtime-route-safety";
 
 export const dynamic = "force-dynamic";
 
@@ -28,20 +29,24 @@ export default async function MessagesPage() {
 
   const userEmail = user.email?.toLowerCase();
 
-  const threads = await prisma.thread.findMany({
+  const accessWhere =
+    user.role === "ADMIN"
+      ? {}
+      : {
+          OR: [
+            { org: { ownerId: user.id } },
+            { org: { members: { some: { userId: user.id } } } },
+            { participants: { some: { userId: user.id } } },
+            ...(userEmail ? [{ participants: { some: { email: { equals: userEmail, mode: "insensitive" as const } } } }] : []),
+            { listing: { org: { ownerId: user.id } } },
+            { listing: { org: { members: { some: { userId: user.id } } } } },
+          ],
+        };
+
+  const threads = await safePrismaResult("messages.thread.findMany", prisma.thread.findMany({
     where: {
-      ...(user.role === "ADMIN"
-        ? {}
-        : {
-            OR: [
-              { org: { ownerId: user.id } },
-              { org: { members: { some: { userId: user.id } } } },
-              { participants: { some: { userId: user.id } } },
-              ...(userEmail ? [{ participants: { some: { email: { equals: userEmail, mode: "insensitive" as const } } } }] : []),
-              { listing: { org: { ownerId: user.id } } },
-              { listing: { org: { members: { some: { userId: user.id } } } } },
-            ],
-          }),
+      org: { is: {} },
+      ...accessWhere,
     },
     include: {
       org: { select: { name: true } },
@@ -53,7 +58,7 @@ export default async function MessagesPage() {
     },
     orderBy: { updatedAt: "desc" },
     take: 50,
-  });
+  }), []);
 
   const label = roleLabel(user.role);
 
@@ -78,7 +83,7 @@ export default async function MessagesPage() {
           ) : (
             threads.map((thread) => {
               const latestMessage = thread.messages[0];
-              const context = thread.event?.name ?? thread.proposal?.title ?? thread.listing?.title ?? thread.org.name;
+              const context = thread.event?.name ?? thread.proposal?.title ?? thread.listing?.title ?? thread.org?.name ?? "Organization unavailable";
               return (
                 <Link key={thread.id} href={`/messages/${thread.id}` as Route} className="block px-4 py-4 hover:bg-slate-50">
                   <div className="flex flex-wrap items-center justify-between gap-2">

@@ -148,7 +148,7 @@ describe("core dashboard destination routes", () => {
 
     render(await MessagesPage());
     expect(screen.getByRole("link", { name: /proposal discussion/i })).toHaveAttribute("href", "/messages/thread-1");
-    expect(findThreads).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
+    expect(findThreads).toHaveBeenCalledWith(expect.objectContaining({ where: { org: { is: {} } } }));
 
     render(await MessageThreadPage({ params: Promise.resolve({ threadId: "thread-1" }) }));
     expect(screen.getByRole("heading", { name: /proposal discussion/i })).toBeInTheDocument();

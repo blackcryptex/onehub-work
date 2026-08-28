@@ -46,10 +46,62 @@ import { AiSourceVendorsVenuesPanel } from "@/components/vault/AiSourceVendorsVe
 import { AddToShortlistButtonClient } from "@/components/shortlist/AddToShortlistButtonClient";
 import { getVaultBasePath, proposalDetail, contractDetail } from "@/lib/routes";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
+import { safeArray, safeNumber, safePrismaResult } from "@/lib/runtime-route-safety";
 import {
   PROVIDER_PROPOSAL_SUBMITTED_ACTION,
   hasProviderListingContext,
 } from "@/lib/provider-backed-proposal";
+
+type RuntimeBudgetLine = { plannedCents?: number | null; actualCents?: number | null; category?: string | null };
+type RuntimeChecklistItem = { id: string; done?: boolean; title: string };
+type RuntimeChecklist = { id?: string; title?: string; items: RuntimeChecklistItem[] };
+type RuntimeGuestList = { guests?: Array<{ status?: string | null }> };
+type RuntimeMilestone = { id: string; title: string; dueAt?: Date | string | null; done?: boolean };
+type RuntimePaymentIntent = { id?: string; status: string; fundedAt?: Date | string | null };
+type RuntimeContract = { id: string; title?: string | null; status: string; paymentIntents?: RuntimePaymentIntent[]; proposal?: { id: string; title: string } | null };
+type RuntimeProposal = {
+  id: string;
+  title: string;
+  status: string;
+  totalCents: number;
+  listingId?: string | null;
+  listing?: { id: string; title: string; type?: string | null } | null;
+  contract?: RuntimeContract | null;
+  milestones?: Array<{ id: string; status?: string | null; amountCents?: number | null }>;
+};
+type RuntimeBookingRequest = { id: string; listingId: string; status?: string | null; listing?: { title: string; category?: string | null; type?: string | null } | null };
+type RuntimeShortlistItem = { id: string; listingId: string; listing: { title: string; slug: string; type?: string | null; category?: string | null; org?: { city?: string | null; state?: string | null } | null } };
+type RuntimeActivity = { id: string; action: string; at: Date | string };
+type RuntimeContact = { name?: string | null; email?: string | null };
+type RuntimeOrg = {
+  ownerId: string;
+  owner?: RuntimeContact | null;
+  members: Array<{ userId: string; role?: string; user?: RuntimeContact | null }>;
+};
+type RuntimeCrisisIssue = {
+  id: string;
+  title: string;
+  severity: string;
+  status: string;
+  issueType: string;
+  impactSummary: string;
+  recommendedNextAction: string;
+  replacementBookingRequestId?: string | null;
+};
+type ProVaultRuntimeEvent = Record<string, any> & {
+  orgId: string;
+  createdById: string;
+  org: RuntimeOrg;
+  budgetLines: RuntimeBudgetLine[];
+  checklists: RuntimeChecklist[];
+  milestones: RuntimeMilestone[];
+  guestLists: RuntimeGuestList[];
+  bookingRequests: RuntimeBookingRequest[];
+  shortlistItems: RuntimeShortlistItem[];
+  proposals: RuntimeProposal[];
+  contracts: RuntimeContract[];
+  activities: RuntimeActivity[];
+};
 
 /**
  * Pro Planner Event Vault Detail Page
@@ -83,7 +135,7 @@ export default async function ProVaultDetailPage({
   );
   const vaultBasePath = getVaultBasePath(user.role);
 
-  let event;
+  let event: ProVaultRuntimeEvent | null;
   try {
     event = await prisma.event.findUnique({
       where: { id: authorizedEvent.id },
@@ -170,101 +222,84 @@ export default async function ProVaultDetailPage({
         },
         activities: { orderBy: { at: "desc" }, take: 20 },
       },
-    });
+    }) as ProVaultRuntimeEvent | null;
   } catch (error) {
-    console.error("[Pro Vault] Error loading event:", error);
-    if (error instanceof Error && error.message.includes("shortlistItems")) {
-      event = await prisma.event.findUnique({
-        where: { id: authorizedEvent.id },
-        include: {
-          createdBy: { select: { name: true, email: true } },
-          org: {
-            include: {
-              owner: { select: { name: true, email: true } },
-              members: {
-                where: { userId: userId },
-                include: { user: { select: { name: true, email: true } } },
+    console.error(
+      "[Pro Vault] Rich event load failed; rendering safe detail fallback:",
+      error instanceof Error ? error.message : "unknown error",
+    );
+    event = await safePrismaResult("proVault.event.safeFallback", prisma.event.findUnique({
+      where: { id: authorizedEvent.id },
+      include: {
+        createdBy: { select: { name: true, email: true } },
+        org: {
+          include: {
+            owner: { select: { name: true, email: true } },
+            members: {
+              where: { userId: userId },
+              include: { user: { select: { name: true, email: true } } },
+            },
+          },
+        },
+        stakeholders: {
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+          },
+        },
+        shares: {
+          select: { viewerUserId: true, scope: true },
+          where: { scope: "SUMMARY" },
+        },
+        budgetLines: {
+          select: { plannedCents: true, actualCents: true, category: true },
+        },
+        milestones: { orderBy: { dueAt: "asc" } },
+        checklists: {
+          include: { items: { select: { id: true, done: true, title: true } } },
+          orderBy: { title: "asc" },
+        },
+        guestLists: {
+          include: {
+            guests: {
+              include: {
+                invitations: { select: { respondedAt: true, sentAt: true } },
               },
             },
           },
-          stakeholders: {
-            include: {
-              user: { select: { id: true, name: true, email: true } },
-            },
-          },
-          shares: {
-            select: { viewerUserId: true, scope: true },
-            where: { scope: "SUMMARY" },
-          },
-          budgetLines: {
-            select: { plannedCents: true, actualCents: true, category: true },
-          },
-          milestones: { orderBy: { dueAt: "asc" } },
-          checklists: {
-            include: {
-              items: { select: { id: true, done: true, title: true } },
-            },
-            orderBy: { title: "asc" },
-          },
-          guestLists: {
-            include: {
-              guests: {
-                include: {
-                  invitations: { select: { respondedAt: true, sentAt: true } },
-                },
-              },
-            },
-          },
-          bookingRequests: {
-            include: {
-              listing: {
-                select: {
-                  id: true,
-                  title: true,
-                  type: true,
-                  category: true,
-                },
-              },
-            },
-            orderBy: { createdAt: "desc" },
-          },
-          proposals: {
-            include: {
-              milestones: {
-                select: { id: true, status: true, amountCents: true },
-              },
-              listing: { select: { id: true, title: true, type: true } },
-              contract: { select: { id: true, title: true, status: true } },
-            },
-            orderBy: { createdAt: "desc" },
-          },
-          contracts: {
-          include: { paymentIntents: { select: { id: true, status: true, fundedAt: true } }, proposal: { select: { id: true, title: true } } },
-          orderBy: { createdAt: "desc" },
         },
         activities: { orderBy: { at: "desc" }, take: 20 },
-        },
-      });
-    } else {
-      throw error;
-    }
+      },
+    }) as Promise<ProVaultRuntimeEvent | null>, null);
   }
 
   if (!event) {
     return notFound();
   }
 
-  const crisisIssues = await prisma.crisisIssue.findMany({
+  event = {
+    ...event,
+    budgetLines: safeArray(event.budgetLines),
+    checklists: safeArray(event.checklists),
+    milestones: safeArray(event.milestones),
+    guestLists: safeArray(event.guestLists),
+    bookingRequests: safeArray(event.bookingRequests),
+    shortlistItems: safeArray(event.shortlistItems),
+    proposals: safeArray(event.proposals),
+    contracts: safeArray(event.contracts),
+    activities: safeArray(event.activities),
+  } as ProVaultRuntimeEvent;
+
+  const crisisIssues: RuntimeCrisisIssue[] = await safePrismaResult("proVault.crisisIssue.findMany", prisma.crisisIssue.findMany({
     where: { eventId: event.id, status: { in: ["OPEN", "IMPACT_REVIEW", "REPLACEMENT_STARTED"] } },
     orderBy: [{ severity: "desc" }, { createdAt: "desc" }],
     take: 10,
-  });
+  }), []);
 
   const canManage = canManageEvent(user, event);
   const canDelete = canDeleteEvent(user, event);
 
-  const planned = event.budgetLines.reduce((a, l) => a + l.plannedCents, 0);
-  const actual = event.budgetLines.reduce((a, l) => a + l.actualCents, 0);
+  const planned = event.budgetLines.reduce((a, l) => a + safeNumber(l.plannedCents), 0);
+  const actual = event.budgetLines.reduce((a, l) => a + safeNumber(l.actualCents), 0);
   const budgetPercent = planned > 0 ? Math.round((actual / planned) * 100) : 0;
   const checklistTotal = event.checklists.reduce(
     (sum, c) => sum + c.items.length,
@@ -277,11 +312,7 @@ export default async function ProVaultDetailPage({
   const progress =
     checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
 
-  const guestLists = Array.isArray(event.guestLists)
-    ? event.guestLists
-    : event.guestLists
-      ? [event.guestLists]
-      : [];
+  const guestLists = safeArray(event.guestLists);
   const guests = guestLists.flatMap((list) => list.guests || []);
   const totalGuests = guests.length;
   const rsvped = guests.filter((guest) => guest.status === "ACCEPTED").length;
@@ -295,7 +326,7 @@ export default async function ProVaultDetailPage({
     .slice(0, 5);
 
   const paymentPlanPending = event.proposals.flatMap((p) =>
-    p.milestones.filter((m) => m.status === "PENDING"),
+    (p.milestones ?? []).filter((m) => m.status === "PENDING"),
   ).length;
   const shortlistItems =
     "shortlistItems" in event && Array.isArray(event.shortlistItems)
@@ -440,12 +471,6 @@ export default async function ProVaultDetailPage({
       ? `${event.venueCity}, ${event.venueState}`
       : event.venueCity || undefined;
   const sourceVendorsHref = `/marketplace?eventId=${event.id}&eventSlug=${event.slug}&eventName=${encodeURIComponent(event.name)}${eventLocation ? `&location=${encodeURIComponent(eventLocation)}` : ""}&returnTo=${encodeURIComponent(`/pro/planner/vault/${event.slug}`)}`;
-  const existingVendorRequests = event.bookingRequests.map((request) => ({
-    title: request.listing.title,
-    category: request.listing.category,
-    type: request.listing.type,
-    status: request.status,
-  }));
   const bookingRequestsByListingId = new Map(
     event.bookingRequests.map((request) => [request.listingId, request]),
   );
@@ -1141,7 +1166,7 @@ export default async function ProVaultDetailPage({
                   {event.bookingRequests.length > 0 ? (
                     event.bookingRequests.map((request) => (
                       <div key={request.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <p className="font-semibold">{request.listing.title}</p>
+                        <p className="font-semibold">{request.listing?.title ?? "Vendor listing unavailable"}</p>
                         <p className="mt-1 text-xs text-slate-500">Booking request status: {request.status}</p>
                       </div>
                     ))

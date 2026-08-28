@@ -2,6 +2,7 @@ import { KPIStat, TrendSparkline, Card } from "@onehub/ui";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
+import { safePrismaResult } from "@/lib/runtime-route-safety";
 import { redirect } from "next/navigation";
 
 function money(cents: number | null | undefined, currency = "USD") {
@@ -100,34 +101,34 @@ export default async function AdminOverviewPage() {
     unprocessedWebhookEvents,
     auditTrailEntries,
   ] = await Promise.all([
-    prisma.metricDaily.findMany({ orderBy: { date: "desc" }, take: 30 }),
+    safePrismaResult("admin.metricDaily.findMany", prisma.metricDaily.findMany({ orderBy: { date: "desc" }, take: 30 }), []),
     prisma.organization.count(),
     prisma.user.count(),
     prisma.event.count(),
-    adminPrisma.dispute.count({ where: { status: { in: ["OPEN", "NEEDS_INFO", "UNDER_ADMIN_REVIEW", "ESCALATED"] } } }),
-    adminPrisma.refundRequest.count({ where: { status: "OPEN" } }),
-    adminPrisma.paymentHoldback.count({ where: { state: "ACTIVE" } }),
-    adminPrisma.payout.count({ where: { status: "PENDING" } }),
-    adminPrisma.abuseReport.count({ where: { status: "OPEN" } }),
+    safePrismaResult("admin.dispute.count", adminPrisma.dispute.count({ where: { status: { in: ["OPEN", "NEEDS_INFO", "UNDER_ADMIN_REVIEW", "ESCALATED"] } } }), 0),
+    safePrismaResult("admin.refundRequest.count", adminPrisma.refundRequest.count({ where: { status: "OPEN" } }), 0),
+    safePrismaResult("admin.paymentHoldback.count", adminPrisma.paymentHoldback.count({ where: { state: "ACTIVE" } }), 0),
+    safePrismaResult("admin.payout.count", adminPrisma.payout.count({ where: { status: "PENDING" } }), 0),
+    safePrismaResult("admin.abuseReport.count", adminPrisma.abuseReport.count({ where: { status: "OPEN" } }), 0),
     prisma.user.count({ where: { role: "ADMIN" } }),
     prisma.user.count({ where: { role: "EVENT_DREAMER" } }),
-    adminPrisma.dispute.findFirst({
+    safePrismaResult("admin.dispute.findFirst", adminPrisma.dispute.findFirst({
       where: { status: { in: ["UNDER_ADMIN_REVIEW", "ESCALATED", "OPEN", "NEEDS_INFO"] } },
       orderBy: { updatedAt: "desc" },
-    }),
-    adminPrisma.refundRequest.findFirst({ where: { status: "OPEN" }, orderBy: { createdAt: "asc" } }),
-    adminPrisma.paymentHoldback.findFirst({ where: { state: "ACTIVE" }, orderBy: { updatedAt: "asc" } }),
-    adminPrisma.payout.findFirst({ where: { status: "PENDING" }, orderBy: { createdAt: "asc" } }),
-    adminPrisma.abuseReport.findFirst({ where: { status: "OPEN" }, orderBy: { createdAt: "asc" } }),
-    executionTaskModel?.count({ where: { status: "BLOCKED" } }) ?? Promise.resolve(0),
-    executionTaskModel?.count({ where: { status: { in: ["TODO", "IN_PROGRESS", "BLOCKED"] }, priority: "CRITICAL" } }) ?? Promise.resolve(0),
-    executionTaskModel?.count({ where: { status: { in: ["TODO", "IN_PROGRESS", "BLOCKED"] }, dueAt: { lt: new Date() } } }) ?? Promise.resolve(0),
-    executionMilestoneModel?.count({ where: { done: false, dueAt: { lt: new Date() } } }) ?? Promise.resolve(0),
-    adminPrisma.crisisIssue?.count({ where: { status: { in: ["OPEN", "IMPACT_REVIEW", "REPLACEMENT_STARTED"] } } }) ?? Promise.resolve(0),
-    adminPrisma.crisisIssue?.findFirst({ where: { status: { in: ["OPEN", "IMPACT_REVIEW", "REPLACEMENT_STARTED"] } }, orderBy: [{ severity: "desc" }, { createdAt: "desc" }] }) ?? Promise.resolve(null),
-    adminPrisma.paymentIntent?.count({ where: { status: "FAILED" } }) ?? Promise.resolve(0),
-    adminPrisma.webhookEvent?.count({ where: { processedAt: null } }) ?? Promise.resolve(0),
-    adminPrisma.auditLog?.count({ where: {} }) ?? Promise.resolve(0),
+    }), null),
+    safePrismaResult("admin.refundRequest.findFirst", adminPrisma.refundRequest.findFirst({ where: { status: "OPEN" }, orderBy: { createdAt: "asc" } }), null),
+    safePrismaResult("admin.paymentHoldback.findFirst", adminPrisma.paymentHoldback.findFirst({ where: { state: "ACTIVE" }, orderBy: { updatedAt: "asc" } }), null),
+    safePrismaResult("admin.payout.findFirst", adminPrisma.payout.findFirst({ where: { status: "PENDING" }, orderBy: { createdAt: "asc" } }), null),
+    safePrismaResult("admin.abuseReport.findFirst", adminPrisma.abuseReport.findFirst({ where: { status: "OPEN" }, orderBy: { createdAt: "asc" } }), null),
+    executionTaskModel ? safePrismaResult("admin.task.blocked.count", executionTaskModel.count({ where: { status: "BLOCKED" } }), 0) : Promise.resolve(0),
+    executionTaskModel ? safePrismaResult("admin.task.critical.count", executionTaskModel.count({ where: { status: { in: ["TODO", "IN_PROGRESS", "BLOCKED"] }, priority: "CRITICAL" } }), 0) : Promise.resolve(0),
+    executionTaskModel ? safePrismaResult("admin.task.overdue.count", executionTaskModel.count({ where: { status: { in: ["TODO", "IN_PROGRESS", "BLOCKED"] }, dueAt: { lt: new Date() } } }), 0) : Promise.resolve(0),
+    executionMilestoneModel ? safePrismaResult("admin.milestone.overdue.count", executionMilestoneModel.count({ where: { done: false, dueAt: { lt: new Date() } } }), 0) : Promise.resolve(0),
+    adminPrisma.crisisIssue ? safePrismaResult("admin.crisisIssue.count", adminPrisma.crisisIssue.count({ where: { status: { in: ["OPEN", "IMPACT_REVIEW", "REPLACEMENT_STARTED"] } } }), 0) : Promise.resolve(0),
+    adminPrisma.crisisIssue ? safePrismaResult("admin.crisisIssue.findFirst", adminPrisma.crisisIssue.findFirst({ where: { status: { in: ["OPEN", "IMPACT_REVIEW", "REPLACEMENT_STARTED"] } }, orderBy: [{ severity: "desc" }, { createdAt: "desc" }] }), null) : Promise.resolve(null),
+    adminPrisma.paymentIntent ? safePrismaResult("admin.paymentIntent.failed.count", adminPrisma.paymentIntent.count({ where: { status: "FAILED" } }), 0) : Promise.resolve(0),
+    adminPrisma.webhookEvent ? safePrismaResult("admin.webhookEvent.unprocessed.count", adminPrisma.webhookEvent.count({ where: { processedAt: null } }), 0) : Promise.resolve(0),
+    adminPrisma.auditLog ? safePrismaResult("admin.auditLog.count", adminPrisma.auditLog.count({ where: {} }), 0) : Promise.resolve(0),
   ]);
 
   const latest = metrics[0];
