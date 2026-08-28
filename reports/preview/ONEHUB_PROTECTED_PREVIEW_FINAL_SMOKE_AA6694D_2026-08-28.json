@@ -1,0 +1,215 @@
+{
+  "baseURL": "https://onehub-work-web-8kph-odnt03880-one-hub2.vercel.app",
+  "probes": [
+    {
+      "route": "/api/health",
+      "status": 200,
+      "json": true,
+      "head": "{\"status\":\"ok\",\"timestamp\":\"2026-08-28T15:39:29.633Z\",\"checks\":{\"database\":\"ok\",\"stripe\":\"ok\"}}"
+    },
+    {
+      "route": "/api/auth/providers",
+      "status": 200,
+      "json": true,
+      "head": "{\"credentials\":{\"id\":\"credentials\",\"name\":\"Credentials\",\"type\":\"credentials\",\"signinUrl\":\"https://www.1hubevents.com/api/auth/signin/credentials\",\"callbackUrl\":\"https://www.1hubeve"
+    }
+  ],
+  "roles": [
+    {
+      "role": "ADMIN",
+      "auth": {
+        "login": 302,
+        "session": 200,
+        "email": "admin@example.com",
+        "role": "ADMIN"
+      },
+      "checks": [
+        {
+          "route": "/admin/overview",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nVerification\nAdmin\nSign out\nAdmin trust & risk command center\n\nOversight only: no live money movement or credential changes from"
+        },
+        {
+          "route": "/admin/users",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nVerification\nAdmin\nSign out\nUsers\nSearch\nZero Event Pro Planner Beta Proof\npro-zero-beta-20260512@example.com\nRole: PRO_PLANNER "
+        },
+        {
+          "route": "/messages",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nVerification\nAdmin\nSign out\n\nADMIN FOLLOW-UP INBOX\n\nMessage inbox\n\nReview client, vendor, venue, proposal, and internal planning"
+        },
+        {
+          "route": "/events/new",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nEvent Wizard\n\nFill out all fields below to create your event. AI will automatically generate your event brief, find vendors, create a budget, and set up checklists."
+        }
+      ]
+    },
+    {
+      "role": "PRO_PLANNER",
+      "auth": {
+        "login": 302,
+        "session": 200,
+        "email": "pro@example.com",
+        "role": "PRO_PLANNER"
+      },
+      "checks": [
+        {
+          "route": "/pro/planner",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nSign out\nPro Planner\n\nProfessional Event Planning\n\nDASHBOARD\nCommand\nTeam\nClients\nVendors\nCrisis\nTimeline\nContracts\nPayments\nFiles\nServices\nAvailability\nPortfolio\nR"
+        },
+        {
+          "route": "/pro/planner/vault",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nEvent Vault\n\nAll your events organized in one place\n\nAT A GLANCE\nArtifact Verification Event\n8/15/2026\nPLANNING\nProgress\n0%\n0/6 checklist items done\nBudget\n$0\nof $1"
+        },
+        {
+          "route": "/messages",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nEvent Vault\nSign out\n\nPRO PLANNER FOLLOW-UP INBOX\n\nMessage inbox\n\nReview client, vendor, venue, proposal, and internal planning "
+        },
+        {
+          "route": "/events/new",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nEvent Wizard\n\nFill out all fields below to create your event. AI will automatically generate your event brief, find vendors, create a budget, and set up checklists."
+        },
+        {
+          "route": "/pro/planner/vault/artifact-verification-event-qtx3",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nOneHub\nDashboard\nSign out\nHome\nEvents\nCalendar\nMarketplace\nHelp\nEvents\n/\nArtifact Verification Event\nArtifact Verification Event\nPLANNING\n8/15/2026, 6:00:00 PM\nChic"
+        }
+      ]
+    },
+    {
+      "role": "DIY_PLANNER",
+      "auth": {
+        "login": 302,
+        "session": 200,
+        "email": "diy@example.com",
+        "role": "DIY_PLANNER"
+      },
+      "checks": [
+        {
+          "route": "/diy-planner",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nSign out\nDIY Planner\n\nEvent Wizard\n\nCreate Event\nDASHBOARD\nOverview\nCalendar\nEVENT VAULT\nMy Events\nSep 19, 2026\n0%\nSentinel DIY Vault Proof 20260503171335-4c8610\nSe"
+        },
+        {
+          "route": "/diy-planner/vault",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nEvent Vault\n\nAll your events organized in one place\n\nAT A GLANCE\nAtlas Preview Smoke 20260808232634\n12/15/2026\nPLANNING\nProgress\n0%\n0/6 checklist items done\nBudget\n"
+        },
+        {
+          "route": "/marketplace",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nOneHub Events\nFeatures\nMore\nMessages\nDashboard\nSign out\nVendor & Venue Marketplace\n\nDiscover vendors and venues for your events\n\nType\nAll\nVendors\nVenues\nCategory\nAl"
+        },
+        {
+          "route": "/events/new",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nEvent Wizard\n\nFill out all fields below to create your event. AI will automatically generate your event brief, find vendors, create a budget, and set up checklists."
+        },
+        {
+          "route": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nAtlas Preview Smoke 20260808232634\n12/15/2026\nPLANNING\nEdit\nDelete\n← Back to Vault\nAt a glance\nProgress\n0%\n0/6 items done\nBudget\n$0\nof $9750\nMain Contacts\nDIY Plann"
+        }
+      ]
+    },
+    {
+      "role": "VENDOR",
+      "auth": {
+        "login": 302,
+        "session": 200,
+        "email": "vendor@example.com",
+        "role": "VENDOR"
+      },
+      "checks": [
+        {
+          "route": "/vendor/dashboard",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nSign out\nVendor Dashboard\n\nManage Your Services\n\nDASHBOARD\nOverview\nLeads\nPayments\nCalendar\nMessages\nSettings\n\nWELCOME, ATLAS FLOW VENDOR 20260809152526\n\nLead respo"
+        },
+        {
+          "route": "/messages",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nEvent Vault\nListings\nSign out\n\nVENDOR FOLLOW-UP INBOX\n\nMessage inbox\n\nReview client, vendor, venue, proposal, and internal plann"
+        },
+        {
+          "route": "/marketplace",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nOneHub Events\nFeatures\nMore\nMessages\nDashboard\nSign out\nVendor & Venue Marketplace\n\nDiscover vendors and venues for your events\n\nType\nAll\nVendors\nVenues\nCategory\nAl"
+        }
+      ]
+    },
+    {
+      "role": "VENUE",
+      "auth": {
+        "login": 302,
+        "session": 200,
+        "email": "venue@example.com",
+        "role": "VENUE"
+      },
+      "checks": [
+        {
+          "route": "/venue/dashboard",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nSign out\nVenue Dashboard\n\nManage Your Space\n\nDASHBOARD\nOverview\nLeads\nCalendar\nMessages\nSettings\n\nWELCOME, ATLAS FLOW VENUE 20260809152526\n\nVenue booking command ce"
+        },
+        {
+          "route": "/messages",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nEvent Vault\nAvailability\nSign out\n\nVENUE FOLLOW-UP INBOX\n\nMessage inbox\n\nReview client, vendor, venue, proposal, and internal pl"
+        },
+        {
+          "route": "/marketplace",
+          "status": 200,
+          "signin": false,
+          "error": false,
+          "head": "Skip to content\nOneHub Events\nFeatures\nMore\nMessages\nDashboard\nSign out\nVendor & Venue Marketplace\n\nDiscover vendors and venues for your events\n\nType\nAll\nVendors\nVenues\nCategory\nAl"
+        }
+      ]
+    }
+  ],
+  "failures": []
+}
