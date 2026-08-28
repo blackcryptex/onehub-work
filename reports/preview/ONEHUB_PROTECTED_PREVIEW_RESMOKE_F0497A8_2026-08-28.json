@@ -1,0 +1,312 @@
+{
+  "baseURL": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app",
+  "probes": [
+    {
+      "route": "/api/health",
+      "status": 200,
+      "json": true,
+      "head": "{\"status\":\"ok\",\"timestamp\":\"2026-08-28T15:33:52.330Z\",\"checks\":{\"database\":\"ok\",\"stripe\":\"ok\"}}"
+    },
+    {
+      "route": "/api/auth/providers",
+      "status": 200,
+      "json": true,
+      "head": "{\"credentials\":{\"id\":\"credentials\",\"name\":\"Credentials\",\"type\":\"credentials\",\"signinUrl\":\"https://www.1hubevents.com/api/auth/signin/credentials\",\"callbackUrl\":\"https://www.1hubevents.com/api/auth/cal"
+    }
+  ],
+  "results": [
+    {
+      "role": "ADMIN",
+      "auth": {
+        "csrf": 200,
+        "login": 302,
+        "session": 200,
+        "email": "admin@example.com",
+        "role": "ADMIN"
+      },
+      "checks": [
+        {
+          "route": "/admin/overview",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/admin/overview",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nVerification\nAdmin\nSign out\nAdmin trust & risk command center\n\nOversight only: no live money movement or credential changes from this dashboard.\n\nVerification →\nManage users →\nAbuse reports →\nTRUST/RISK ITEM\nReview now\n\nDispute: Venue availability ",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/admin/users",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/admin/users",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nVerification\nAdmin\nSign out\nUsers\nSearch\nZero Event Pro Planner Beta Proof\npro-zero-beta-20260512@example.com\nRole: PRO_PLANNER • Created: 5/12/2026\n\nBreak-glass view as pro-zero-beta-20260512@example.com\n\nBreak-glass reason\nIncident ticket\nView as",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/messages",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/messages",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nVerification\nAdmin\nSign out\n\nADMIN FOLLOW-UP INBOX\n\nMessage inbox\n\nReview client, vendor, venue, proposal, and internal planning threads connected to organizations you can access.\n\nRecent threads\n\nNo message threads need your attention.\n\nClient, ve",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/events/new",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/events/new",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nEvent Wizard\n\nFill out all fields below to create your event. AI will automatically generate your event brief, find vendors, create a budget, and set up checklists.\n\nEvent Basics\nEvent Name *\nEvent Type *\n\nType anything (e.g., \"black-tie wedding\", \"church wedding\", \"company retreat\")",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "PRO_PLANNER",
+      "auth": {
+        "csrf": 200,
+        "login": 302,
+        "session": 200,
+        "email": "pro@example.com",
+        "role": "PRO_PLANNER"
+      },
+      "checks": [
+        {
+          "route": "/pro/planner",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/pro/planner",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nSign out\nPro Planner\n\nProfessional Event Planning\n\nDASHBOARD\nCommand\nTeam\nClients\nVendors\nCrisis\nTimeline\nContracts\nPayments\nFiles\nServices\nAvailability\nPortfolio\nReports\nSettings\n\nPROFESSIONAL PLANNER COMMAND CENTER\n\nAgency command deck\n\nManage today’s event work, client follow-ups,",
+          "errors": [
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/pro/planner/vault",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/pro/planner/vault",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nEvent Vault\n\nAll your events organized in one place\n\nAT A GLANCE\nArtifact Verification Event\n8/15/2026\nPLANNING\nProgress\n0%\n0/6 checklist items done\nBudget\n$0\nof $15600\nMain Contact\nPro Planner\nUpcoming\nEvent Day\n8/15/2026\nRecent\nEVENT_DELETED\n6/12/2026, 6:44:52 AM\nAT A GLANCE\nDemo W",
+          "errors": [
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/messages",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/messages",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nEvent Vault\nSign out\n\nPRO PLANNER FOLLOW-UP INBOX\n\nMessage inbox\n\nReview client, vendor, venue, proposal, and internal planning threads connected to organizations you can access.\n\nRecent threads\n\nNo message threads need your attention.\n\nClient, ven",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/events/new",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/events/new",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nEvent Wizard\n\nFill out all fields below to create your event. AI will automatically generate your event brief, find vendors, create a budget, and set up checklists.\n\n1\nEvent Details\n2\nClient Intake\nEvent Basics\nEvent Name *\nEvent Type *\n\nType anything (e.g., \"black-tie wedding\", \"chu",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/pro/planner/vault/artifact-verification-event-qtx3",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/pro/planner/vault/artifact-verification-event-qtx3",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nOneHub\nDashboard\nSign out\nHome\nEvents\nCalendar\nMarketplace\nHelp\nEvents\n/\nArtifact Verification Event\nArtifact Verification Event\nPLANNING\n8/15/2026, 6:00:00 PM\nChicago, IL\nOpen event workspace\nBack to Vault\nMore\nDelete\n\nSELECTED-EVENT NAVIGATION\n\nNext real action: Track requests; dra",
+          "errors": [
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "DIY_PLANNER",
+      "auth": {
+        "csrf": 200,
+        "login": 302,
+        "session": 200,
+        "email": "diy@example.com",
+        "role": "DIY_PLANNER"
+      },
+      "checks": [
+        {
+          "route": "/diy-planner",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/diy-planner",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nSign out\nDIY Planner\n\nEvent Wizard\n\nCreate Event\nDASHBOARD\nOverview\nCalendar\nEVENT VAULT\nMy Events\nSep 19, 2026\n0%\nSentinel DIY Vault Proof 20260503171335-4c8610\nSep 19, 2026\n0%\nSentinel DIY Routing 20260503181652\nOct 24, 2026\n0%\nSentinel DIY Exact Flow 20260503171453-2024a6\nNov 21, ",
+          "errors": [
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/diy-planner/vault",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/diy-planner/vault",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nEvent Vault\n\nAll your events organized in one place\n\nAT A GLANCE\nAtlas Preview Smoke 20260808232634\n12/15/2026\nPLANNING\nProgress\n0%\n0/6 checklist items done\nBudget\n$0\nof $9750\nMain Contact\nDIY Planner\nUpcoming\nEvent Day\n12/15/2026\nRecent\nNo recent activity\nAT A GLANCE\nAtlas Provider ",
+          "errors": [
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/marketplace",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/marketplace",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nOneHub Events\nFeatures\nMore\nMessages\nDashboard\nSign out\nVendor & Venue Marketplace\n\nDiscover vendors and venues for your events\n\nType\nAll\nVendors\nVenues\nCategory\nAll categories\nVenue space\nCatering\nDecor & floral\nEntertainment\nPhoto & video\nTransportation\nStaffing\nPlanning services\nR",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/events/new",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/events/new",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nEvent Wizard\n\nFill out all fields below to create your event. AI will automatically generate your event brief, find vendors, create a budget, and set up checklists.\n\nEvent Basics\nEvent Name *\nEvent Type *\n\nType anything (e.g., \"black-tie wedding\", \"church wedding\", \"company retreat\")",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/diy-planner/vault/atlas-preview-smoke-20260808232634-7atm",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nAtlas Preview Smoke 20260808232634\n12/15/2026\nPLANNING\nEdit\nDelete\n← Back to Vault\nAt a glance\nProgress\n0%\n0/6 items done\nBudget\n$0\nof $9750\nMain Contacts\nDIY Planner\nDIY Planner\nGuests\n0\nof 0 invited\n0 pending\nTimeline & Notifications\nAuto-updating\nUpcoming Tasks\nEvent Day\nDue in 10",
+          "errors": [
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Framing 'https://vercel.live/' violates the following report-only Content Security Policy directive: \"default-src 'self'\". The violation has been logged, but no",
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "VENDOR",
+      "auth": {
+        "csrf": 200,
+        "login": 302,
+        "session": 200,
+        "email": "vendor@example.com",
+        "role": "VENDOR"
+      },
+      "checks": [
+        {
+          "route": "/vendor/dashboard",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/vendor/dashboard",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nSign out\nVendor Dashboard\n\nManage Your Services\n\nDASHBOARD\nOverview\nLeads\nPayments\nCalendar\nMessages\nSettings\n\nWELCOME, ATLAS FLOW VENDOR 20260809152526\n\nLead response command center\n\nStart with the newest money-making lead, then confirm dates, contact, contract, and manual payment r",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/messages",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/messages",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nEvent Vault\nListings\nSign out\n\nVENDOR FOLLOW-UP INBOX\n\nMessage inbox\n\nReview client, vendor, venue, proposal, and internal planning threads connected to organizations you can access.\n\nRecent threads\n\nNo message threads need your attention.\n\nClient,",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/marketplace",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/marketplace",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nOneHub Events\nFeatures\nMore\nMessages\nDashboard\nSign out\nVendor & Venue Marketplace\n\nDiscover vendors and venues for your events\n\nType\nAll\nVendors\nVenues\nCategory\nAll categories\nVenue space\nCatering\nDecor & floral\nEntertainment\nPhoto & video\nTransportation\nStaffing\nPlanning services\nR",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "VENUE",
+      "auth": {
+        "csrf": 200,
+        "login": 302,
+        "session": 200,
+        "email": "venue@example.com",
+        "role": "VENUE"
+      },
+      "checks": [
+        {
+          "route": "/venue/dashboard",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/venue/dashboard",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nSign out\nVenue Dashboard\n\nManage Your Space\n\nDASHBOARD\nOverview\nLeads\nCalendar\nMessages\nSettings\n\nWELCOME, ATLAS FLOW VENUE 20260809152526\n\nVenue booking command center\n\nStart with new inquiries, then confirm holds, tour timing, calendar fit, and manual booking readiness before promi",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/messages",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/messages",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nOneHub\nDashboard\nSign out\nDashboard\nEvent Vault\nAvailability\nSign out\n\nVENUE FOLLOW-UP INBOX\n\nMessage inbox\n\nReview client, vendor, venue, proposal, and internal planning threads connected to organizations you can access.\n\nRecent threads\n\nNo message threads need your attention.\n\nClie",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        },
+        {
+          "route": "/marketplace",
+          "status": 200,
+          "finalUrl": "https://onehub-work-web-8kph-otqmte6qs-one-hub2.vercel.app/marketplace",
+          "isSignin": false,
+          "isError": false,
+          "bodyHead": "Skip to content\nOneHub Events\nFeatures\nMore\nMessages\nDashboard\nSign out\nVendor & Venue Marketplace\n\nDiscover vendors and venues for your events\n\nType\nAll\nVendors\nVenues\nCategory\nAll categories\nVenue space\nCatering\nDecor & floral\nEntertainment\nPhoto & video\nTransportation\nStaffing\nPlanning services\nR",
+          "errors": [
+            "Failed to load resource: the server responded with a status of 400 ()"
+          ]
+        }
+      ]
+    }
+  ],
+  "failures": []
+}
