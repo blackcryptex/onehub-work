@@ -14,7 +14,7 @@ const { getCurrentUser, prisma, requireAuthorizedEventBySlug, redirect, notFound
     throw new Error("not-found");
   }),
   prisma: {
-    event: { findUnique: vi.fn() },
+    event: { findFirst: vi.fn(), findUnique: vi.fn() },
     activity: { findMany: vi.fn() },
     crisisIssue: { findMany: vi.fn() },
   },
@@ -86,6 +86,7 @@ describe("Pro planner event workspace polish", () => {
     vi.clearAllMocks();
     getCurrentUser.mockResolvedValue({ id: "planner-1", role: "PRO_PLANNER", email: "planner@example.com", name: "Planner" });
     requireAuthorizedEventBySlug.mockResolvedValue({ event: { id: event.id, slug: event.slug, name: event.name } });
+    prisma.event.findFirst.mockResolvedValue({ id: event.id, slug: event.slug });
     prisma.event.findUnique.mockResolvedValue(event);
     prisma.activity.findMany.mockResolvedValue([]);
     prisma.crisisIssue.findMany.mockResolvedValue([]);
