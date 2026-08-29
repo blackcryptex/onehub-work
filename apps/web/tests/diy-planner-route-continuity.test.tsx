@@ -5,17 +5,20 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
-const { getCurrentUser, redirect, requireAuthorizedEventBySlug, prisma } = vi.hoisted(() => ({
+const { getCurrentUser, redirect, notFound, requireAuthorizedEventBySlug, prisma } = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   redirect: vi.fn((url: string) => {
     throw new Error(`redirect:${url}`);
+  }),
+  notFound: vi.fn(() => {
+    throw new Error("notFound");
   }),
   requireAuthorizedEventBySlug: vi.fn(),
   prisma: {
     organization: { findMany: vi.fn() },
     guestList: { findMany: vi.fn() },
     checklist: { findMany: vi.fn() },
-    event: { findUnique: vi.fn() },
+    event: { findFirst: vi.fn(), findUnique: vi.fn() },
     activity: { findMany: vi.fn() },
   },
 }));
@@ -26,7 +29,7 @@ vi.mock("@/lib/auth-helpers", () => ({
 }));
 vi.mock("@/lib/event-access", () => ({ requireAuthorizedEventBySlug }));
 vi.mock("@/lib/prisma", () => ({ prisma }));
-vi.mock("next/navigation", () => ({ redirect }));
+vi.mock("next/navigation", () => ({ redirect, notFound }));
 vi.mock("@/components/ui", async () => {
   const React = await import("react");
   return {
@@ -48,12 +51,28 @@ vi.mock("@/components/panes/ContractsPane", () => ({ default: () => <div>Contrac
 vi.mock("@/components/panes/BudgetPane", () => ({ default: () => <div>Budget Pane</div> }));
 vi.mock("@/components/panes/GuestsPane", () => ({ default: () => <div>Guests Pane</div> }));
 vi.mock("@/components/panes/TasksMilestonesPane", () => ({ default: () => <div>Tasks Pane</div> }));
+vi.mock("@/components/proposals/GenerateProposalButton", () => ({
+  GenerateProposalButton: () => <button>Generate proposal</button>,
+}));
+vi.mock("@/components/events/EventActions", () => ({
+  EventActions: () => <div data-testid="event-actions" />,
+}));
+vi.mock("@/components/events/ShareEventButton", () => ({
+  ShareEventButton: () => <button>Share event</button>,
+}));
+vi.mock("@/components/vault/StakeholdersSectionClient", () => ({
+  StakeholdersSectionClient: () => <div data-testid="stakeholders" />,
+}));
+vi.mock("@/components/vault/AiSourceVendorsVenuesPanel", () => ({
+  AiSourceVendorsVenuesPanel: () => <div data-testid="ai-source" />,
+}));
 
 import EventManagementSection from "../src/components/EventManagementSection";
 import EventGuests from "../src/app/(app)/events/[eventSlug]/guests/page";
 import EventChecklists from "../src/app/(app)/events/[eventSlug]/checklists/page";
 import EventBudget from "../src/app/(app)/events/[eventSlug]/budget/page";
 import EventOverview from "../src/app/(app)/events/[eventSlug]/page";
+import DIYVaultDetail from "../src/app/diy-planner/vault/[eventSlug]/page";
 import LegacyAppVaultPage from "../src/app/app/vault/page";
 import LegacyAppContractsPage from "../src/app/app/contracts/page";
 import LegacyAppProposalsPage from "../src/app/app/proposals/page";
@@ -246,5 +265,46 @@ describe("DIY planner route continuity cleanup", () => {
     await expect(LegacyAppVaultPage()).rejects.toThrow("redirect:/venue/dashboard");
     await expect(LegacyAppContractsPage()).rejects.toThrow("redirect:/venue/dashboard");
     await expect(LegacyAppProposalsPage()).rejects.toThrow("redirect:/venue/dashboard");
+  });
+
+  it("keeps the canonical DIY smoke slug useful by falling back to the user's first manageable event", async () => {
+    prisma.event.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: "event-1",
+        slug: "scout-gala",
+        createdById: "diy-1",
+        org: { ownerId: "diy-1", members: [] },
+        stakeholders: [],
+        shares: [],
+      });
+    prisma.event.findUnique.mockResolvedValue({
+      id: "event-1",
+      name: "Scout Gala",
+      slug: "scout-gala",
+      status: "PLANNING",
+      type: "BIRTHDAY",
+      startAt: new Date("2027-05-01T18:00:00.000Z"),
+      budgetLines: [{ plannedCents: 500000, actualCents: 125000, category: "VENUE" }],
+      milestones: [{ id: "milestone-1", title: "Confirm venue", dueAt: new Date("2027-04-01T12:00:00.000Z"), done: false }],
+      checklists: [{ id: "checklist-1", title: "Launch checklist", items: [{ id: "item-1", title: "Set budget", done: true }] }],
+      guestLists: null,
+      bookingRequests: [],
+      shortlistItems: [],
+      proposals: [],
+      activities: [],
+      org: { owner: { name: "DIY Planner", email: "diy@example.com" }, members: [] },
+      stakeholders: [],
+      shares: [],
+    });
+
+    const page = await DIYVaultDetail({ params: Promise.resolve({ eventSlug: "diy-sample-event" }) });
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("Scout Gala");
+    expect(html).toContain("At a glance");
+    expect(html).toContain("Proposals");
+    expect(html).toContain("/events/scout-gala/guests");
+    expect(html).not.toContain("/events/diy-sample-event/guests");
   });
 });
