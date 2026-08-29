@@ -139,7 +139,14 @@ async function findManageableProEventForRoute(eventSlug: string, user: Awaited<R
   }
 
   return prisma.event.findFirst({
-    where: { createdById: user.id },
+    where: {
+      OR: [
+        { createdById: user.id },
+        { org: { members: { some: { userId: user.id } } } },
+        { stakeholders: { some: { userId: user.id } } },
+        { shares: { some: { viewerUserId: user.id, scope: "SUMMARY" } } },
+      ],
+    },
     orderBy: { createdAt: "asc" },
     include: includeAccess,
   }) as Promise<ManageableProEvent | null>;
