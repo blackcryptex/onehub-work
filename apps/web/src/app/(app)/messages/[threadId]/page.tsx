@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { ThreadPanel } from "@onehub/ui";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { notFound, redirect } from "next/navigation";
+import { MessageThreadReplyPanel } from "@/components/messages/MessageThreadReplyPanel";
+import { canReadThread, canSendThread } from "@/server/lib/access";
 
 type ThreadMessage = {
   id: string;
@@ -17,27 +18,18 @@ export default async function MessageThreadPage({ params }: { params: Promise<{ 
   if (!user) redirect("/signin");
 
   const resolvedParams = await params;
-  const userEmail = user.email?.toLowerCase();
   const thread = await prisma.thread.findFirst({
-    where: {
-      id: resolvedParams.threadId,
-      ...(user.role === "ADMIN"
-        ? {}
-        : {
-            OR: [
-              { org: { ownerId: user.id } },
-              { org: { members: { some: { userId: user.id } } } },
-              { participants: { some: { userId: user.id } } },
-              ...(userEmail ? [{ participants: { some: { email: { equals: userEmail, mode: "insensitive" as const } } } }] : []),
-              { listing: { org: { ownerId: user.id } } },
-              { listing: { org: { members: { some: { userId: user.id } } } } },
-            ],
-          }),
-    },
+    where: { id: resolvedParams.threadId },
     include: {
-      org: { select: { name: true } },
-      event: { select: { name: true, slug: true } },
-      listing: { select: { title: true, type: true } },
+      org: { include: { members: true } },
+      event: {
+        include: {
+          org: { include: { members: true } },
+          shares: { select: { viewerUserId: true, scope: true } },
+          stakeholders: { select: { userId: true, role: true } },
+        },
+      },
+      listing: { include: { org: { include: { members: true } } } },
       proposal: { select: { title: true, status: true } },
       participants: { select: { email: true, roleHint: true, userId: true } },
       messages: { orderBy: { createdAt: "asc" } },
@@ -45,6 +37,9 @@ export default async function MessageThreadPage({ params }: { params: Promise<{ 
   });
 
   if (!thread) return notFound();
+  const userOrgIds = new Set<string>();
+  if (!canReadThread(user, thread, userOrgIds)) return notFound();
+  const canReply = canSendThread(user, thread, userOrgIds);
 
   const messages: ThreadMessage[] = thread.messages.map((message) => ({
     id: message.id,
@@ -54,6 +49,9 @@ export default async function MessageThreadPage({ params }: { params: Promise<{ 
   }));
 
   const context = thread.event?.name ?? thread.proposal?.title ?? thread.listing?.title ?? thread.org.name;
+  const resourceContext = thread.resourceType && thread.resourceId
+    ? `${thread.resourceType.replace(/_/g, " ").toLowerCase()} · ${thread.resourceId}`
+    : "Event, proposal, listing, contract, task, payment, or crisis context is recorded when linked.";
 
   return (
     <div className="space-y-5">
@@ -78,12 +76,16 @@ export default async function MessageThreadPage({ params }: { params: Promise<{ 
           <p className="mt-1 text-slate-600">{context}</p>
         </div>
         <div>
-          <p className="font-medium text-slate-900">Workflow</p>
-          <p className="mt-1 text-slate-600">Review recorded coordination context before taking action in the event or proposal workspace.</p>
+          <p className="font-medium text-slate-900">Linked record</p>
+          <p className="mt-1 text-slate-600">{resourceContext}</p>
         </div>
       </section>
 
-      <ThreadPanel messages={messages} />
+      <section className="rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900">
+        Replies are persisted from this message detail. In-app notifications are created for registered participants only; email-only participants remain visible as unbound participants.
+      </section>
+
+      <MessageThreadReplyPanel threadId={thread.id} messages={messages} canReply={canReply} />
 
       {thread.event?.slug && (
         <Link href={`/events/${thread.event.slug}` as Route} className="inline-flex text-sm font-medium text-indigo-700 hover:text-indigo-900">

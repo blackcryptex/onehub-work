@@ -1,20 +1,24 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
-import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgMember } from "@/lib/rbac";
+import { requireEventAccess } from "@/server/lib/access";
 import type { Prisma } from "@prisma/client";
 
 export const calendarRouter = router({
-  list: publicProcedure.input(z.object({
+  list: protectedProcedure.input(z.object({
     orgSlug: z.string(),
     eventId: z.string().optional(),
     from: z.date().optional(),
     to: z.date().optional(),
-  })).query(async ({ input }) => {
-    const org = await db.organization.findUnique({ where: { slug: input.orgSlug } });
+  })).query(async ({ input, ctx }) => {
+    const org = await db.organization.findUnique({ where: { slug: input.orgSlug }, include: { members: true } });
     if (!org) return [];
+    if (!isOrgMember(ctx.user, org)) throw new Error("Forbidden");
+    if (input.eventId) {
+      await requireEventAccess(ctx.user, input.eventId);
+    }
     const where: Prisma.CalendarEventWhereInput = { orgId: org.id };
     if (input.eventId) {
       where.eventId = input.eventId;
@@ -35,7 +39,7 @@ export const calendarRouter = router({
     return db.calendarEvent.findMany({ where, orderBy: { startAt: "asc" } });
   }),
 
-  create: publicProcedure.input(z.object({
+  create: protectedProcedure.input(z.object({
     orgSlug: z.string(),
     eventId: z.string().optional(),
     title: z.string().min(1),
@@ -45,13 +49,14 @@ export const calendarRouter = router({
     allDay: z.boolean().optional(),
     location: z.string().optional(),
     visibility: z.enum(["public", "private"]).optional(),
-  })).mutation(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+  })).mutation(async ({ input, ctx }) => {
     const org = await db.organization.findUnique({ where: { slug: input.orgSlug }, include: { members: true } });
     if (!org) throw new Error("Org not found");
     // Centralized permission check: see apps/web/src/lib/rbac.ts
-    if (!isOrgMember(user, org)) throw new Error("Forbidden");
+    if (!isOrgMember(ctx.user, org)) throw new Error("Forbidden");
+    if (input.eventId) {
+      await requireEventAccess(ctx.user, input.eventId);
+    }
     return db.calendarEvent.create({
       data: {
         orgId: org.id,
@@ -63,12 +68,12 @@ export const calendarRouter = router({
         allDay: input.allDay ?? false,
         location: input.location,
         visibility: input.visibility,
-        createdById: user.id,
+        createdById: ctx.user.id,
       },
     });
   }),
 
-  update: publicProcedure.input(z.object({
+  update: protectedProcedure.input(z.object({
     id: z.string(),
     title: z.string().min(1).optional(),
     description: z.string().optional(),
@@ -77,22 +82,18 @@ export const calendarRouter = router({
     allDay: z.boolean().optional(),
     location: z.string().optional(),
     visibility: z.enum(["public", "private"]).optional(),
-  })).mutation(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+  })).mutation(async ({ input, ctx }) => {
     const evt = await db.calendarEvent.findUniqueOrThrow({ where: { id: input.id }, include: { org: { include: { members: true } } } });
     // Centralized permission check: see apps/web/src/lib/rbac.ts
-    if (!isOrgMember(user, evt.org)) throw new Error("Forbidden");
+    if (!isOrgMember(ctx.user, evt.org)) throw new Error("Forbidden");
     const { id, ...data } = input;
     return db.calendarEvent.update({ where: { id: input.id }, data });
   }),
 
-  delete: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input, ctx }) => {
     const evt = await db.calendarEvent.findUniqueOrThrow({ where: { id: input.id }, include: { org: { include: { members: true } } } });
     // Centralized permission check: see apps/web/src/lib/rbac.ts
-    if (!isOrgMember(user, evt.org)) throw new Error("Forbidden");
+    if (!isOrgMember(ctx.user, evt.org)) throw new Error("Forbidden");
     await db.calendarEvent.delete({ where: { id: input.id } });
     return { success: true };
   }),

@@ -58,6 +58,9 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
       signatures: {
         orderBy: { signedAt: "asc" },
       },
+      changeOrders: {
+        orderBy: { number: "asc" },
+      },
     },
   });
 

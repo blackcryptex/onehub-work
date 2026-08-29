@@ -275,10 +275,10 @@ export function PaymentPlanPageClient({
       <div>
         <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
           <DollarSign className="w-8 h-8 text-indigo-600" />
-          Payments & Held Funds
+          Payment planning / held-funds review
         </h1>
         <p className="mt-2 text-slate-600 max-w-2xl">
-          Clients fund held funds pending release. Planners allocate payouts to vendors. OneHub earns a fee on releases.
+          Plan buyer funding and provider release reviews for the private-pilot workflow. Planning rows are not provider-paid evidence; releases are recorded only after guarded admin review and transfer evidence.
         </p>
       </div>
 
@@ -289,29 +289,29 @@ export function PaymentPlanPageClient({
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           <div>
-            <div className="text-sm text-slate-600">Held Funds Balance</div>
+            <div className="text-sm text-slate-600">Held pending review balance</div>
             <div className="mt-1 text-2xl font-semibold">
               <Money cents={heldFundsBalance} currency="USD" />
             </div>
-            <div className="mt-1 text-xs text-slate-500">Funds held pending release</div>
+            <div className="mt-1 text-xs text-slate-500">Funds held pending refund/dispute/holdback/admin review</div>
           </div>
           <div>
-            <div className="text-sm text-slate-600">Funded Total</div>
+            <div className="text-sm text-slate-600">Stripe-confirmed held total</div>
             <div className="mt-1 text-2xl font-semibold text-blue-600">
               <Money cents={fundedTotal} currency="USD" />
             </div>
-            <div className="mt-1 text-xs text-slate-500">Total deposits funded</div>
+            <div className="mt-1 text-xs text-slate-500">Total buyer payments with persisted confirmation</div>
           </div>
           <div>
-            <div className="text-sm text-slate-600">Released to Vendor</div>
+            <div className="text-sm text-slate-600">Provider transfer evidence</div>
             <div className="mt-1 text-2xl font-semibold text-green-600">
               <Money cents={releasedTotal} currency="USD" />
             </div>
-            <div className="mt-1 text-xs text-slate-500">Payments completed</div>
+            <div className="mt-1 text-xs text-slate-500">Recorded only when transfer evidence exists</div>
           </div>
         </div>
         <p className="mt-4 text-xs text-slate-500">
-          Stripe Connect held funds pending release coming next.
+          Private-pilot/test-mode readiness only: no row is public payout-ready or provider-paid evidence unless transfer evidence and guarded-admin review are recorded.
         </p>
       </Card>
 
@@ -539,7 +539,7 @@ export function PaymentPlanPageClient({
                             payout.status
                           )}`}
                         >
-                          {formatStatus(payout.status)}
+                          {payout.status === "SENT" ? "Transfer evidence recorded" : formatStatus(payout.status)}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 text-sm">
@@ -599,7 +599,7 @@ export function PaymentPlanPageClient({
 
         {revenueBreakdown.length === 0 ? (
           <div className="py-8 text-center text-sm text-slate-500">
-            No payments released yet. Revenue will appear here once payouts are released.
+            No transfer evidence recorded yet. Revenue appears only after guarded release review and provider transfer evidence are persisted.
           </div>
         ) : (
           <div className="space-y-4">

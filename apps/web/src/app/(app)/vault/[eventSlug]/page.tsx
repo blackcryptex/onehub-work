@@ -249,6 +249,16 @@ export default async function EventVaultDetailPage({ params }: { params: Promise
   // Get payment info from milestones (Payout model doesn't have direct relation to Proposal)
   const paymentsDue = event.proposals.flatMap((p) => p.milestones.filter((m) => m.status === "PENDING")).length;
   const paymentsReceived = event.proposals.flatMap((p) => p.milestones.filter((m) => m.status === "PAID")).length;
+  const heldForReview = event.proposals.flatMap((p) => p.milestones.filter((m) => m.status === "IN_ESCROW")).length;
+  const commercialProposalIds = event.proposals.map((p) => p.id);
+  const [openRefundRequests, openDisputes, activeHoldbacks, payoutReviews] = commercialProposalIds.length
+    ? await Promise.all([
+        (prisma as any).refundRequest.count({ where: { proposalId: { in: commercialProposalIds }, status: "OPEN" } }),
+        (prisma as any).dispute.count({ where: { proposalId: { in: commercialProposalIds }, status: { in: ["OPEN", "NEEDS_INFO", "UNDER_ADMIN_REVIEW", "ESCALATED"] } } }),
+        (prisma as any).paymentHoldback.count({ where: { proposalId: { in: commercialProposalIds }, state: "ACTIVE" } }),
+        prisma.payout.count({ where: { proposalId: { in: commercialProposalIds }, status: "PENDING" } }),
+      ])
+    : [0, 0, 0, 0];
 
   // Main contacts
   const mainContacts = [
@@ -437,9 +447,20 @@ export default async function EventVaultDetailPage({ params }: { params: Promise
                   )}
                   {paymentsReceived > 0 && (
                     <div className="rounded border border-green-300 bg-green-50 p-3">
-                      <div className="text-sm font-medium text-green-700">{paymentsReceived} payment(s) received</div>
+                      <div className="text-sm font-medium text-green-700">{paymentsReceived} transfer evidence record(s)</div>
                     </div>
                   )}
+                  <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                    <div className="text-sm font-medium text-slate-700">Trust review state</div>
+                    <div className="mt-1 text-xs text-slate-600">
+                      {heldForReview} held milestone(s) • {openRefundRequests} open refund request(s) • {openDisputes} open dispute(s) • {activeHoldbacks} active holdback(s) • {payoutReviews} payout review row(s)
+                    </div>
+                    {isAdmin(user) && (
+                      <Link href="/admin/verification" className="mt-1 inline-flex text-xs text-indigo-600 hover:underline">
+                        Open admin verification →
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
 

@@ -11,6 +11,9 @@ const { auth, getCurrentUser, prisma, routerRefresh } = vi.hoisted(() => {
     listing: { findMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
     organization: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
     user: { update: vi.fn() },
+    bookingRequest: { create: vi.fn() },
+    activity: { create: vi.fn() },
+    notification: { createMany: vi.fn() },
     $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),
   };
   return {
@@ -44,6 +47,7 @@ import MarketplacePage from "../src/app/marketplace/page";
 import ListingProfile from "../src/app/marketplace/[slug]/page";
 import { BookingRequestModal } from "../src/components/bookings/BookingRequestModal";
 import { POST } from "../src/app/api/providers/profile/route";
+import { POST as createBookingRequest } from "../src/app/api/bookings/request/route";
 
 const providerOrg = {
   id: "provider-org-1",
@@ -72,6 +76,7 @@ const providerOrg = {
   paymentsJson: { depositPercent: "25%", finalDue: "14 days before event" },
   mediaJson: { gallery: [{ url: "https://img.example/cover.jpg" }] },
   notificationsJson: { responseTimeLabel: "Usually responds within 1 business day" },
+  members: [{ userId: "provider-1", role: "OWNER" }],
   updatedAt: new Date("2026-08-20T00:00:00.000Z"),
 };
 
@@ -139,6 +144,9 @@ beforeEach(() => {
   prisma.organization.create.mockResolvedValue({ id: "provider-org-1", slug: "avery-florals-xy12", name: "Avery Florals LLC", profileStatus: "PUBLISHED" });
   prisma.organization.update.mockResolvedValue({ id: "provider-org-1", slug: "avery-florals-xy12", name: "Avery Florals LLC", profileStatus: "PUBLISHED" });
   prisma.user.update.mockResolvedValue({ id: "provider-user-1", role: "VENDOR" });
+  prisma.bookingRequest.create.mockResolvedValue({ id: "request-1" });
+  prisma.activity.create.mockResolvedValue({ id: "activity-1" });
+  prisma.notification.createMany.mockResolvedValue({ count: 1 });
 });
 
 describe("provider profile publish, marketplace discovery, and event-smart request flow", () => {
@@ -298,5 +306,44 @@ describe("provider profile publish, marketplace discovery, and event-smart reque
     }));
     expect(payload.listingId).not.toMatch(/fallback|sample/i);
     fetchMock.mockRestore();
+  });
+
+  it("records request activity and provider notification from the visible REST booking path", async () => {
+    const response = await createBookingRequest(new Request("http://localhost/api/bookings/request", {
+      method: "POST",
+      body: JSON.stringify({
+        listingId: "listing-1",
+        eventId: "event-1",
+        contactName: "Maya Client",
+        contactEmail: "maya@example.com",
+        startAt: "2027-06-14T17:00:00.000Z",
+        endAt: "2027-06-15T02:00:00.000Z",
+        guests: 150,
+        message: "Requesting availability and quote.",
+      }),
+    }) as unknown as NextRequest);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(expect.objectContaining({ success: true, id: "request-1" }));
+    expect(prisma.bookingRequest.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ eventId: "event-1", listingId: "listing-1", status: "PENDING" }),
+    }));
+    expect(prisma.activity.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        orgId: "planner-org-1",
+        eventId: "event-1",
+        actorId: "planner-user-1",
+        action: "BOOKING_REQUEST_CREATED",
+        target: "request-1",
+      }),
+    }));
+    expect(prisma.notification.createMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: [expect.objectContaining({
+        userId: "provider-1",
+        orgId: "provider-org-1",
+        type: "BOOKING_REQUEST",
+        title: "New booking request: Avery Florals",
+      })],
+    }));
   });
 });

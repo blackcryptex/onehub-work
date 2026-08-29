@@ -102,9 +102,7 @@ export default async function VenueDashboardPage() {
           },
         }
       : {
-          proposal: {
-            orgId: org.id,
-          },
+          sellerId: org.id,
           status: {
             in: [ContractStatus.ACCEPTED, ContractStatus.IN_PAYMENT, ContractStatus.ACTIVE, ContractStatus.COMPLETED],
           },

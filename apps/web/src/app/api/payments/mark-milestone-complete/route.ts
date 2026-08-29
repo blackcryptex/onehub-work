@@ -122,7 +122,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Milestone marked as complete. Payment can now be released.",
+      message:
+        "Provider completion evidence submitted for admin review; release remains blocked until refund, dispute, holdback, payout setup, Stripe, escrow, transfer, and guarded-admin checks pass.",
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Failed to mark milestone as complete";

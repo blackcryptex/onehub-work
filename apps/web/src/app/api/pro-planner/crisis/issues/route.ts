@@ -20,3 +20,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create crisis issue" }, { status: 500 });
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const input = await request.json();
+    const result = await crisisRouter.createCaller({}).close(input);
+    return NextResponse.json(result, { status: 200 });
+  } catch (error) {
+    if (error instanceof TRPCError) {
+      const status = error.code === "UNAUTHORIZED" ? 401 : error.code === "FORBIDDEN" ? 403 : error.code === "NOT_FOUND" ? 404 : 400;
+      return NextResponse.json({ error: error.message }, { status });
+    }
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid crisis issue close request", details: error.issues }, { status: 400 });
+    }
+    console.error("Error closing crisis issue:", error);
+    return NextResponse.json({ error: "Failed to close crisis issue" }, { status: 500 });
+  }
+}

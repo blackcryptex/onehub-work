@@ -142,6 +142,13 @@ export default async function AdminVerificationPage({
         <button className="rounded bg-slate-900 px-4 py-2 text-white">Filter</button>
       </form>
 
+      <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+        <h2 className="font-semibold">Human-first trust review summary</h2>
+        <p className="mt-1">
+          Before approving release, refund, dispute, or holdback decisions, confirm the current blocker, affected buyer/provider parties, requested vs approved amount, missing evidence, policy/legal version, named guarded-MVP authority, and irreversible side effects. JSON evidence below is supporting detail, not a substitute for review notes.
+        </p>
+      </section>
+
       <Section title="Refund requests" hrefBase="/admin/verification/refunds" rows={refunds.map((item: any) => ({ id: item.id, bits: [item.status, item.proposalId, money(item.amountRequestedCents, item.currency)] }))} />
       <Section title="Dispute cases" hrefBase="/admin/verification/disputes" rows={disputes.map((item: any) => ({ id: item.id, bits: [item.status, item.freezeState, item.proposalId] }))} />
       <Section title="Holdbacks" hrefBase="/admin/verification/holdbacks" rows={holdbacks.map((item: any) => ({ id: item.paymentIntentId, bits: [item.state, item.proposalId, item.triggerSummary || "no triggers"] }))} />

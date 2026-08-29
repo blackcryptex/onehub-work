@@ -12,6 +12,10 @@ const { getCurrentUser, prisma, recordActivity, resolveContractTemplate } = vi.h
       findUniqueOrThrow: vi.fn(),
       update: vi.fn(),
     },
+    changeOrder: {
+      findUniqueOrThrow: vi.fn(),
+      update: vi.fn(),
+    },
   };
 
   return {
@@ -90,6 +94,16 @@ describe("contract router commercial access", () => {
     prisma.contract.findUniqueOrThrow.mockResolvedValue(contract());
     prisma.contract.update.mockResolvedValue(contract({ status: "PARTIALLY_SIGNED" }));
     prisma.signature.update.mockResolvedValue({ id: "signature-1", signerEmail: "Signer@Test.Local" });
+    prisma.changeOrder.findUniqueOrThrow.mockResolvedValue({
+      id: "co-1",
+      contractId: "contract-1",
+      number: 1,
+      title: "Extra install",
+      deltaCents: 90000,
+      status: "PENDING",
+      contract: contract(),
+    });
+    prisma.changeOrder.update.mockResolvedValue({ id: "co-1", status: "APPROVED" });
     resolveContractTemplate.mockReturnValue("rendered contract");
     recordActivity.mockResolvedValue(undefined);
   });
@@ -143,5 +157,78 @@ describe("contract router commercial access", () => {
       where: { id: "signature-1" },
       data: expect.objectContaining({ signerId: "case-signer" }),
     }));
+  });
+
+  it("contract.sign marks fully signed when buyer member and seller owner have signed", async () => {
+    getCurrentUser.mockResolvedValue(user("seller-owner-1", "VENDOR", "seller-owner@test.local"));
+    prisma.signature.findUniqueOrThrow.mockResolvedValue({
+      id: "signature-seller-owner",
+      signerId: null,
+      signerEmail: "seller-owner@test.local",
+      signedAt: null,
+      contract: contract({
+        signatures: [
+          { id: "signature-buyer", signerId: "buyer-member-1", signerEmail: "buyer@test.local", signedAt: new Date() },
+          { id: "signature-seller-owner", signerId: null, signerEmail: "seller-owner@test.local", signedAt: null },
+        ],
+      }),
+    });
+    prisma.contract.findUniqueOrThrow.mockResolvedValue(contract({
+      signatures: [
+        { id: "signature-buyer", signerId: "buyer-member-1", signerEmail: "buyer@test.local", signedAt: new Date() },
+        { id: "signature-seller-owner", signerId: "seller-owner-1", signerEmail: "seller-owner@test.local", signedAt: new Date() },
+      ],
+    }));
+
+    await expect(caller().sign({ signatureId: "signature-seller-owner", typedName: "Seller Owner" })).resolves.toEqual(
+      expect.objectContaining({ id: "signature-1" })
+    );
+    expect(prisma.contract.update).toHaveBeenCalledWith({
+      where: { id: "contract-1" },
+      data: { status: "FULLY_SIGNED" },
+    });
+  });
+
+  it("contract.sign marks fully signed when buyer owner and seller member have signed", async () => {
+    getCurrentUser.mockResolvedValue(user("seller-member-1", "VENDOR", "seller-member@test.local"));
+    prisma.signature.findUniqueOrThrow.mockResolvedValue({
+      id: "signature-seller-member",
+      signerId: null,
+      signerEmail: "seller-member@test.local",
+      signedAt: null,
+      contract: contract({
+        signatures: [
+          { id: "signature-buyer", signerId: "buyer-owner-1", signerEmail: "buyer@test.local", signedAt: new Date() },
+          { id: "signature-seller-member", signerId: null, signerEmail: "seller-member@test.local", signedAt: null },
+        ],
+      }),
+    });
+    prisma.contract.findUniqueOrThrow.mockResolvedValue(contract({
+      signatures: [
+        { id: "signature-buyer", signerId: "buyer-owner-1", signerEmail: "buyer@test.local", signedAt: new Date() },
+        { id: "signature-seller-member", signerId: "seller-member-1", signerEmail: "seller-member@test.local", signedAt: new Date() },
+      ],
+    }));
+
+    await expect(caller().sign({ signatureId: "signature-seller-member", typedName: "Seller Member" })).resolves.toEqual(
+      expect.objectContaining({ id: "signature-1" })
+    );
+    expect(prisma.contract.update).toHaveBeenCalledWith({
+      where: { id: "contract-1" },
+      data: { status: "FULLY_SIGNED" },
+    });
+  });
+
+  it("approveChangeOrder allows seller org members and blocks unrelated users", async () => {
+    getCurrentUser.mockResolvedValue(user("seller-member-1", "VENDOR"));
+
+    await expect(caller().approveChangeOrder({ id: "co-1" })).resolves.toEqual(expect.objectContaining({ status: "APPROVED" }));
+    expect(prisma.changeOrder.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "co-1" },
+      data: expect.objectContaining({ status: "APPROVED" }),
+    }));
+
+    getCurrentUser.mockResolvedValue(user("stranger-1", "VENUE"));
+    await expect(caller().approveChangeOrder({ id: "co-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

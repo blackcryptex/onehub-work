@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { recordBookingRequestCreatedEvidence } from "@/server/lib/booking-request-workflow";
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,6 +74,16 @@ export async function POST(request: NextRequest) {
       where: { id: listingId },
       select: {
         id: true,
+        title: true,
+        orgId: true,
+        org: {
+          select: {
+            members: {
+              where: { role: { in: ["OWNER", "ADMIN"] } },
+              select: { userId: true, role: true },
+            },
+          },
+        },
       },
     });
 
@@ -111,20 +122,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const bookingRequest = await prisma.bookingRequest.create({
-      data: {
+    const bookingRequest = await prisma.$transaction(async (tx) => {
+      const created = await tx.bookingRequest.create({
+        data: {
+          orgId: event.orgId,
+          eventId: event.id,
+          listingId,
+          contactName,
+          contactEmail,
+          contactPhone: contactPhone || null,
+          startAt: parsedStartAt,
+          endAt: parsedEndAt,
+          guests: parsedGuests,
+          message: message || null,
+          status: "PENDING",
+        },
+      });
+
+      await recordBookingRequestCreatedEvidence({
+        db: tx,
         orgId: event.orgId,
         eventId: event.id,
-        listingId,
+        actorId: user.id,
+        bookingRequestId: created.id,
+        listing,
         contactName,
-        contactEmail,
-        contactPhone: contactPhone || null,
-        startAt: parsedStartAt,
-        endAt: parsedEndAt,
-        guests: parsedGuests,
-        message: message || null,
-        status: "PENDING",
-      },
+      });
+
+      return created;
     });
 
     return NextResponse.json({ success: true, id: bookingRequest.id });

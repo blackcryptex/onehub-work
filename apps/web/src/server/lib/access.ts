@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { db } from "@/server/db";
 import type { AppUser } from "@/lib/auth-helpers";
 import { isAdmin } from "@/lib/auth-helpers";
-import { canManageEvent } from "@/lib/rbac";
+import { canManageEvent, canViewEvent, isOrgMember } from "@/lib/rbac";
 
 /**
  * Shared resource-level authorization helpers for tRPC routers.
@@ -106,11 +106,38 @@ export async function getUserOrgIds(user: AppUser): Promise<Set<string>> {
   return ids;
 }
 
+type ThreadVisibility = "INTERNAL" | "CLIENT_VISIBLE" | "PROVIDER_VISIBLE" | "ALL_PARTIES";
+
 type ThreadForAccess = {
   orgId: string;
-  participants: Array<{ userId: string | null; email: string }>;
-  listing?: { orgId: string } | null;
+  visibility?: ThreadVisibility;
+  participants: Array<{ userId: string | null; email: string; roleHint?: string | null }>;
+  org?: Parameters<typeof isOrgMember>[1] | null;
+  event?: Parameters<typeof canViewEvent>[1] | null;
+  listing?: { orgId: string; org?: Parameters<typeof isOrgMember>[1] | null } | null;
 };
+
+function isThreadParticipant(user: AppUser, thread: ThreadForAccess): boolean {
+  const email = user.email?.toLowerCase();
+  return thread.participants.some(
+    (participant) =>
+      participant.userId === user.id ||
+      Boolean(email && participant.email.toLowerCase() === email)
+  );
+}
+
+function isThreadOrgMember(user: AppUser, thread: ThreadForAccess, userOrgIds: Set<string>): boolean {
+  if (userOrgIds.has(thread.orgId)) return true;
+  if (thread.org && isOrgMember(user, thread.org)) return true;
+  const org = thread.event?.org;
+  return Boolean(org && isOrgMember(user, org));
+}
+
+function isListingOrgMember(user: AppUser, thread: ThreadForAccess, userOrgIds: Set<string>): boolean {
+  if (!thread.listing) return false;
+  if (userOrgIds.has(thread.listing.orgId)) return true;
+  return Boolean(thread.listing.org && isOrgMember(user, thread.listing.org));
+}
 
 /**
  * Returns true if the user may access the thread:
@@ -119,21 +146,39 @@ type ThreadForAccess = {
  * - member/owner of the thread's org, or
  * - member/owner of the listing's org (vendor side) when the thread targets a listing.
  */
-export function canAccessThread(
+export function canReadThread(
   user: AppUser,
   thread: ThreadForAccess,
   userOrgIds: Set<string>
 ): boolean {
   if (isAdmin(user)) return true;
-  const email = user.email?.toLowerCase();
-  const isParticipant = thread.participants.some(
-    (p) => p.userId === user.id || (email && p.email.toLowerCase() === email)
-  );
-  if (isParticipant) return true;
-  if (userOrgIds.has(thread.orgId)) return true;
-  if (thread.listing && userOrgIds.has(thread.listing.orgId)) return true;
-  return false;
+  const isParticipant = isThreadParticipant(user, thread);
+  const isOrgSide = isThreadOrgMember(user, thread, userOrgIds);
+  const isProviderSide = isListingOrgMember(user, thread, userOrgIds);
+
+  switch (thread.visibility ?? "INTERNAL") {
+    case "INTERNAL":
+      return isOrgSide;
+    case "CLIENT_VISIBLE":
+      return isOrgSide || isParticipant || Boolean(thread.event && canViewEvent(user, thread.event));
+    case "PROVIDER_VISIBLE":
+      return isOrgSide || isProviderSide || isParticipant;
+    case "ALL_PARTIES":
+      return isOrgSide || isProviderSide || isParticipant || Boolean(thread.event && canViewEvent(user, thread.event));
+    default:
+      return false;
+  }
 }
+
+export function canSendThread(
+  user: AppUser,
+  thread: ThreadForAccess,
+  userOrgIds: Set<string>
+): boolean {
+  return canReadThread(user, thread, userOrgIds);
+}
+
+export const canAccessThread = canReadThread;
 
 /**
  * Loads a thread (with participants and listing org) and throws unless the
@@ -142,10 +187,29 @@ export function canAccessThread(
 export async function requireThreadAccess(user: AppUser, threadId: string) {
   const thread = await db.thread.findUnique({
     where: { id: threadId },
-    include: { participants: true, listing: { select: { orgId: true } } },
+    include: {
+      participants: true,
+      event: { include: eventAccessInclude },
+      listing: { include: { org: { include: { members: true } } } },
+    },
   });
   if (!thread) throw notFound("Thread not found");
   const orgIds = await getUserOrgIds(user);
-  if (!canAccessThread(user, thread, orgIds)) throw forbidden();
+  if (!canReadThread(user, thread, orgIds)) throw forbidden();
+  return thread;
+}
+
+export async function requireThreadSendAccess(user: AppUser, threadId: string) {
+  const thread = await db.thread.findUnique({
+    where: { id: threadId },
+    include: {
+      participants: true,
+      event: { include: eventAccessInclude },
+      listing: { include: { org: { include: { members: true } } } },
+    },
+  });
+  if (!thread) throw notFound("Thread not found");
+  const orgIds = await getUserOrgIds(user);
+  if (!canSendThread(user, thread, orgIds)) throw forbidden();
   return thread;
 }

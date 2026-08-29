@@ -17,7 +17,10 @@ const findThreads = vi.fn();
 const findThread = vi.fn();
 const findNotifications = vi.fn();
 
-vi.mock("@/lib/auth-helpers", () => ({ getCurrentUser }));
+vi.mock("@/lib/auth-helpers", () => ({
+  getCurrentUser,
+  isAdmin: (user: { role?: string } | null | undefined) => user?.role === "ADMIN",
+}));
 vi.mock("@/lib/auth", () => ({ auth }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -39,6 +42,14 @@ vi.mock("@/server/db", () => ({
     notification: { findMany: findNotifications },
   },
 }));
+vi.mock("@/components/messages/MessageThreadReplyPanel", () => ({
+  MessageThreadReplyPanel: ({ canReply, messages }: { canReply: boolean; messages: { bodyMd: string }[] }) => (
+    <div aria-label="Canonical reply panel">
+      {messages.map((message) => <span key={message.bodyMd}>{message.bodyMd}</span>)}
+      {canReply ? <button>Send</button> : <p>Read-only</p>}
+    </div>
+  ),
+}));
 vi.mock("next/navigation", () => ({
   redirect: vi.fn((path: string) => {
     throw new Error(`redirect:${path}`);
@@ -46,6 +57,7 @@ vi.mock("next/navigation", () => ({
   notFound: vi.fn(() => {
     throw new Error("not-found");
   }),
+  useRouter: () => ({ refresh: vi.fn() }),
 }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
@@ -63,6 +75,23 @@ vi.mock("@onehub/ui", () => ({
 
 const forbiddenPlaceholderCopy = /coming soon|placeholder|stub|mock-only|content for/i;
 
+function inboxThread(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "thread-1",
+    orgId: "org-1",
+    visibility: "CLIENT_VISIBLE",
+    subject: "Readable planning update",
+    org: { name: "Atlas Events", ownerId: "owner-1", members: [{ userId: "planner-1" }] },
+    event: null,
+    listing: null,
+    proposal: null,
+    participants: [{ email: "client@example.com", roleHint: "CLIENT", userId: "client-1" }],
+    messages: [{ id: "message-1", bodyMd: "Visible client update", createdAt: new Date("2027-04-05T12:00:00.000Z"), senderId: "planner-1" }],
+    createdAt: new Date("2027-04-05T12:00:00.000Z"),
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   getCurrentUser.mockResolvedValue({ id: "planner-1", role: "PRO_PLANNER", name: "Pro Planner" });
@@ -77,9 +106,21 @@ beforeEach(() => {
   findThreads.mockResolvedValue([]);
   findThread.mockResolvedValue({
     id: "thread-1",
+    orgId: "org-1",
+    visibility: "CLIENT_VISIBLE",
     subject: "Proposal Discussion",
-    org: { name: "Atlas Events" },
-    event: { name: "Sample Wedding", slug: "sample-wedding" },
+    resourceType: "EVENT_TASK",
+    resourceId: "task-1",
+    org: { name: "Atlas Events", ownerId: "owner-1", members: [{ userId: "planner-1" }] },
+    event: {
+      name: "Sample Wedding",
+      slug: "sample-wedding",
+      orgId: "org-1",
+      createdById: "planner-1",
+      org: { ownerId: "owner-1", members: [{ userId: "planner-1" }] },
+      shares: [],
+      stakeholders: [],
+    },
     listing: null,
     proposal: null,
     participants: [{ email: "client@example.com", roleHint: "CLIENT" }],
@@ -125,18 +166,9 @@ describe("core dashboard destination routes", () => {
     expect(screen.getByRole("heading", { name: /proposal discussion/i })).toBeInTheDocument();
     expect(screen.getByText(/Back to Message Inbox/i)).toBeInTheDocument();
     expect(screen.getByText(/Please confirm the floor plan/i)).toBeInTheDocument();
-    expect(findThread).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({
-        id: "thread-1",
-        OR: expect.arrayContaining([
-          { org: { ownerId: "planner-1" } },
-          { org: { members: { some: { userId: "planner-1" } } } },
-          { participants: { some: { userId: "planner-1" } } },
-          { listing: { org: { ownerId: "planner-1" } } },
-          { listing: { org: { members: { some: { userId: "planner-1" } } } } },
-        ]),
-      }),
-    }));
+    expect(screen.getByRole("button", { name: /send/i })).toBeInTheDocument();
+    expect(screen.getByText(/task-1/i)).toBeInTheDocument();
+    expect(findThread).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "thread-1" } }));
     expect(document.body.textContent).not.toMatch(forbiddenPlaceholderCopy);
   });
 
@@ -152,30 +184,115 @@ describe("core dashboard destination routes", () => {
 
     render(await MessageThreadPage({ params: Promise.resolve({ threadId: "thread-1" }) }));
     expect(screen.getByRole("heading", { name: /proposal discussion/i })).toBeInTheDocument();
-    expect(findThread).toHaveBeenLastCalledWith(expect.objectContaining({
-      where: { id: "thread-1" },
-    }));
+    expect(findThread).toHaveBeenLastCalledWith(expect.objectContaining({ where: { id: "thread-1" } }));
+  });
+
+  it("hides internal thread inbox previews from client participants while preserving readable client threads", async () => {
+    getCurrentUser.mockResolvedValue({ id: "client-1", role: "CLIENT", name: "Client", email: "client@example.com" });
+    findThreads.mockResolvedValue([
+      inboxThread({
+        id: "internal-thread",
+        visibility: "INTERNAL",
+        subject: "Internal client risk review",
+        participants: [{ email: "client@example.com", roleHint: "CLIENT", userId: "client-1" }],
+        messages: [{ id: "message-internal", bodyMd: "Do not disclose this internal note", createdAt: new Date("2027-04-06T12:00:00.000Z"), senderId: "planner-1" }],
+      }),
+      inboxThread({
+        id: "client-visible-thread",
+        visibility: "CLIENT_VISIBLE",
+        subject: "Client visible update",
+        messages: [{ id: "message-visible", bodyMd: "Floor plan is ready for your review", createdAt: new Date("2027-04-05T12:00:00.000Z"), senderId: "planner-1" }],
+      }),
+    ]);
+    const { default: MessagesPage } = await import("../src/app/(app)/messages/page");
+
+    render(await MessagesPage());
+
+    expect(screen.queryByText(/Internal client risk review/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Do not disclose this internal note/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Client visible update/i })).toHaveAttribute("href", "/messages/client-visible-thread");
+    expect(screen.getByText(/Floor plan is ready for your review/i)).toBeInTheDocument();
+  });
+
+  it("hides internal thread inbox previews from provider participants while preserving provider-visible threads", async () => {
+    getCurrentUser.mockResolvedValue({ id: "provider-1", role: "VENDOR", name: "Vendor", email: "provider@example.com" });
+    findThreads.mockResolvedValue([
+      inboxThread({
+        id: "provider-internal-thread",
+        visibility: "INTERNAL",
+        subject: "Internal vendor negotiation",
+        participants: [{ email: "provider@example.com", roleHint: "VENDOR", userId: "provider-1" }],
+        messages: [{ id: "message-provider-internal", bodyMd: "Internal margin note", createdAt: new Date("2027-04-06T12:00:00.000Z"), senderId: "planner-1" }],
+      }),
+      inboxThread({
+        id: "provider-visible-thread",
+        visibility: "PROVIDER_VISIBLE",
+        subject: "Provider load-in details",
+        participants: [{ email: "provider@example.com", roleHint: "VENDOR", userId: "provider-1" }],
+        messages: [{ id: "message-provider-visible", bodyMd: "Please confirm your arrival window", createdAt: new Date("2027-04-05T12:00:00.000Z"), senderId: "planner-1" }],
+      }),
+    ]);
+    const { default: MessagesPage } = await import("../src/app/(app)/messages/page");
+
+    render(await MessagesPage());
+
+    expect(screen.queryByText(/Internal vendor negotiation/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Internal margin note/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Provider load-in details/i })).toHaveAttribute("href", "/messages/provider-visible-thread");
+    expect(screen.getByText(/Please confirm your arrival window/i)).toBeInTheDocument();
+  });
+
+  it("hides internal thread inbox previews from unrelated listing-side users while preserving provider-side readable threads", async () => {
+    getCurrentUser.mockResolvedValue({ id: "listing-member-1", role: "VENDOR", name: "Listing Team", email: "listing@example.com" });
+    const listing = { title: "Rosewood Catering", type: "CATERER", orgId: "listing-org-1", org: { ownerId: "listing-owner-1", members: [{ userId: "listing-member-1" }] } };
+    findThreads.mockResolvedValue([
+      inboxThread({
+        id: "listing-internal-thread",
+        visibility: "INTERNAL",
+        subject: "Internal listing-side review",
+        listing,
+        participants: [],
+        messages: [{ id: "message-listing-internal", bodyMd: "Planner-only listing note", createdAt: new Date("2027-04-06T12:00:00.000Z"), senderId: "planner-1" }],
+      }),
+      inboxThread({
+        id: "listing-provider-thread",
+        visibility: "PROVIDER_VISIBLE",
+        subject: "Provider-visible listing update",
+        listing,
+        participants: [],
+        messages: [{ id: "message-listing-provider", bodyMd: "Provider-side details are ready", createdAt: new Date("2027-04-05T12:00:00.000Z"), senderId: "planner-1" }],
+      }),
+    ]);
+    const { default: MessagesPage } = await import("../src/app/(app)/messages/page");
+
+    render(await MessagesPage());
+
+    expect(screen.queryByText(/Internal listing-side review/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Planner-only listing note/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Provider-visible listing update/i })).toHaveAttribute("href", "/messages/listing-provider-thread");
+    expect(screen.getByText(/Provider-side details are ready/i)).toBeInTheDocument();
   });
 
   it("preserves non-admin /messages/[threadId] isolation for unrelated users", async () => {
     getCurrentUser.mockResolvedValue({ id: "outsider-1", role: "PRO_PLANNER", name: "Outsider", email: "outsider@example.com" });
-    findThread.mockResolvedValue(null);
+    findThread.mockResolvedValue({
+      id: "thread-1",
+      orgId: "org-1",
+      visibility: "INTERNAL",
+      subject: "Internal Thread",
+      resourceType: null,
+      resourceId: null,
+      org: { name: "Atlas Events", ownerId: "owner-1", members: [{ userId: "planner-1" }] },
+      event: null,
+      listing: null,
+      proposal: null,
+      participants: [{ email: "client@example.com", roleHint: "CLIENT", userId: "client-1" }],
+      messages: [],
+    });
     const { default: MessageThreadPage } = await import("../src/app/(app)/messages/[threadId]/page");
 
     await expect(MessageThreadPage({ params: Promise.resolve({ threadId: "thread-1" }) })).rejects.toThrow("not-found");
-    expect(findThread).toHaveBeenLastCalledWith(expect.objectContaining({
-      where: expect.objectContaining({
-        id: "thread-1",
-        OR: expect.arrayContaining([
-          { org: { ownerId: "outsider-1" } },
-          { org: { members: { some: { userId: "outsider-1" } } } },
-          { participants: { some: { userId: "outsider-1" } } },
-          { participants: { some: { email: { equals: "outsider@example.com", mode: "insensitive" } } } },
-          { listing: { org: { ownerId: "outsider-1" } } },
-          { listing: { org: { members: { some: { userId: "outsider-1" } } } } },
-        ]),
-      }),
-    }));
+    expect(findThread).toHaveBeenLastCalledWith(expect.objectContaining({ where: { id: "thread-1" } }));
   });
 
   it("renders /notifications as a useful notification center with a truthful empty state", async () => {

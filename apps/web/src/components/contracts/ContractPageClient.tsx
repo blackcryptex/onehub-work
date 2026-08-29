@@ -31,6 +31,10 @@ function formatStatusLabel(status: string) {
     .join(" ");
 }
 
+function formatMoney(cents: number | null | undefined, currency = "USD") {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format((cents ?? 0) / 100);
+}
+
 function getContractReadinessCopy({
   status,
   fromProviderBackedProposal,
@@ -276,6 +280,44 @@ export function ContractPageClient({
           </div>
         </Card>
       )}
+
+      <Card className="p-4">
+        <div className="flex flex-col gap-1 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h3 className="font-semibold">Change orders</h3>
+            <p className="text-sm text-slate-600">
+              Approved change orders increase committed budget exposure. Pending change orders are risk only and do not change payable, held, or paid state.
+            </p>
+          </div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Budget impact visibility
+          </div>
+        </div>
+        {contract.changeOrders && contract.changeOrders.length > 0 ? (
+          <div className="mt-4 space-y-3">
+            {contract.changeOrders.map((order: any) => (
+              <div key={order.id} className="rounded-lg border border-slate-200 p-3 text-sm">
+                <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                  <div className="font-medium text-slate-950">
+                    CO #{order.number}: {order.title}
+                  </div>
+                  <div className={order.status === "APPROVED" ? "font-semibold text-green-700" : order.status === "PENDING" ? "font-semibold text-amber-700" : "font-semibold text-slate-600"}>
+                    {formatStatusLabel(order.status)} • {formatMoney(order.deltaCents, contract.proposal?.currency ?? "USD")}
+                  </div>
+                </div>
+                {order.bodyMd && <p className="mt-2 text-slate-600">{order.bodyMd}</p>}
+                {order.approvedAt && (
+                  <p className="mt-2 text-xs text-slate-500">Approved on {new Date(order.approvedAt).toLocaleDateString()}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">
+            No change orders are attached to this contract yet. Use guarded contract change-order actions before treating scope changes as committed.
+          </p>
+        )}
+      </Card>
 
       <LegalNotice
         label="Contract signing and payment actions are tied to the current guarded MVP legal text."

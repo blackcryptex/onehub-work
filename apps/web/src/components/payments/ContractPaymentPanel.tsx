@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@onehub/ui";
+import Link from "next/link";
 import { PaymentModal } from "./PaymentModal";
 import {
   formatCurrency,
@@ -248,6 +249,23 @@ export function ContractPaymentPanel({
                       {milestone.dueDate && (
                         <div className="text-xs text-slate-600">
                           Due: {new Date(milestone.dueDate).toLocaleDateString()}
+                        </div>
+                      )}
+                      {(isHeldFunds || isPaid) && (
+                        <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                          <Link
+                            href={`/disputes?proposalId=${contract.proposalId}&milestoneId=${milestone.id}&amountRequestedCents=${milestone.amountCents}`}
+                            className="text-indigo-600 hover:underline"
+                          >
+                            Request refund review
+                          </Link>
+                          <Link
+                            href={`/disputes?proposalId=${contract.proposalId}&milestoneId=${milestone.id}&amountRequestedCents=${milestone.amountCents}&mode=dispute`}
+                            className="text-indigo-600 hover:underline"
+                          >
+                            Open dispute review
+                          </Link>
+                          <span className="text-slate-500">Review requests do not self-serve reversals or release.</span>
                         </div>
                       )}
                     </div>

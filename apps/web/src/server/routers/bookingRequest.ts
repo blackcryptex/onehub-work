@@ -1,11 +1,16 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner } from "@/lib/rbac";
 import { recordActivity } from "@/server/lib/activity";
 import { notify } from "@/server/routers/notification";
+import {
+  providerBookingStatusValues,
+  setProviderBookingRequestStatus,
+  submitProviderQuoteForBookingRequest,
+} from "@/server/lib/booking-request-workflow";
 
 export const bookingRequestRouter = router({
   create: publicProcedure.input(z.object({ orgSlug: z.string(), eventId: z.string(), listingId: z.string(), startAt: z.date(), endAt: z.date(), guests: z.number().int().optional(), message: z.string().optional(), contact: z.object({ name: z.string(), email: z.string().email(), phone: z.string().optional() }) })).mutation(async ({ input }) => {
@@ -47,82 +52,20 @@ export const bookingRequestRouter = router({
     if (!isOrgAdminOrOwner(user, listing.org, mem)) throw new Error("Forbidden");
     return db.bookingRequest.findMany({ where: { listingId: input.listingId }, include: { event: true, org: true }, orderBy: { createdAt: "desc" } });
   }),
-  listForOrg: publicProcedure.input(z.object({ orgSlug: z.string() })).query(async ({ input }) => {
-    const org = await db.organization.findUnique({ where: { slug: input.orgSlug } });
+  listForOrg: protectedProcedure.input(z.object({ orgSlug: z.string() })).query(async ({ input, ctx }) => {
+    const org = await db.organization.findUnique({ where: { slug: input.orgSlug }, include: { members: true } });
     if (!org) return [];
+    const membership = org.members.find((member) => member.userId === ctx.user.id);
+    if (!isOrgAdminOrOwner(ctx.user, org, membership)) throw new Error("Forbidden");
     return db.bookingRequest.findMany({ where: { orgId: org.id }, include: { listing: true, event: true }, orderBy: { createdAt: "desc" } });
   }),
-  setStatus: publicProcedure.input(z.object({ id: z.string(), status: z.enum(["PENDING","HOLD","QUOTED","DECLINED","EXPIRED","WITHDRAWN"]) })).mutation(async ({ input }) => {
-    const req = await db.bookingRequest.findUniqueOrThrow({ where: { id: input.id }, include: { listing: { include: { org: { include: { members: true } } } } } });
+  setStatus: publicProcedure.input(z.object({ id: z.string(), status: z.enum(providerBookingStatusValues) })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
-    // Centralized permission check: see apps/web/src/lib/rbac.ts
-    const mem = req.listing.org.members.find((m) => m.userId === user.id);
-    if (!isOrgAdminOrOwner(user, req.listing.org, mem)) throw new Error("Forbidden");
-    const updated = await db.bookingRequest.update({ where: { id: input.id }, data: { status: input.status } });
-    await recordActivity({ orgId: req.listing.orgId, actorId: user.id, action: "BOOKING_REQUEST_STATUS_SET", target: req.id, meta: { status: input.status } });
-    return updated;
+    return setProviderBookingRequestStatus({ db, id: input.id, status: input.status, user });
   }),
   quote: publicProcedure.input(z.object({ id: z.string(), quoteCents: z.number().int().nonnegative(), note: z.string().optional() })).mutation(async ({ input }) => {
-    const req = await db.bookingRequest.findUniqueOrThrow({
-      where: { id: input.id },
-      include: {
-        event: true,
-        listing: { include: { org: { include: { members: true } } } },
-      },
-    });
     const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
-    // Centralized permission check: see apps/web/src/lib/rbac.ts
-    const mem = req.listing.org.members.find((m) => m.userId === user.id);
-    if (!isOrgAdminOrOwner(user, req.listing.org, mem)) throw new Error("Forbidden");
-    const updated = await db.bookingRequest.update({ where: { id: input.id }, data: { status: "QUOTED", quoteCents: input.quoteCents, notes: input.note } });
-    const proposal = await db.proposal.create({
-      data: {
-        orgId: req.orgId,
-        eventId: req.eventId,
-        listingId: req.listingId,
-        title: `${req.listing.title} quote for ${req.event.name}`,
-        summary: `Provider-submitted quote from ${req.listing.title}${input.note ? `: ${input.note}` : "."}`,
-        status: "SENT",
-        bookingClassification: "MARKETPLACE",
-        currency: "USD",
-        subtotalCents: input.quoteCents,
-        taxCents: 0,
-        totalCents: input.quoteCents,
-        terms: input.note,
-        lineItems: {
-          create: [{
-            label: `${req.listing.title} provider quote`,
-            description: input.note,
-            qty: 1,
-            unit: "quote",
-            unitPriceCents: input.quoteCents,
-            totalCents: input.quoteCents,
-          }],
-        },
-        milestones: {
-          create: [{
-            title: "Provider quote total",
-            description: "Payment schedule to be finalized during contract generation.",
-            dueType: "OFFSET_FROM_EVENT_START",
-            dueOffsetDays: -14,
-            amountCents: input.quoteCents,
-            status: "PENDING",
-          }],
-        },
-      },
-    });
-    await recordActivity({
-      orgId: req.orgId,
-      eventId: req.eventId,
-      actorId: user.id,
-      action: "PROVIDER_PROPOSAL_SUBMITTED",
-      target: proposal.id,
-      meta: { bookingRequestId: req.id, listingId: req.listingId, quoteCents: input.quoteCents },
-    });
-    // TODO: Find user by email and notify; for now, notification appears when viewing requests
-    return { bookingRequest: updated, proposal };
+    return submitProviderQuoteForBookingRequest({ db, id: input.id, quoteCents: input.quoteCents, note: input.note, user });
   }),
 });
 

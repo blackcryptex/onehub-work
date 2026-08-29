@@ -76,6 +76,10 @@ const contract = {
   sellerId: "seller-org-1",
   proposalId: "proposal-1",
   eventId: "event-1",
+  signatures: [
+    { signedAt: new Date("2026-01-01T00:00:00.000Z"), signerId: "buyer-user-1" },
+    { signedAt: new Date("2026-01-01T00:00:00.000Z"), signerId: "seller-user-1" },
+  ],
   proposal: {
     id: "proposal-1",
     status: "CONVERTED",
@@ -83,7 +87,7 @@ const contract = {
     bookingClassification: "STANDARD",
     listingId: "listing-1",
     escrowAccount: { id: "escrow-1", balanceCents: 0, status: "EMPTY", stripeIntent: null },
-    listing: { id: "listing-1", org: { ownerId: "seller-user-1" } },
+    listing: { id: "listing-1", org: { ownerId: "seller-user-1", members: [{ userId: "seller-member-1" }] } },
     milestones: [{ id: "milestone-1", amountCents: 10000, status: "PENDING" }],
     event: { orgId: "buyer-org-1", org: { type: "CLIENT" } },
   },
@@ -369,6 +373,47 @@ describe("payment intent lifecycle guardrails", () => {
     });
     expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
     expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  it("blocks payment intent creation when the fully signed status lacks bilateral signature evidence", async () => {
+    prisma.contract.findUnique.mockResolvedValue({
+      ...contract,
+      signatures: [{ signedAt: new Date("2026-01-01T00:00:00.000Z"), signerId: "buyer-user-1" }],
+    });
+
+    const response = await createIntentPOST(request({
+      contractId: "contract-1",
+      milestoneId: "milestone-1",
+      acceptance: { legalVersion: "payment-v1" },
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({ error: "Contract is not in a payable state" });
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  it("allows payment intent creation when the seller side was signed by a seller org member", async () => {
+    prisma.contract.findUnique.mockResolvedValue({
+      ...contract,
+      signatures: [
+        { signedAt: new Date("2026-01-01T00:00:00.000Z"), signerId: "buyer-user-1" },
+        { signedAt: new Date("2026-01-01T00:00:00.000Z"), signerId: "seller-member-1" },
+      ],
+    });
+
+    const response = await createIntentPOST(request({
+      contractId: "contract-1",
+      milestoneId: "milestone-1",
+      acceptance: { legalVersion: "payment-v1" },
+    }));
+
+    expect(response.status).toBe(200);
+    expect(prisma.paymentIntent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ payeeId: "seller-user-1" }),
+    });
+    expect(stripe.paymentIntents.create).toHaveBeenCalled();
   });
 
   it("blocks payment intent creation when the accepted proposal lacks provider-submitted evidence", async () => {

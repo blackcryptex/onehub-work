@@ -8,7 +8,7 @@ import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
 import { recordAudit } from "@/server/lib/audit";
 import { createRefundRequest } from "@/lib/refund-request";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { isOrgAdminOrOwner, canManageEvent, canReleaseMilestonePayment } from "@/lib/rbac";
+import { isOrgAdminOrOwner, canManageEvent } from "@/lib/rbac";
 
 export const billingRouter = router({
   // SECURITY HOTFIX: require auth (P0)
@@ -89,60 +89,18 @@ export const billingRouter = router({
       detailsSubmitted: Boolean(account.details_submitted),
     };
   }),
-  // SECURITY HOTFIX: require auth (P0)
-  // SECURITY: permission check - user must be able to manage the event
+  // Guarded MVP: disable the legacy tRPC proposal funding surface so payment intents
+  // can only be created through the canonical /api/payments/create-intent path with
+  // provider-backed proposal, signed contract, current payment acceptance, server-
+  // derived amount, canonical PaymentIntent rows, and Stripe metadata binding.
   escrowCreatePaymentIntent: protectedProcedure.input(z.object({
     proposalId: z.string(),
     amountCents: z.number().int().nonnegative(),
-  })).mutation(async ({ input, ctx }) => {
-    const proposal = await db.proposal.findUniqueOrThrow({
-      where: { id: input.proposalId },
-      include: {
-        escrowAccount: true,
-        event: {
-          include: {
-            org: {
-              include: { members: true },
-            },
-          },
-        },
-      },
+  })).mutation(async () => {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Legacy proposal payment intent creation via billing router is disabled. Use the canonical /api/payments/create-intent route.",
     });
-    if (!canManageEvent(ctx.user, proposal.event)) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "You do not have permission to create payment intents for this proposal",
-      });
-    }
-    if (!proposal.escrowAccount) throw new Error("Escrow account not found");
-    
-    // Idempotency: check if escrow already has a Stripe intent
-    const stripe = getStripeOrThrow();
-    if (proposal.escrowAccount.stripeIntent) {
-      const existingIntent = await stripe.paymentIntents.retrieve(proposal.escrowAccount.stripeIntent);
-      return { clientSecret: existingIntent.client_secret };
-    }
-    
-    // Generate stable idempotency key
-    const idempotencyKey = `escrow-${proposal.id}-${input.amountCents}`;
-    
-    const intent = await stripe.paymentIntents.create(
-      {
-        amount: input.amountCents,
-        currency: proposal.currency.toLowerCase(),
-        metadata: { proposalId: proposal.id, escrowAccountId: proposal.escrowAccount.id },
-      },
-      {
-        idempotencyKey,
-      }
-    );
-    
-    // Update escrow account with Stripe intent (unique constraint prevents duplicates)
-    await db.escrowAccount.update({
-      where: { id: proposal.escrowAccount.id },
-      data: { stripeIntent: intent.id },
-    });
-    return { clientSecret: intent.client_secret };
   }),
   // Guarded MVP: disable the legacy tRPC release surface so milestone releases can only
   // flow through the canonical /api/payments/release-milestone path with acceptance,

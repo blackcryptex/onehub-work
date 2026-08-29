@@ -3,6 +3,7 @@ import { db } from "@/server/db";
 import { router, publicProcedure } from "@/server/trpc";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canViewBudget, canEditBudget } from "@/lib/rbac";
+import { getEventFinancialSummary } from "@/server/lib/event-financial-summary";
 
 export const budgetRouter = router({
   create: publicProcedure.input(z.object({ eventId: z.string(), category: z.enum(["VENUE","CATERING","DECOR","ENTERTAINMENT","PHOTO_VIDEO","TRANSPORT","STAFF","MARKETING","MISC"]), label: z.string(), plannedCents: z.number().int().nonnegative().default(0), actualCents: z.number().int().nonnegative().default(0), vendorName: z.string().optional(), notes: z.string().optional() })).mutation(async ({ input }) => {
@@ -43,5 +44,12 @@ export const budgetRouter = router({
     const totals = lines.reduce((acc, l) => { acc.planned += l.plannedCents; acc.actual += l.actualCents; return acc; }, { planned: 0, actual: 0 });
     const variance = totals.actual - totals.planned;
     return { lines, totals, variance };
+  }),
+  summary: publicProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Unauthorized");
+    const summary = await getEventFinancialSummary({ eventId: input.eventId, actor: user });
+    if (!summary) throw new Error("Event not found");
+    return summary;
   }),
 });

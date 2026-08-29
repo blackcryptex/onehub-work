@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getCurrentUser, isAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { canManageEvent } from "@/lib/rbac";
-import { recordAudit } from "@/server/lib/audit";
+import { recordActivity } from "@/server/lib/activity";
 
 const createClientTaskSchema = z.object({
   orgId: z.string().min(1),
@@ -59,34 +59,63 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Selected client is not attached to this event" }, { status: 400 });
     }
 
-    const task = await prisma.task.create({
-      data: {
-        eventId: event.id,
-        title: input.title,
-        description: selectedClient
-          ? `Waiting on client: ${selectedClient.user.name || selectedClient.user.email || "Client"}`
-          : "Waiting on client: owner needs a client decision or response.",
-        status: "TODO",
-        priority: input.priority,
-        dueAt: input.dueAt ? new Date(input.dueAt) : null,
-        assigneeId: selectedClient?.userId ?? undefined,
-      },
-      include: {
-        assignee: { select: { id: true, name: true, email: true } },
-      },
-    });
+    const task = await prisma.$transaction(async (tx) => {
+      const createdTask = await tx.task.create({
+        data: {
+          eventId: event.id,
+          title: input.title,
+          description: selectedClient
+            ? `Waiting on client: ${selectedClient.user.name || selectedClient.user.email || "Client"}`
+            : "Waiting on client: owner needs a client decision or response.",
+          status: "TODO",
+          priority: input.priority,
+          dueAt: input.dueAt ? new Date(input.dueAt) : null,
+          assigneeId: selectedClient?.userId ?? undefined,
+          createdById: user.id,
+        },
+        include: {
+          assignee: { select: { id: true, name: true, email: true } },
+        },
+      });
 
-    await recordAudit({
-      orgId: input.orgId,
-      actorId: user.id,
-      action: "pro_planner.client_task.created",
-      target: task.id,
-      metadata: {
+      await recordActivity({
+        db: tx,
+        orgId: event.orgId,
         eventId: event.id,
-        title: task.title,
-        clientUserId: selectedClient?.userId ?? null,
-        priority: task.priority,
-      },
+        actorId: user.id,
+        action: "TASK_CREATED",
+        target: createdTask.id,
+        meta: { assigneeId: createdTask.assigneeId, status: createdTask.status, priority: createdTask.priority, source: "pro_planner.client_task" },
+      });
+      await tx.auditLog.create({
+        data: {
+          orgId: input.orgId,
+          actorId: user.id,
+          action: "pro_planner.client_task.created",
+          target: createdTask.id,
+          metadata: {
+            eventId: event.id,
+            title: createdTask.title,
+            clientUserId: selectedClient?.userId ?? null,
+            priority: createdTask.priority,
+          },
+        },
+      });
+      if (createdTask.assigneeId) {
+        await tx.notification.createMany({
+          data: [{
+            userId: createdTask.assigneeId,
+            orgId: event.orgId,
+            type: "TASK_ASSIGNED",
+            title: `Task assigned: ${createdTask.title}`,
+            body: "You have a client follow-up task assigned in OneHub.",
+            link: `/events/${event.slug}/tasks?task=${createdTask.id}`,
+          }],
+          skipDuplicates: true,
+        });
+      }
+
+      return createdTask;
     });
 
     return NextResponse.json({

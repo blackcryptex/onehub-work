@@ -40,6 +40,7 @@ function contract(overrides: Record<string, unknown> = {}) {
     buyerSideSigned: false,
     sellerSideSigned: false,
     signatures: [],
+    changeOrders: [],
     proposal: {
       id: "proposal-1",
       status: "CONVERTED",
@@ -224,5 +225,22 @@ describe("contract delivery and signature readiness clarity", () => {
     expect(screen.getByText(/Payment locked until provider-backed proposal evidence/i)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Enter payment/i })).not.toBeInTheDocument();
     expect(screen.queryByText("Payment panel ready")).not.toBeInTheDocument();
+  });
+
+  it("renders change-order budget impact without claiming live payment movement", () => {
+    renderContract({
+      changeOrders: [
+        { id: "co-1", number: 1, title: "Extra install", bodyMd: "Adds late-night installation.", deltaCents: 90000, status: "APPROVED", approvedAt: "2027-01-03T00:00:00.000Z" },
+        { id: "co-2", number: 2, title: "Late pickup", bodyMd: "Pending pickup decision.", deltaCents: 25000, status: "PENDING" },
+      ],
+    });
+
+    expect(screen.getByText("Change orders")).toBeInTheDocument();
+    expect(screen.getByText(/Approved change orders increase committed budget exposure/i)).toBeInTheDocument();
+    expect(screen.getByText(/CO #1: Extra install/i)).toBeInTheDocument();
+    expect(screen.getByText(/Approved • \$900.00/i)).toBeInTheDocument();
+    expect(screen.getByText(/CO #2: Late pickup/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pending • \$250.00/i)).toBeInTheDocument();
+    expect(screen.getByText(/risk only and do not change payable, held, or paid state/i)).toBeInTheDocument();
   });
 });

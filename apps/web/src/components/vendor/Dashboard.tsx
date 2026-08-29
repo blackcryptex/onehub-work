@@ -101,11 +101,14 @@ export function VendorDashboard({
 }: VendorDashboardProps) {
   const [uiRoute, setUiRoute] = useState<UIRoute>("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [leadStatuses, setLeadStatuses] = useState<Record<string, string>>({});
+  const [leadActionMessage, setLeadActionMessage] = useState<string | null>(null);
 
-  const pendingRequests = recentRequests.filter((request) => request.status === "PENDING");
-  const followUpRequests = recentRequests.filter((request) => request.status === "QUOTED");
+  const currentStatus = (request: BookingRequest) => leadStatuses[request.id] ?? request.status;
+  const pendingRequests = recentRequests.filter((request) => currentStatus(request) === "PENDING");
+  const followUpRequests = recentRequests.filter((request) => currentStatus(request) === "QUOTED");
   const activeRequests = recentRequests.filter(
-    (request) => request.status !== "DECLINED" && request.status !== "WITHDRAWN"
+    (request) => currentStatus(request) !== "DECLINED" && currentStatus(request) !== "WITHDRAWN"
   );
   const now = new Date();
   const futureActiveRequests = activeRequests.filter((request) => request.startAt >= now);
@@ -129,6 +132,47 @@ export function VendorDashboard({
   const formatDate = (date: Date) => new Date(date).toLocaleDateString();
   const pluralize = (count: number, singular: string, plural = `${singular}s`) =>
     `${count} ${count === 1 ? singular : plural}`;
+
+  const updateLeadStatus = async (request: BookingRequest, status: "HOLD" | "DECLINED") => {
+    setLeadActionMessage(null);
+    const response = await fetch(`/api/providers/leads/${request.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      setLeadActionMessage(data.error || "Lead status update failed");
+      return;
+    }
+    setLeadStatuses((statuses) => ({ ...statuses, [request.id]: status }));
+    setLeadActionMessage(`Lead ${status === "HOLD" ? "held for follow-up" : "declined"}; evidence was recorded.`);
+  };
+
+  const submitLeadQuote = async (request: BookingRequest) => {
+    const quoteInput = window.prompt("Quote amount in dollars (manual-safe; no payment is charged)");
+    if (!quoteInput) return;
+    const quoteCents = Math.round(Number(quoteInput) * 100);
+    if (!Number.isFinite(quoteCents) || quoteCents < 0) {
+      setLeadActionMessage("Enter a valid quote amount before submitting.");
+      return;
+    }
+    const response = await fetch(`/api/providers/leads/${request.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        quoteCents,
+        note: `Provider quote submitted from vendor dashboard for ${request.event?.name || request.listing?.title || "booking request"}.`,
+      }),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      setLeadActionMessage(data.error || "Quote submission failed");
+      return;
+    }
+    setLeadStatuses((statuses) => ({ ...statuses, [request.id]: "QUOTED" }));
+    setLeadActionMessage("Provider-backed proposal created from this lead; no live payment was charged.");
+  };
 
   const routeButtonClass =
     "rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700";
@@ -293,6 +337,11 @@ export function VendorDashboard({
         return (
           <section className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
             <h2 className="text-xl font-semibold mb-4">Leads & Booking Requests</h2>
+            {leadActionMessage && (
+              <p className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800">
+                {leadActionMessage}
+              </p>
+            )}
             {recentRequests.length === 0 ? (
               <div className="space-y-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
                 <p className="font-medium text-slate-900">No active leads yet.</p>
@@ -327,18 +376,27 @@ export function VendorDashboard({
                     <div className="ml-4">
                       <span
                         className={`px-3 py-1 text-sm rounded-full ${
-                          request.status === "PENDING"
+                          currentStatus(request) === "PENDING"
                             ? "bg-yellow-100 text-yellow-800"
-                            : request.status === "QUOTED"
+                            : currentStatus(request) === "QUOTED"
                             ? "bg-blue-100 text-blue-800"
-                            : request.status === "DECLINED"
+                            : currentStatus(request) === "DECLINED"
                             ? "bg-red-100 text-red-800"
                             : "bg-slate-100 text-slate-800"
                         }`}
                       >
-                        {request.status}
+                        {currentStatus(request)}
                       </span>
                       <div className="mt-2 flex justify-end gap-2">
+                        <button type="button" className={secondaryButtonClass} onClick={() => updateLeadStatus(request, "HOLD")}>
+                          Hold for follow-up
+                        </button>
+                        <button type="button" className={routeButtonClass} onClick={() => submitLeadQuote(request)}>
+                          Send guarded quote
+                        </button>
+                        <button type="button" className={secondaryButtonClass} onClick={() => updateLeadStatus(request, "DECLINED")}>
+                          Decline lead
+                        </button>
                         <button type="button" className={secondaryButtonClass} onClick={() => setUiRoute("messages")}>
                           Contact lead
                         </button>

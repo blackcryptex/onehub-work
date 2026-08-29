@@ -41,3 +41,4 @@ node_modules/
 # generated verification/build artifacts
 *.tsbuildinfo
 LINKCHECK.json
+test-results/

@@ -4,6 +4,8 @@ const { auth, getCurrentUser, isOrgAdminOrOwner, db, recordActivity, notify } = 
   const db = {
     bookingRequest: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
     proposal: { create: vi.fn() },
+    organization: { findUnique: vi.fn() },
+    notification: { createMany: vi.fn() },
   };
   return {
     auth: vi.fn(),
@@ -39,7 +41,7 @@ const bookingRequest = {
   endAt: new Date("2027-06-15T02:00:00.000Z"),
   guests: 150,
   status: "PENDING",
-  event: { id: "event-1", name: "Smith Wedding Weekend", orgId: "planner-org-1" },
+  event: { id: "event-1", name: "Smith Wedding Weekend", slug: "smith-wedding-weekend", orgId: "planner-org-1" },
   listing: {
     id: "listing-1",
     title: "Avery Florals",
@@ -65,6 +67,11 @@ beforeEach(() => {
     eventId: "event-1",
     totalCents: 250000,
   });
+  db.organization.findUnique.mockResolvedValue({
+    id: "planner-org-1",
+    members: [{ userId: "planner-admin-1", role: "ADMIN" }],
+  });
+  db.notification.createMany.mockResolvedValue({ count: 1 });
   recordActivity.mockResolvedValue(undefined);
 });
 
@@ -92,7 +99,15 @@ describe("booking request quote to provider-backed proposal handoff", () => {
     expect(recordActivity).toHaveBeenCalledWith(expect.objectContaining({
       action: "PROVIDER_PROPOSAL_SUBMITTED",
       target: "proposal-1",
-      meta: expect.objectContaining({ bookingRequestId: "request-1", listingId: "listing-1" }),
+      meta: expect.objectContaining({ bookingRequestId: "request-1", listingId: "listing-1", evidence: "event-logistics-provider-quote" }),
+    }));
+    expect(db.notification.createMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: [expect.objectContaining({
+        userId: "planner-admin-1",
+        type: "PROVIDER_PROPOSAL_SUBMITTED",
+        link: "/pro/planner/vault/smith-wedding-weekend#workspace-proposals-detail",
+      })],
+      skipDuplicates: true,
     }));
   });
 });

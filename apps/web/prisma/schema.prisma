@@ -35,7 +35,13 @@ model User {
   paymentIntentsAsPayer  PaymentIntent[]    @relation("PaymentIntentPayer")
   reviews                Review[]
   sessions               Session[]
-  assignedTasks          Task[]
+  assignedTasks          Task[]              @relation("TaskAssignee")
+  blockedTasks           Task[]              @relation("TaskBlockedBy")
+  blockerResolvedTasks   Task[]              @relation("TaskBlockerResolvedBy")
+  completedTasks         Task[]              @relation("TaskCompletedBy")
+  createdTasks           Task[]              @relation("TaskCreatedBy")
+  taskDependenciesCreated TaskDependency[]   @relation("TaskDependencyCreatedBy")
+  taskProofs             TaskProof[]         @relation("TaskProofUploadedBy")
   transactionsAsPayee    Transaction[]      @relation("TransactionPayee")
   transactionsAsPayer    Transaction[]      @relation("TransactionPayer")
   userFeatureFlags       UserFeatureFlag[]
@@ -428,18 +434,70 @@ model ChecklistItem {
 }
 
 model Task {
-  id          String       @id @default(cuid())
-  eventId     String
-  title       String
-  description String?
-  status      TaskStatus   @default(TODO)
-  priority    TaskPriority @default(MEDIUM)
-  assigneeId  String?
-  dueAt       DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  assignee    User?        @relation(fields: [assigneeId], references: [id])
-  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id                  String           @id @default(cuid())
+  eventId             String
+  title               String
+  description         String?
+  status              TaskStatus       @default(TODO)
+  priority            TaskPriority     @default(MEDIUM)
+  assigneeId          String?
+  createdById         String?
+  dueAt               DateTime?
+  blockedAt           DateTime?
+  blockedById         String?
+  blockerReason       String?
+  blockerType         String?
+  blockerResolvedAt   DateTime?
+  blockerResolvedById String?
+  completedAt         DateTime?
+  completedById       String?
+  completionNote      String?
+  escalationLevel     Int              @default(0)
+  escalatedAt         DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  assignee            User?            @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  blockedBy           User?            @relation("TaskBlockedBy", fields: [blockedById], references: [id])
+  blockerResolvedBy   User?            @relation("TaskBlockerResolvedBy", fields: [blockerResolvedById], references: [id])
+  completedBy         User?            @relation("TaskCompletedBy", fields: [completedById], references: [id])
+  createdBy           User?            @relation("TaskCreatedBy", fields: [createdById], references: [id])
+  event               Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  dependencies        TaskDependency[] @relation("TaskDependencies")
+  dependents          TaskDependency[] @relation("TaskDependents")
+  proofs              TaskProof[]
+
+  @@index([eventId, status])
+  @@index([assigneeId, status, dueAt])
+  @@index([status, priority, dueAt])
+}
+
+model TaskDependency {
+  id              String   @id @default(cuid())
+  taskId          String
+  dependsOnTaskId String
+  createdById     String?
+  createdAt       DateTime @default(now())
+  createdBy       User?    @relation("TaskDependencyCreatedBy", fields: [createdById], references: [id])
+  dependsOnTask   Task     @relation("TaskDependents", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+  task            Task     @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnTaskId])
+  @@index([taskId])
+  @@index([dependsOnTaskId])
+}
+
+model TaskProof {
+  id           String   @id @default(cuid())
+  taskId       String
+  uploadedById String?
+  label        String
+  urlOrMediaId String
+  createdAt    DateTime @default(now())
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy   User?    @relation("TaskProofUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([taskId, createdAt])
+  @@index([uploadedById, createdAt])
 }
 
 model BudgetLine {
@@ -898,6 +956,8 @@ model Thread {
   eventId      String?
   proposalId   String?
   listingId    String?
+  resourceType ThreadResourceType?
+  resourceId   String?
   subject      String
   visibility   ThreadVisibility    @default(INTERNAL)
   purpose      ThreadPurpose       @default(EVENT_COORDINATION)
@@ -909,6 +969,7 @@ model Thread {
   participants ThreadParticipant[]
 
   @@index([updatedAt])
+  @@index([resourceType, resourceId])
 }
 
 model ThreadParticipant {
@@ -935,6 +996,16 @@ enum ThreadPurpose {
   INTERNAL_NOTE
   DOCUMENT_REVIEW
   ADMIN_REVIEW
+}
+
+enum ThreadResourceType {
+  CONTRACT
+  EVENT_TASK
+  PAYMENT_INTENT
+  PAYMENT_MILESTONE
+  REFUND_REQUEST
+  DISPUTE
+  CRISIS_ISSUE
 }
 
 model Message {

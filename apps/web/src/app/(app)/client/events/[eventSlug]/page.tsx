@@ -6,6 +6,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { Calendar, MapPin, Users, MessageSquare } from "lucide-react";
 import { DepositPanel } from "@/components/client/DepositPanel";
+import { getEventLogisticsSummary } from "@/server/lib/event-logistics-summary";
 
 /**
  * Phase 2: Client-safe event summary view
@@ -163,6 +164,13 @@ export default async function ClientEventSummaryPage({
   const location = [event.venueCity, event.venueState]
     .filter(Boolean)
     .join(", ");
+  let clientNextAction: Awaited<ReturnType<typeof getEventLogisticsSummary>>["nextAction"] = null;
+  try {
+    const logisticsSummary = await getEventLogisticsSummary({ eventId: event.id, actor: user });
+    clientNextAction = logisticsSummary.roleNextActions.client ?? logisticsSummary.nextAction;
+  } catch (error) {
+    console.warn("[Client Event] Logistics summary unavailable", error instanceof Error ? error.message : "unknown error");
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -256,6 +264,19 @@ export default async function ClientEventSummaryPage({
           notes: d.notes,
         }))}
       />
+
+      {clientNextAction && (
+        <Card className="p-6 border-indigo-100 bg-indigo-50">
+          <h3 className="text-lg font-semibold text-indigo-950">Schedule next action</h3>
+          <p className="mt-2 text-sm text-indigo-900">
+            {clientNextAction.title} • {clientNextAction.status.replace(/_/g, " ")}
+          </p>
+          <p className="mt-2 text-sm text-slate-700">{clientNextAction.nextAction}</p>
+          <p className="mt-2 text-xs text-indigo-800">
+            Client-safe logistics only. Provider financials, internal planner notes, and payment operations stay hidden unless your planner shares them.
+          </p>
+        </Card>
+      )}
 
       {crisisIssues.length > 0 && (
         <Card className="p-6 border-amber-200 bg-amber-50">

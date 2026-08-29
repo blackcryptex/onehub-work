@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { safePrismaResult } from "@/lib/runtime-route-safety";
+import { canReadThread } from "@/server/lib/access";
 
 export const dynamic = "force-dynamic";
 
@@ -43,22 +44,31 @@ export default async function MessagesPage() {
           ],
         };
 
-  const threads = await safePrismaResult("messages.thread.findMany", prisma.thread.findMany({
+  const candidateThreads = await safePrismaResult("messages.thread.findMany", prisma.thread.findMany({
     where: {
       org: { is: {} },
       ...accessWhere,
     },
     include: {
-      org: { select: { name: true } },
-      event: { select: { name: true, slug: true } },
-      listing: { select: { title: true, type: true } },
+      org: { include: { members: true } },
+      event: {
+        include: {
+          org: { include: { members: true } },
+          shares: { select: { viewerUserId: true, scope: true } },
+          stakeholders: { select: { userId: true, role: true } },
+        },
+      },
+      listing: { include: { org: { include: { members: true } } } },
       proposal: { select: { title: true, status: true } },
       participants: { select: { email: true, roleHint: true, userId: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 1 },
     },
     orderBy: { updatedAt: "desc" },
-    take: 50,
+    take: 100,
   }), []);
+
+  const userOrgIds = new Set<string>();
+  const threads = candidateThreads.filter((thread) => canReadThread(user, thread, userOrgIds)).slice(0, 50);
 
   const label = roleLabel(user.role);
 

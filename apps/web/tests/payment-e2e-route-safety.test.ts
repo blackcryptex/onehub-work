@@ -10,7 +10,7 @@ const { prisma } = vi.hoisted(() => ({
     adminOverride: { deleteMany: vi.fn() },
     acceptanceCapture: { deleteMany: vi.fn() },
     auditLog: { deleteMany: vi.fn() },
-    activity: { deleteMany: vi.fn() },
+    activity: { deleteMany: vi.fn(), create: vi.fn() },
     moneyTx: { deleteMany: vi.fn() },
     transaction: { deleteMany: vi.fn() },
     refundRequest: { deleteMany: vi.fn(), create: vi.fn(), updateMany: vi.fn(), findMany: vi.fn() },
@@ -92,6 +92,7 @@ describe("payment e2e route safety gate", () => {
     prisma.contract.create.mockResolvedValue({ id: "contract-1" });
     prisma.escrowAccount.create.mockResolvedValue({ id: "escrow-1" });
     prisma.membership.createMany.mockResolvedValue({ count: 2 });
+    prisma.activity.create.mockResolvedValue({ id: "provider-submitted-activity" });
     prisma.proposalLineItem.create.mockResolvedValue({});
     prisma.signature.createMany.mockResolvedValue({ count: 2 });
 
@@ -103,5 +104,11 @@ describe("payment e2e route safety gate", () => {
 
     expect(response.status).toBe(200);
     expect(prisma.user.findMany).toHaveBeenCalled();
+    expect(prisma.activity.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        action: "PROVIDER_PROPOSAL_SUBMITTED",
+        target: "proposal-1",
+      }),
+    }));
   });
 });

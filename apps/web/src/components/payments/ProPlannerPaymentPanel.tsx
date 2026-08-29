@@ -59,6 +59,9 @@ export function ProPlannerPaymentPanel({
 }: ProPlannerPaymentPanelProps) {
   const [loading, setLoading] = useState<Record<string, boolean>>({});
 
+  const releaseReviewCopy =
+    "Release is blocked until refund, dispute, holdback, Connect, Stripe, escrow, and guarded-admin checks pass. This is a review attempt, not a live-money guarantee.";
+
   const handleReleasePayment = async (milestoneId: string) => {
     if (!onReleasePayment) return;
     
@@ -130,7 +133,7 @@ export function ProPlannerPaymentPanel({
                       </div>
                     </div>
                     <div className="p-2 bg-blue-50 rounded">
-                      <div className="text-xs text-blue-600">Funds Held</div>
+                      <div className="text-xs text-blue-600">Held pending review</div>
                       <div className="text-sm font-semibold text-blue-700">
                         {formatCurrency(totalHeldFunds, contract.proposal.currency)}
                       </div>
@@ -180,10 +183,11 @@ export function ProPlannerPaymentPanel({
                     </span>
                   </div>
                   <div className="p-2 bg-blue-50 rounded mb-3">
-                    <div className="text-xs text-blue-600">Available to Release</div>
+                    <div className="text-xs text-blue-600">Held for admin review</div>
                     <div className="text-sm font-semibold text-blue-700">
                       {formatCurrency(totalHeldFunds, contract.proposal.currency)}
                     </div>
+                    <div className="mt-1 text-xs text-blue-700">{releaseReviewCopy}</div>
                   </div>
                   <div className="space-y-2">
                     {heldFundsMilestones.map((milestone) => (
@@ -198,6 +202,7 @@ export function ProPlannerPaymentPanel({
                               Due: {new Date(milestone.dueDate).toLocaleDateString()}
                             </div>
                           )}
+                          <div className="mt-1 text-xs text-slate-500">{releaseReviewCopy}</div>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-sm font-semibold">
@@ -208,7 +213,7 @@ export function ProPlannerPaymentPanel({
                             onClick={() => handleReleasePayment(milestone.id)}
                             disabled={loading[milestone.id]}
                           >
-                            {loading[milestone.id] ? "Processing..." : "Release Payment"}
+                            {loading[milestone.id] ? "Processing..." : "Request guarded release review"}
                           </Button>
                         </div>
                       </div>

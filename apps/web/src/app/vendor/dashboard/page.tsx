@@ -109,9 +109,7 @@ export default async function VendorDashboardPage() {
           },
         } as any)
       : {
-          proposal: {
-            orgId: org.id,
-          },
+          sellerId: org.id,
           status: {
             in: ["ACCEPTED", "IN_PAYMENT", "ACTIVE", "COMPLETED"] as any,
           },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { PROVIDER_PROPOSAL_SUBMITTED_ACTION } from "@/lib/provider-backed-proposal";
 
 const E2E_PASSWORD = "OneHubE2E!12345";
 const BUYER_EMAIL = "slice5-buyer@onehub-e2e.local";
@@ -137,6 +138,7 @@ async function seedScenario() {
   });
   const listing = await prisma.listing.create({ data: { orgId: sellerOrg.id, slug: LISTING_SLUG, title: "Slice 5 E2E Venue", type: "VENUE", category: "VENUE_SPACE", description: "Deterministic mocked-Stripe venue", email: SELLER_EMAIL, city: "Austin", state: "TX", country: "US" } });
   const proposal = await prisma.proposal.create({ data: { orgId: sellerOrg.id, eventId: event.id, listingId: listing.id, title: PROPOSAL_TITLE, summary: "Deterministic payment E2E proposal", status: "ACCEPTED", bookingClassification: "DIRECT", currency: "USD", subtotalCents: 120000, taxCents: 0, totalCents: 120000, terms: "E2E mocked Stripe only" } });
+  await prisma.activity.create({ data: { orgId: sellerOrg.id, eventId: event.id, actorId: seller.id, action: PROVIDER_PROPOSAL_SUBMITTED_ACTION, target: proposal.id, meta: { source: "e2e-payment-seed", listingId: listing.id } } });
   await prisma.proposalLineItem.create({ data: { proposalId: proposal.id, label: "Venue milestone", qty: 1, unit: "event", unitPriceCents: 120000, totalCents: 120000 } });
   const milestone = await prisma.paymentMilestone.create({ data: { proposalId: proposal.id, title: MILESTONE_TITLE, description: "Fund and release through mocked Stripe", dueType: "DATE_ABSOLUTE", dueDate: eventStart, amountCents: 120000, status: "PENDING" } });
   const contract = await prisma.contract.create({ data: { proposalId: proposal.id, orgId: sellerOrg.id, eventId: event.id, title: CONTRACT_TITLE, bodyMd: "# Slice 5 E2E Contract\n\nSigned deterministic payment contract.", status: "FULLY_SIGNED", buyerId: buyerOrg.id, sellerId: sellerOrg.id, platformFeePercent: 5 } });

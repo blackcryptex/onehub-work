@@ -14,7 +14,8 @@ const { getCurrentUser, redirect, canAccessDashboard, prisma } = vi.hoisted(() =
     metricDaily: { findMany: vi.fn() },
     organization: { count: vi.fn() },
     user: { count: vi.fn() },
-    event: { count: vi.fn() },
+    event: { count: vi.fn(), findMany: vi.fn() },
+    activity: { findMany: vi.fn() },
     dispute: { count: vi.fn(), findFirst: vi.fn() },
     refundRequest: { count: vi.fn(), findFirst: vi.fn() },
     paymentHoldback: { count: vi.fn(), findFirst: vi.fn() },
@@ -56,6 +57,8 @@ beforeEach(() => {
     return Promise.resolve(48);
   });
   prisma.event.count.mockResolvedValue(18);
+  prisma.event.findMany.mockResolvedValue([]);
+  prisma.activity.findMany.mockResolvedValue([]);
   prisma.dispute.count.mockResolvedValue(2);
   prisma.refundRequest.count.mockResolvedValue(1);
   prisma.paymentHoldback.count.mockResolvedValue(1);
@@ -84,6 +87,7 @@ describe("Admin overview trust and risk command workflow", () => {
     expect(screen.getByText(/2 admins • 3 event dreamers to verify/i)).toBeInTheDocument();
     expect(screen.getByText("Payments needing oversight")).toBeInTheDocument();
     expect(screen.getByText(/4 pending payouts • 1 refund request • 1 holdback/i)).toBeInTheDocument();
+    expect(screen.getByText(/No event budget overruns or pending change-order exposure/i)).toBeInTheDocument();
     expect(screen.getByText("Support operations queue")).toBeInTheDocument();
     expect(screen.getByText(/1 open abuse report/i)).toBeInTheDocument();
     expect(screen.getByText(/2 failed payments • 1 unprocessed webhook event • 42 audit trail entries/i)).toBeInTheDocument();
@@ -118,12 +122,59 @@ describe("Admin overview trust and risk command workflow", () => {
 
     expect(screen.getByText(/No open trust queue item needs immediate admin review/i)).toBeInTheDocument();
     expect(screen.getByText(/Role roster is visible; keep admin access limited and review event dreamer conversions/i)).toBeInTheDocument();
-    expect(screen.getByText(/No pending payouts, refund requests, or active holdbacks/i)).toBeInTheDocument();
+    expect(screen.getByText(/No pending payouts, refund requests, active holdbacks, budget overruns, or pending change-order exposure/i)).toBeInTheDocument();
     expect(screen.getByText(/No open abuse reports. 0 failed payments • 0 unprocessed webhook events • 0 audit trail entries/i)).toBeInTheDocument();
     expect(screen.getByText(/Scan verification overview and user roles before changing platform settings/i)).toBeInTheDocument();
     expect(container.querySelector('a[href="/admin/verification"]')).not.toBeNull();
     expect(container.querySelector('a[href="/admin/users"]')).not.toBeNull();
     expect(container.querySelector('a[href="/admin/abuse"]')).not.toBeNull();
     expect(container).not.toHaveTextContent(/coming soon|placeholder|no-op|content for/i);
+  });
+
+  it("surfaces event budget and change-order overrun risk in admin money oversight", async () => {
+    prisma.payout.count.mockResolvedValue(0);
+    prisma.refundRequest.count.mockResolvedValue(0);
+    prisma.paymentHoldback.count.mockResolvedValue(0);
+    prisma.event.findMany.mockResolvedValue([
+      {
+        id: "event-1",
+        name: "Smith Wedding Weekend",
+        slug: "smith-wedding-weekend",
+        orgId: "buyer-org-1",
+        createdById: "planner-1",
+        budgetCents: 500000,
+        budgetCurrency: "USD",
+        org: { ownerId: "owner-1", members: [{ userId: "planner-1" }] },
+        stakeholders: [],
+        shares: [],
+        budgetLines: [],
+        proposals: [{
+          id: "proposal-1",
+          title: "Avery Florals",
+          orgId: "buyer-org-1",
+          eventId: "event-1",
+          listingId: "listing-1",
+          listing: { id: "listing-1", title: "Avery Florals" },
+          status: "ACCEPTED",
+          currency: "USD",
+          totalCents: 490000,
+          milestones: [{ id: "m-1", title: "Deposit", amountCents: 100000, status: "PENDING" }],
+          contract: {
+            id: "contract-1",
+            title: "Avery Florals Agreement",
+            status: "FULLY_SIGNED",
+            changeOrders: [{ id: "co-1", number: 1, title: "Extra install", deltaCents: 25000, status: "APPROVED" }],
+          },
+        }],
+      },
+    ]);
+    prisma.activity.findMany.mockResolvedValue([{ eventId: "event-1", target: "proposal-1" }]);
+
+    const page = await AdminOverviewPage();
+    render(page);
+
+    expect(screen.getByText(/1 event budget\/change-order risk/i)).toBeInTheDocument();
+    expect(screen.getByText(/Smith Wedding Weekend over by \$150.00/i)).toBeInTheDocument();
+    expect(screen.getByText("Budget/change-order risk: 1")).toBeInTheDocument();
   });
 });

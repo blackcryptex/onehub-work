@@ -51,12 +51,16 @@ import {
   PROVIDER_PROPOSAL_SUBMITTED_ACTION,
   hasProviderListingContext,
 } from "@/lib/provider-backed-proposal";
+import { getEventFinancialSummary } from "@/server/lib/event-financial-summary";
+import { getEventLogisticsSummary } from "@/server/lib/event-logistics-summary";
 
 type RuntimeBudgetLine = { plannedCents?: number | null; actualCents?: number | null; category?: string | null };
 type RuntimeChecklistItem = { id: string; done?: boolean; title: string };
 type RuntimeChecklist = { id?: string; title?: string; items: RuntimeChecklistItem[] };
 type RuntimeGuestList = { guests?: Array<{ status?: string | null }> };
 type RuntimeMilestone = { id: string; title: string; dueAt?: Date | string | null; done?: boolean };
+type RuntimeTask = { id: string; title: string; dueAt?: Date | string | null; status?: string | null };
+type RuntimeCalendarEvent = { id: string; title: string; startAt: Date | string; endAt: Date | string; visibility?: string | null };
 type RuntimePaymentIntent = { id?: string; status: string; fundedAt?: Date | string | null };
 type RuntimeContract = { id: string; title?: string | null; status: string; paymentIntents?: RuntimePaymentIntent[]; proposal?: { id: string; title: string } | null };
 type RuntimeProposal = {
@@ -95,6 +99,8 @@ type ProVaultRuntimeEvent = Record<string, any> & {
   budgetLines: RuntimeBudgetLine[];
   checklists: RuntimeChecklist[];
   milestones: RuntimeMilestone[];
+  tasks: RuntimeTask[];
+  calendarEvents: RuntimeCalendarEvent[];
   guestLists: RuntimeGuestList[];
   bookingRequests: RuntimeBookingRequest[];
   shortlistItems: RuntimeShortlistItem[];
@@ -102,6 +108,10 @@ type ProVaultRuntimeEvent = Record<string, any> & {
   contracts: RuntimeContract[];
   activities: RuntimeActivity[];
 };
+
+function money(cents: number, currency = "USD") {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(cents / 100);
+}
 
 /**
  * Pro Planner Event Vault Detail Page
@@ -163,6 +173,8 @@ export default async function ProVaultDetailPage({
           select: { plannedCents: true, actualCents: true, category: true },
         },
         milestones: { orderBy: { dueAt: "asc" } },
+        tasks: { orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }] },
+        calendarEvents: { orderBy: { startAt: "asc" } },
         checklists: {
           include: { items: { select: { id: true, done: true, title: true } } },
           orderBy: { title: "asc" },
@@ -254,6 +266,8 @@ export default async function ProVaultDetailPage({
           select: { plannedCents: true, actualCents: true, category: true },
         },
         milestones: { orderBy: { dueAt: "asc" } },
+        tasks: { orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }] },
+        calendarEvents: { orderBy: { startAt: "asc" } },
         checklists: {
           include: { items: { select: { id: true, done: true, title: true } } },
           orderBy: { title: "asc" },
@@ -281,6 +295,8 @@ export default async function ProVaultDetailPage({
     budgetLines: safeArray(event.budgetLines),
     checklists: safeArray(event.checklists),
     milestones: safeArray(event.milestones),
+    tasks: safeArray(event.tasks),
+    calendarEvents: safeArray(event.calendarEvents),
     guestLists: safeArray(event.guestLists),
     bookingRequests: safeArray(event.bookingRequests),
     shortlistItems: safeArray(event.shortlistItems),
@@ -288,6 +304,18 @@ export default async function ProVaultDetailPage({
     contracts: safeArray(event.contracts),
     activities: safeArray(event.activities),
   } as ProVaultRuntimeEvent;
+
+  const financialSummary = await safePrismaResult(
+    "proVault.eventFinancialSummary",
+    getEventFinancialSummary({ eventId: event.id, actor: user }),
+    null,
+  );
+
+  const logisticsSummary = await safePrismaResult(
+    "proVault.eventLogisticsSummary",
+    getEventLogisticsSummary({ eventId: event.id, actor: user }),
+    null,
+  );
 
   const crisisIssues: RuntimeCrisisIssue[] = await safePrismaResult("proVault.crisisIssue.findMany", prisma.crisisIssue.findMany({
     where: { eventId: event.id, status: { in: ["OPEN", "IMPACT_REVIEW", "REPLACEMENT_STARTED"] } },
@@ -301,6 +329,9 @@ export default async function ProVaultDetailPage({
   const planned = event.budgetLines.reduce((a, l) => a + safeNumber(l.plannedCents), 0);
   const actual = event.budgetLines.reduce((a, l) => a + safeNumber(l.actualCents), 0);
   const budgetPercent = planned > 0 ? Math.round((actual / planned) * 100) : 0;
+  const financialBudgetPercent = financialSummary?.budgetTotalCents
+    ? Math.round((financialSummary.committedCents / financialSummary.budgetTotalCents) * 100)
+    : budgetPercent;
   const checklistTotal = event.checklists.reduce(
     (sum, c) => sum + c.items.length,
     0,
@@ -309,6 +340,7 @@ export default async function ProVaultDetailPage({
     (sum, c) => sum + c.items.filter((i) => i.done).length,
     0,
   );
+  const persistedTaskCount = event.tasks?.length ?? 0;
   const progress =
     checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
 
@@ -395,6 +427,7 @@ export default async function ProVaultDetailPage({
             : openPaymentIntents > 0
               ? "Resolve the open payment step attached to the signed contract."
               : "Track execution against signed contracts and paid milestones.";
+  const nextLogisticsAction = logisticsSummary?.nextAction?.nextAction ?? nextCommerceAction;
 
   const commerceSpine = [
     {
@@ -551,6 +584,18 @@ export default async function ProVaultDetailPage({
   const riskItems = commerceSpine
     .filter((step) => step.blocked)
     .map((step) => `${step.label}: ${step.next}`);
+  if (financialSummary?.riskLevel === "overrun") {
+    riskItems.unshift(`Budget: committed exposure is over approved budget by ${money(financialSummary.overrunCents, financialSummary.currency)}.`);
+  } else if (financialSummary?.riskLevel === "watch") {
+    riskItems.unshift(`Budget: pending proposals/change orders require review before treating the event as financially clear.`);
+  }
+  if (logisticsSummary?.criticalItems.length) {
+    riskItems.unshift(`Logistics: ${logisticsSummary.criticalItems[0]?.title ?? "critical item"} needs ${logisticsSummary.criticalItems[0]?.ownerRole ?? "planner"} action.`);
+  } else if (logisticsSummary?.lateItems.length) {
+    riskItems.unshift(`Logistics: ${logisticsSummary.lateItems.length} late timeline/task/provider item${logisticsSummary.lateItems.length === 1 ? "" : "s"} need review.`);
+  } else if (logisticsSummary?.conflictItems.length) {
+    riskItems.unshift(`Logistics: ${logisticsSummary.conflictItems.length} conflict item${logisticsSummary.conflictItems.length === 1 ? "" : "s"} need schedule recovery.`);
+  }
   const confirmedVendorItems = event.proposals
     .filter(
       (proposal) =>
@@ -615,7 +660,9 @@ export default async function ProVaultDetailPage({
     },
     {
       title: "Timeline",
-      summary: "See upcoming event milestones and what needs attention next.",
+      summary: logisticsSummary
+        ? `Unified logistics timeline has ${logisticsSummary.items.length} item${logisticsSummary.items.length === 1 ? "" : "s"}; ${logisticsSummary.criticalItems.length + logisticsSummary.lateItems.length + logisticsSummary.conflictItems.length} need attention.`
+        : "See upcoming event milestones and what needs attention next.",
       action: "View timeline",
       href: "#workspace-timeline-detail",
       icon: CalendarDays,
@@ -697,12 +744,12 @@ export default async function ProVaultDetailPage({
     },
     {
       id: "workspace-operations",
-      title: "Execution checklist",
+      title: "Tasks & accountability",
       icon: ListChecks,
-      summary: `${checklistDone}/${checklistTotal} checklist items complete; ${event.milestones.length} milestone${event.milestones.length === 1 ? "" : "s"}.`,
+      summary: `${persistedTaskCount} persisted task${persistedTaskCount === 1 ? "" : "s"}; ${checklistDone}/${checklistTotal} checklist items complete; ${event.milestones.length} milestone${event.milestones.length === 1 ? "" : "s"}.`,
       status: commerceSpine[6]?.state ?? "Pending",
       action: "Open tasks",
-      href: `/events/${eventSlug}/checklists`,
+      href: `/events/${eventSlug}/tasks`,
     },
     {
       id: "workspace-crisis",
@@ -728,8 +775,10 @@ export default async function ProVaultDetailPage({
       id: "workspace-budget",
       title: "Budget overview",
       icon: BarChart3,
-      summary: `$${(actual / 100).toFixed(0)} actual of $${(planned / 100).toFixed(0)} planned; ${budgetPercent}% used.`,
-      status: budgetPercent > 90 ? "Blocked" : budgetPercent > 0 ? "Happened" : "Pending",
+      summary: financialSummary
+        ? `${money(financialSummary.committedCents, financialSummary.currency)} committed; ${money(financialSummary.heldCents, financialSummary.currency)} held; ${money(financialSummary.paidCents, financialSummary.currency)} paid; ${money(financialSummary.owedCents, financialSummary.currency)} owed.`
+        : `$${(actual / 100).toFixed(0)} actual of $${(planned / 100).toFixed(0)} planned; ${budgetPercent}% used.`,
+      status: financialSummary?.riskLevel === "overrun" || financialBudgetPercent > 90 ? "Blocked" : financialBudgetPercent > 0 ? "Happened" : "Pending",
       action: "View budget",
       href: `/events/${eventSlug}/budget`,
     },
@@ -737,8 +786,10 @@ export default async function ProVaultDetailPage({
       id: "workspace-timeline",
       title: "Event timeline",
       icon: CalendarDays,
-      summary: `${upcomingMilestones.length} upcoming milestone${upcomingMilestones.length === 1 ? "" : "s"} loaded from event state.`,
-      status: upcomingMilestones.length > 0 ? "Pending" : "Pending",
+      summary: logisticsSummary
+        ? `${logisticsSummary.items.length} logistics item${logisticsSummary.items.length === 1 ? "" : "s"} across milestones, tasks, calendar, provider requests, availability, and crisis issues.`
+        : `${upcomingMilestones.length} upcoming milestone${upcomingMilestones.length === 1 ? "" : "s"} loaded from event state.`,
+      status: logisticsSummary && (logisticsSummary.criticalItems.length > 0 || logisticsSummary.lateItems.length > 0 || logisticsSummary.conflictItems.length > 0) ? "Blocked" : "Pending",
       action: "View timeline",
       href: "#workspace-timeline-detail",
     },
@@ -861,7 +912,7 @@ export default async function ProVaultDetailPage({
                     Selected-event navigation
                   </p>
                   <p className="mt-1 text-sm text-slate-600">
-                    Next real action: <span className="font-semibold text-slate-900">{nextCommerceAction}</span>
+                    Next real action: <span className="font-semibold text-slate-900">{nextLogisticsAction}</span>
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -1298,21 +1349,26 @@ export default async function ProVaultDetailPage({
               <Card id="workspace-timeline-detail" className="scroll-mt-24 p-5">
                 <h3 className="text-lg font-semibold">Timeline</h3>
                 <p className="mt-2 text-sm text-slate-600">
-                  Timeline shows upcoming event milestones from event state. It does not route to payments or held funds.
+                  Timeline is a server-derived logistics view: event milestones, tasks, checklist due items, calendar records, provider requests, availability holds/bookings, and crisis impacts. Payment milestones stay read-only and money movement remains in guarded payment routes.
                 </p>
                 <div className="mt-4 space-y-3">
-                  {upcomingMilestones.length > 0 ? (
-                    upcomingMilestones.map((milestone) => (
-                      <div key={milestone.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <p className="font-semibold">{milestone.title}</p>
+                  {logisticsSummary && logisticsSummary.items.length > 0 ? (
+                    logisticsSummary.items.slice(0, 12).map((item) => (
+                      <div key={`${item.sourceType}-${item.sourceId}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-semibold">{item.title}</p>
+                          <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700">{item.sourceType.replace(/_/g, " ")} / {item.severity}</span>
+                        </div>
                         <p className="mt-1 text-xs text-slate-500">
-                          {milestone.dueAt ? new Date(milestone.dueAt).toLocaleDateString() : "Date pending"}
+                          {item.dueAt ? new Date(item.dueAt).toLocaleString() : item.startsAt ? new Date(item.startsAt).toLocaleString() : "Date pending"} • {item.status} • {item.ownerRole}
                         </p>
+                        <p className="mt-2 text-sm text-slate-700">{item.nextAction}</p>
+                        {item.changeReason && <p className="mt-1 text-xs text-slate-500">Change evidence: {item.changeReason}</p>}
                       </div>
                     ))
                   ) : (
                     <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-                      No upcoming timeline milestones are loaded.
+                      No logistics timeline items are loaded.
                     </p>
                   )}
                 </div>
@@ -1354,8 +1410,13 @@ export default async function ProVaultDetailPage({
               </h2>
               <div className="mt-4 space-y-3">
                 <p className="rounded-xl border border-indigo-100 bg-indigo-50 p-3 text-sm text-indigo-950">
-                  {nextCommerceAction}
+                  {nextLogisticsAction}
                 </p>
+                {logisticsSummary?.criticalItems.slice(0, 3).map((item) => (
+                  <p key={`critical-${item.sourceType}-${item.sourceId}`} className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+                    {item.title}: {item.nextAction}
+                  </p>
+                ))}
                 {upcomingChecklist.length > 0 ? (
                   upcomingChecklist.slice(0, 3).map((item) => (
                     <p key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">

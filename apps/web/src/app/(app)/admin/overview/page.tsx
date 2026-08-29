@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
 import { safePrismaResult } from "@/lib/runtime-route-safety";
+import { getAdminEventFinancialRisks } from "@/server/lib/event-financial-summary";
 import { redirect } from "next/navigation";
 
 function money(cents: number | null | undefined, currency = "USD") {
@@ -100,6 +101,7 @@ export default async function AdminOverviewPage() {
     failedPaymentIntents,
     unprocessedWebhookEvents,
     auditTrailEntries,
+    budgetRiskEvents,
   ] = await Promise.all([
     safePrismaResult("admin.metricDaily.findMany", prisma.metricDaily.findMany({ orderBy: { date: "desc" }, take: 30 }), []),
     prisma.organization.count(),
@@ -129,12 +131,16 @@ export default async function AdminOverviewPage() {
     adminPrisma.paymentIntent ? safePrismaResult("admin.paymentIntent.failed.count", adminPrisma.paymentIntent.count({ where: { status: "FAILED" } }), 0) : Promise.resolve(0),
     adminPrisma.webhookEvent ? safePrismaResult("admin.webhookEvent.unprocessed.count", adminPrisma.webhookEvent.count({ where: { processedAt: null } }), 0) : Promise.resolve(0),
     adminPrisma.auditLog ? safePrismaResult("admin.auditLog.count", adminPrisma.auditLog.count({ where: {} }), 0) : Promise.resolve(0),
+    safePrismaResult("admin.eventFinancialRisks", getAdminEventFinancialRisks({ db: prisma, take: 5 }), []),
   ]);
 
   const latest = metrics[0];
   const trustQueueSummary = `${openDisputes} open disputes • ${openRefunds} refund request${openRefunds === 1 ? "" : "s"} • ${activeHoldbacks} active holdback${activeHoldbacks === 1 ? "" : "s"}`;
   const moneyQueueSummary = `${pendingPayouts} pending payout${pendingPayouts === 1 ? "" : "s"} • ${openRefunds} refund request${openRefunds === 1 ? "" : "s"} • ${activeHoldbacks} holdback${activeHoldbacks === 1 ? "" : "s"}`;
   const operationsSummary = `${failedPaymentIntents} failed payment${failedPaymentIntents === 1 ? "" : "s"} • ${unprocessedWebhookEvents} unprocessed webhook event${unprocessedWebhookEvents === 1 ? "" : "s"} • ${auditTrailEntries} audit trail entr${auditTrailEntries === 1 ? "y" : "ies"}`;
+  const budgetRiskSummary = budgetRiskEvents.length > 0
+    ? `${budgetRiskEvents.length} event budget/change-order risk${budgetRiskEvents.length === 1 ? "" : "s"}: ${budgetRiskEvents[0]?.eventName ?? "event"} ${budgetRiskEvents[0]?.overrunCents ? `over by ${money(budgetRiskEvents[0].overrunCents, budgetRiskEvents[0].currency)}` : "needs exposure review"}.`
+    : "No event budget overruns or pending change-order exposure in the current financial summary sample.";
 
   const reviewNowCard = buildReviewNowCard(urgentDispute, urgentRefund, urgentHoldback, trustQueueSummary);
   const userRoleCard: CommandCard = {
@@ -148,9 +154,9 @@ export default async function AdminOverviewPage() {
     title: "Payments needing oversight",
     eyebrow: "Refunds, holdbacks, payouts",
     body:
-      pendingPayouts || openRefunds || activeHoldbacks
-        ? moneyQueueSummary
-        : "No pending payouts, refund requests, or active holdbacks. Keep using verification overview before any manual release.",
+      pendingPayouts || openRefunds || activeHoldbacks || budgetRiskEvents.length > 0
+        ? `${moneyQueueSummary}. ${budgetRiskSummary}`
+        : "No pending payouts, refund requests, active holdbacks, budget overruns, or pending change-order exposure. Keep using verification overview before any manual release.",
     href: pendingPayouts ? "/admin/verification?payoutStatus=PENDING" : "/admin/verification",
     cta: "Open verification queues",
   };
@@ -170,8 +176,8 @@ export default async function AdminOverviewPage() {
       blockedTasks || criticalOpenTasks || overdueTasks || overdueMilestones || openCrisisIssues
         ? `${blockedTasks} blocked task${blockedTasks === 1 ? "" : "s"} • ${criticalOpenTasks} critical open task${criticalOpenTasks === 1 ? "" : "s"} • ${overdueTasks + overdueMilestones} overdue task/milestone item${overdueTasks + overdueMilestones === 1 ? "" : "s"} • ${openCrisisIssues} crisis issue${openCrisisIssues === 1 ? "" : "s"}`
         : "No blocked, critical, or overdue execution tasks/milestones. Continue reviewing money movement only through verification queues.",
-    href: "/admin/verification",
-    cta: "Open verification context",
+    href: "/admin/execution",
+    cta: "Open execution drill-down",
   };
   const nextActionCard: CommandCard = urgentCrisisIssue
     ? {
@@ -215,6 +221,7 @@ export default async function AdminOverviewPage() {
         <KPIStat label="Events" value={events} />
         <KPIStat label="Open trust queue" value={openDisputes + openRefunds + activeHoldbacks + openAbuseReports} />
         <KPIStat label="Execution risk" value={blockedTasks + criticalOpenTasks + overdueTasks + overdueMilestones + openCrisisIssues} />
+        <KPIStat label="Budget/change-order risk" value={budgetRiskEvents.length} />
       </div>
       {latest && (
         <Card className="p-4">

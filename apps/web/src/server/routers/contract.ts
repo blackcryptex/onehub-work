@@ -7,6 +7,7 @@ import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent, canViewCommercialContract, commercialContractAccessInclude } from "@/lib/rbac";
 import type { AppUser } from "@/lib/auth-helpers";
+import { canUserApproveContractChangeOrder } from "@/server/lib/event-financial-summary";
 
 /**
  * SECURITY: Authorization helper for contract access.
@@ -257,10 +258,16 @@ export const contractRouter = router({
       },
     });
     const buyerMemberIds = new Set(
-      contractWithSignatures.proposal.event.org.members.map((member) => member.userId)
+      [
+        contractWithSignatures.proposal.event.org.ownerId,
+        ...contractWithSignatures.proposal.event.org.members.map((member) => member.userId),
+      ].filter((id): id is string => Boolean(id))
     );
     const sellerMemberIds = new Set(
-      (contractWithSignatures.proposal.listing?.org.members ?? []).map((member) => member.userId)
+      [
+        contractWithSignatures.proposal.listing?.org?.ownerId,
+        ...(contractWithSignatures.proposal.listing?.org?.members ?? []).map((member) => member.userId),
+      ].filter((id): id is string => Boolean(id))
     );
     const buyerSigned = contractWithSignatures.signatures.some(
       (signature) => Boolean(signature.signedAt && signature.signerId && buyerMemberIds.has(signature.signerId))
@@ -379,21 +386,27 @@ export const contractRouter = router({
                     },
                   },
                 },
+                listing: {
+                  include: {
+                    org: {
+                      include: { members: true },
+                    },
+                  },
+                },
               },
             },
           },
         },
       },
     });
-    // Check if user is buyer/seller (via contract.buyerId/sellerId) OR can manage the event
-    const isBuyer = (changeOrder.contract as any).buyerId === user.id;
-    const isSeller = (changeOrder.contract as any).sellerId === user.id;
-    const canManage = canManageEvent(user, changeOrder.contract.proposal.event);
-    if (!isBuyer && !isSeller && !canManage) {
+    if (!canUserApproveContractChangeOrder(user, changeOrder.contract)) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "You do not have permission to approve this change order",
       });
+    }
+    if (changeOrder.status === "APPROVED") {
+      return changeOrder;
     }
     const updated = await prisma.changeOrder.update({
       where: { id: input.id },

@@ -3,7 +3,17 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
-export default async function DisputesPage() {
+export default async function DisputesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    proposalId?: string;
+    milestoneId?: string;
+    amountRequestedCents?: string;
+    mode?: string;
+  }>;
+}) {
+  const resolvedSearchParams = await searchParams;
   const session = await auth();
   const userId = session?.user?.id as string | undefined;
   if (!userId) return <div>Unauthorized</div>;
@@ -28,11 +38,23 @@ export default async function DisputesPage() {
         <div>
           <div className="font-semibold">Submit refund request</div>
           <div className="text-sm text-slate-600">Refunds are admin-approved only. This creates a review record, it does not self-serve a refund.</div>
+          {(resolvedSearchParams.proposalId || resolvedSearchParams.milestoneId) && (
+            <div className="mt-2 rounded border border-indigo-100 bg-indigo-50 p-3 text-sm text-indigo-900">
+              <div className="font-medium">Request context</div>
+              <div>
+                Proposal {resolvedSearchParams.proposalId || "not supplied"}
+                {resolvedSearchParams.milestoneId ? ` • Milestone ${resolvedSearchParams.milestoneId}` : ""}
+              </div>
+              {resolvedSearchParams.mode === "dispute" && (
+                <div className="mt-1">Open a dispute review with these contract/payment references. Disputes are manual review requests, not automatic freezes or reversals.</div>
+              )}
+            </div>
+          )}
         </div>
         <form action="/api/refund-requests" method="post" className="grid gap-3">
-          <input name="proposalId" placeholder="Proposal ID" className="rounded border px-3 py-2" />
-          <input name="milestoneId" placeholder="Milestone ID (optional)" className="rounded border px-3 py-2" />
-          <input name="amountRequestedCents" placeholder="Amount in cents" type="number" className="rounded border px-3 py-2" />
+          <input name="proposalId" defaultValue={resolvedSearchParams.proposalId} placeholder="Proposal ID" className="rounded border px-3 py-2" />
+          <input name="milestoneId" defaultValue={resolvedSearchParams.milestoneId} placeholder="Milestone ID (optional)" className="rounded border px-3 py-2" />
+          <input name="amountRequestedCents" defaultValue={resolvedSearchParams.amountRequestedCents} placeholder="Amount in cents" type="number" className="rounded border px-3 py-2" />
           <textarea name="reason" placeholder="Why are you requesting a refund?" className="rounded border px-3 py-2" rows={4} />
           <button type="submit" className="w-fit rounded bg-slate-900 px-4 py-2 text-white">Submit refund request</button>
         </form>

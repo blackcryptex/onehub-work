@@ -9,6 +9,37 @@ import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } 
 import { getLegalSurface } from "@/lib/legal-surface";
 import { hasProviderSubmittedEvidence } from "@/lib/provider-backed-proposal";
 
+type PaymentReadySignature = { signedAt?: Date | string | null; signerId?: string | null };
+type PaymentReadyContract = {
+  event?: { org?: { ownerId?: string | null; members?: Array<{ userId?: string | null }> } };
+  proposal?: { listing?: { org?: { ownerId?: string | null; members?: Array<{ userId?: string | null }> } | null } | null };
+  signatures: PaymentReadySignature[];
+};
+
+function isPresentString(value: string | null | undefined): value is string {
+  return Boolean(value);
+}
+
+function hasBilateralSignedEvidence(contract: PaymentReadyContract, userId: string) {
+  const buyerMemberIds = new Set<string>([
+    contract.event?.org?.ownerId,
+    ...(contract.event?.org?.members ?? []).map((member: { userId?: string | null }) => member.userId),
+  ].filter(isPresentString));
+  const sellerMemberIds = new Set<string>([
+    contract.proposal?.listing?.org?.ownerId,
+    ...(contract.proposal?.listing?.org?.members ?? []).map((member: { userId?: string | null }) => member.userId),
+  ].filter(isPresentString));
+
+  const buyerSigned = contract.signatures.some((signature) => (
+    Boolean(signature.signedAt && signature.signerId && buyerMemberIds.has(signature.signerId))
+  ));
+  const sellerSigned = contract.signatures.some((signature) => (
+    Boolean(signature.signedAt && signature.signerId && sellerMemberIds.has(signature.signerId))
+  ));
+
+  return buyerSigned && sellerSigned && buyerMemberIds.has(userId);
+}
+
 const createIntentSchema = z.object({
   contractId: z.string(),
   milestoneId: z.string().optional(),
@@ -47,12 +78,16 @@ export async function POST(request: NextRequest) {
                 org: {
                   select: {
                     ownerId: true,
+                    members: {
+                      select: { userId: true },
+                    },
                   },
                 },
               },
             },
           },
         },
+        signatures: true,
         event: {
           include: {
             org: {
@@ -87,6 +122,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!PAYABLE_CONTRACT_STATES.has(contract.status)) {
+      return NextResponse.json({ error: "Contract is not in a payable state" }, { status: 400 });
+    }
+
+    if (!hasBilateralSignedEvidence(contract, userId)) {
       return NextResponse.json({ error: "Contract is not in a payable state" }, { status: 400 });
     }
 

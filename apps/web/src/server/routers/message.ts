@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { db } from "@/server/db";
 import { router, protectedProcedure } from "@/server/trpc";
-import { requireThreadAccess } from "@/server/lib/access";
+import { requireThreadSendAccess } from "@/server/lib/access";
 import { recordActivity } from "@/server/lib/activity";
 
 export const messageRouter = router({
@@ -12,7 +12,7 @@ export const messageRouter = router({
       attachments: z.array(z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const thread = await requireThreadAccess(ctx.user, input.threadId);
+      const thread = await requireThreadSendAccess(ctx.user, input.threadId);
       return db.$transaction(async (tx) => {
         const message = await tx.message.create({
           data: {
@@ -23,9 +23,11 @@ export const messageRouter = router({
           },
         });
         await tx.thread.update({ where: { id: input.threadId }, data: { updatedAt: new Date() } });
-        const recipientIds = thread.participants
-          .map((participant) => participant.userId)
-          .filter((userId): userId is string => Boolean(userId && userId !== ctx.user.id));
+        const recipientIds = Array.from(new Set(
+          thread.participants
+            .map((participant) => participant.userId)
+            .filter((userId): userId is string => Boolean(userId && userId !== ctx.user.id))
+        ));
         if (recipientIds.length > 0) {
           await tx.notification.createMany({
             data: recipientIds.map((userId) => ({

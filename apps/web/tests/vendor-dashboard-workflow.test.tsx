@@ -1,6 +1,6 @@
 import * as React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
@@ -124,6 +124,31 @@ describe("VendorDashboard lead response workflow", () => {
     expect(screen.getByText(/Add at least one listing/i)).toBeInTheDocument();
 
     expect(container).not.toHaveTextContent(/coming soon|placeholder|goes here/i);
+  });
+
+  it("wires visible lead status and quote actions to the provider lead API", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({ ok: true, json: async () => ({ success: true }) } as Response);
+    const promptMock = vi.spyOn(window, "prompt").mockReturnValue("2500");
+
+    try {
+      renderDashboard();
+      fireEvent.click(screen.getByRole("button", { name: "Respond in Leads" }));
+
+      fireEvent.click(screen.getAllByRole("button", { name: "Hold for follow-up" })[0]);
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith("/api/providers/leads/request-new", expect.objectContaining({ method: "PATCH" }));
+      });
+      expect(screen.getByText(/Lead held for follow-up; evidence was recorded/i)).toBeInTheDocument();
+
+      fireEvent.click(screen.getAllByRole("button", { name: "Send guarded quote" })[0]);
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith("/api/providers/leads/request-new", expect.objectContaining({ method: "POST" }));
+      });
+      expect(JSON.parse((fetchMock.mock.calls.at(-1)?.[1] as RequestInit).body as string)).toEqual(expect.objectContaining({ quoteCents: 250000 }));
+    } finally {
+      fetchMock.mockRestore();
+      promptMock.mockRestore();
+    }
   });
 
   it("shows the next future active request when a past active request is also present", () => {

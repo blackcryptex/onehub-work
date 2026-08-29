@@ -33,6 +33,19 @@ interface VendorPaymentPanelProps {
 export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentPanelProps) {
   const [loading, setLoading] = useState<Record<string, boolean>>({});
 
+  const getMilestoneReviewCopy = (status: string) => {
+    if (status === "IN_ESCROW") {
+      return "Provider completion evidence can be submitted, but release remains blocked by refund requests, disputes, active holdbacks, missing provider payout setup, or admin review until checks pass.";
+    }
+    if (status === "PENDING" || status === "OVERDUE") {
+      return "Waiting on buyer-side payment authorization and Stripe confirmation before held-funds review starts.";
+    }
+    if (status === "PAID") {
+      return "Provider transfer evidence has been recorded for this milestone.";
+    }
+    return "Review the contract detail for the current guarded payment state.";
+  };
+
   const handleMarkComplete = async (milestoneId: string) => {
     if (!onMarkComplete) return;
     
@@ -59,7 +72,7 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
     return (
       <div className="rounded-2xl bg-[color:var(--oh-surface)] shadow-sm p-6">
         <h3 className="text-lg font-semibold mb-2">Payments</h3>
-        <p className="text-slate-600">No payments pending at this time.</p>
+        <p className="text-slate-600">No buyer payment or held-funds review is pending at this time.</p>
       </div>
     );
   }
@@ -72,7 +85,6 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
         {contractsWithPayments.map((contract) => {
           const milestones = contract.proposal.milestones;
           const heldFundsMilestones = milestones.filter((m) => m.status === "IN_ESCROW");
-          const pending = milestones.filter((m) => m.status === "PENDING" || m.status === "OVERDUE");
           const paid = milestones.filter((m) => m.status === "PAID");
           
           const totalAmount = milestones.reduce((sum, m) => sum + m.amountCents, 0);
@@ -104,11 +116,11 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
                   <div className="text-sm font-semibold">{formatCurrency(totalAmount, contract.proposal.currency)}</div>
                 </div>
                 <div className="p-2 bg-blue-50 rounded">
-                  <div className="text-xs text-blue-600">Funds Held</div>
+                  <div className="text-xs text-blue-600">Held pending review</div>
                   <div className="text-sm font-semibold text-blue-700">{formatCurrency(heldFundsAmount, contract.proposal.currency)}</div>
                 </div>
                 <div className="p-2 bg-emerald-50 rounded">
-                  <div className="text-xs text-emerald-600">Paid</div>
+                  <div className="text-xs text-emerald-600">Transfer evidence</div>
                   <div className="text-sm font-semibold text-emerald-700">{formatCurrency(paidAmount, contract.proposal.currency)}</div>
                 </div>
               </div>
@@ -132,6 +144,9 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
                             Due: {new Date(milestone.dueDate).toLocaleDateString()}
                           </div>
                         )}
+                        <div className="mt-1 text-xs text-slate-500">
+                          {getMilestoneReviewCopy(milestone.status)}
+                        </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="text-sm font-semibold">
@@ -148,7 +163,7 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
                               : "bg-slate-100 text-slate-700"
                           }`}
                         >
-                          {isHeldFunds ? "FUNDS HELD" : milestone.status.replace("_", " ")}
+                          {isHeldFunds ? "HELD FOR ADMIN REVIEW" : isPaid ? "TRANSFER EVIDENCE RECORDED" : milestone.status.replace("_", " ")}
                         </span>
                         {isHeldFunds && onMarkComplete && (
                           <Button
@@ -156,7 +171,7 @@ export function VendorPaymentPanel({ contracts, onMarkComplete }: VendorPaymentP
                             onClick={() => handleMarkComplete(milestone.id)}
                             disabled={loading[milestone.id]}
                           >
-                            {loading[milestone.id] ? "Processing..." : "Mark Complete"}
+                            {loading[milestone.id] ? "Processing..." : "Submit completion for admin review"}
                           </Button>
                         )}
                       </div>
