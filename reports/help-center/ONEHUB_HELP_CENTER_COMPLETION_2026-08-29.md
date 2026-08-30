@@ -53,7 +53,7 @@ Passed locally through `apps/web/tests/help-copy-quality.test.ts`. Coverage bans
 
 ## Browser smoke artifact
 
-- Local artifact: `reports/help-center/help-center-smoke.png`.
+- Local artifact: `test-results/help-center-smoke.png`.
 - Captured by `e2e/help-center.spec.ts` after the smoke opens `/help`, clicks the Pro Planner role guide, clicks the pro-planner message guide, clicks a related payment-readiness guide, opens the DIY role guide, clicks the vendor/venue sourcing guide, confirms no 404 responses on direct role/index navigations, and confirms the final guide page contains no banned placeholder/help copy.
 
 ## Protected/canonical Preview smoke result

@@ -1,7 +1,9 @@
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 
 const bannedCopy = /coming soon|TODO|placeholder|Video Tutorials|API Documentation/i;
-const smokeArtifactPath = "reports/help-center/help-center-smoke.png";
+const smokeArtifactPath = "test-results/help-center-smoke.png";
 
 async function expectPageOk(page: Page, url: string) {
   const response = await page.goto(url);
@@ -41,5 +43,6 @@ test("Help Center role and article smoke", async ({ page }) => {
   await page.getByRole("link", { name: /Source vendors and venues/i }).click();
   await expect(page).toHaveURL(/\/help\/articles\/source-vendors-and-venues$/);
   await expect(page.locator("body")).not.toContainText(bannedCopy);
+  mkdirSync(dirname(smokeArtifactPath), { recursive: true });
   await page.screenshot({ fullPage: true, path: smokeArtifactPath });
 });
