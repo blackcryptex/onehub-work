@@ -1,6 +1,6 @@
 import { LandingHeader } from "@/components/layout/LandingHeader";
 import { Card } from "@/components/ui";
-import { MessageCircle, Mail, Phone, HelpCircle } from "lucide-react";
+import { Mail, HelpCircle } from "lucide-react";
 import Link from "next/link";
 
 export default function SupportPage() {
@@ -17,30 +17,16 @@ export default function SupportPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           <Card className="p-6">
-            <MessageCircle className="w-10 h-10 text-indigo-600 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">AI-Assisted Chat</h2>
-            <p className="text-slate-600 mb-4">Get instant answers with AI assistance. Available 24/7 to help with your event planning questions.</p>
-            <Link href="/support" className="text-indigo-600 font-medium hover:underline">Start Chat →</Link>
-          </Card>
-
-          <Card className="p-6">
             <Mail className="w-10 h-10 text-indigo-600 mb-4" />
             <h2 className="text-xl font-semibold mb-2">Email Support</h2>
-            <p className="text-slate-600 mb-4">Send us an email and we’ll respond within 24 hours.</p>
+            <p className="text-slate-600 mb-4">Send support context and a OneHub team member will review it during the private pilot.</p>
             <a href="mailto:support@onehub.events" className="text-indigo-600 font-medium hover:underline">support@onehub.events</a>
-          </Card>
-
-          <Card className="p-6">
-            <Phone className="w-10 h-10 text-indigo-600 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Phone Support</h2>
-            <p className="text-slate-600 mb-4">Speak directly with our team. Available for Enterprise customers.</p>
-            <a href="tel:+1-800-ONEHUB" className="text-indigo-600 font-medium hover:underline">1-800-ONEHUB</a>
           </Card>
 
           <Card className="p-6">
             <HelpCircle className="w-10 h-10 text-indigo-600 mb-4" />
             <h2 className="text-xl font-semibold mb-2">Help Center</h2>
-            <p className="text-slate-600 mb-4">Browse our knowledge base for answers to common questions.</p>
+            <p className="text-slate-600 mb-4">Browse step-by-step guides for event setup, messages, sourcing, proposals, contracts, payment readiness, tasks, and risk review.</p>
             <Link href="/help" className="text-indigo-600 font-medium hover:underline">Visit Help Center →</Link>
           </Card>
         </div>
@@ -50,15 +36,15 @@ export default function SupportPage() {
           <div className="space-y-4">
             <div>
               <h3 className="font-semibold mb-1">How do I create my first event?</h3>
-              <p className="text-sm text-slate-600">Sign up for an account, then click “Create Events” on your dashboard. Follow the wizard to set up your event details.</p>
+              <p className="text-sm text-slate-600">Open your dashboard, choose Create Event or the event wizard, and enter the event name, type, date, location, guest target, and budget.</p>
             </div>
             <div>
               <h3 className="font-semibold mb-1">How do held funds pending release work?</h3>
-              <p className="text-sm text-slate-600">When you pay a vendor, funds are held pending release until you confirm the services are completed to your satisfaction.</p>
+              <p className="text-sm text-slate-600">Payment readiness is a guarded private-pilot status. Check proposal, contract, provider setup, dispute, refund, holdback, and admin review states before treating any item as ready.</p>
             </div>
             <div>
               <h3 className="font-semibold mb-1">Can I use OneHub for free?</h3>
-              <p className="text-sm text-slate-600">Yes! DIY Planners can use OneHub for free with limited features. Upgrade to unlock advanced tools and priority support.</p>
+              <p className="text-sm text-slate-600">Current access depends on the private-pilot account and role you are using. Check your dashboard for the workflows available to that account.</p>
             </div>
           </div>
         </Card>

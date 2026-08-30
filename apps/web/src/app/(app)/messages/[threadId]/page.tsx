@@ -64,6 +64,9 @@ export default async function MessageThreadPage({ params }: { params: Promise<{ 
         <p className="max-w-3xl text-sm text-slate-600">
           {context} / {thread.participants.length} participant{thread.participants.length === 1 ? "" : "s"}
         </p>
+        <Link href="/help/articles/pro-planner-send-message" className="inline-flex text-sm font-medium text-indigo-700 hover:text-indigo-900">
+          How to send a message →
+        </Link>
       </div>
 
       <section className="grid gap-3 rounded-xl border bg-white p-4 text-sm sm:grid-cols-3">

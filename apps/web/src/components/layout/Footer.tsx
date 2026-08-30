@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone, MessageCircle } from "lucide-react";
+import { Mail, MessageCircle } from "lucide-react";
 import { VendorVenueFooterLink } from "@/components/vendor-venue/VendorVenueFooterLink";
 
 export function Footer() {
@@ -78,20 +78,13 @@ export function Footer() {
                 <Mail className="w-4 h-4" />
                 support@onehub.events
               </a>
-              <a
-                href="tel:+1-800-ONEHUB"
-                className="flex items-center gap-2 hover:text-indigo-600 transition-colors"
-              >
-                <Phone className="w-4 h-4" />
-                1-800-ONEHUB
-              </a>
               <Link
-                href="/support"
+                href="/help"
                 prefetch={false}
                 className="flex items-center gap-2 hover:text-indigo-600 transition-colors"
               >
                 <MessageCircle className="w-4 h-4" />
-                AI-Assisted Chat
+                Help Center
               </Link>
             </div>
 

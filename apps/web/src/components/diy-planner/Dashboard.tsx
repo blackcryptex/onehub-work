@@ -21,6 +21,7 @@ import { Overview } from "@/components/overview/Overview";
 import { EventWizard } from "@/components/event-wizard/EventWizard";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import type { EventItem } from "@/lib/types";
 import { EventItem as EventItemExtended } from "@/lib/types.event";
 import { adaptEventToNewFormat, adaptEventToOldFormat } from "@/lib/eventAdapter";
@@ -620,24 +621,26 @@ export function DIYPlannerDashboard() {
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Help</p>
               <h2 className="mt-2 text-xl font-semibold text-slate-950">DIY planner help</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                A guided support surface for DIY planning questions is not connected yet. Review your event tasks,
-                proposals, or contracts to continue from the surfaced planning workflow.
+                A guided support surface for DIY planning questions is now connected to role-based guidance
+                for event creation, vendor and venue sourcing, tasks, proposals, contracts, and guarded payment-readiness basics.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
                   onClick={() => goToEventTab("tasks")}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 >
                   Review event tasks
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setUiRoute("overview")}
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Back to overview
-                </button>
+                <Link href="/help/roles/diy-planner" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                  Open DIY planner guides
+                </Link>
+                <Link href="/help/articles/diy-create-event" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                  Event creation guide
+                </Link>
+                <Link href="/help/articles/source-vendors-and-venues" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                  Vendor and venue sourcing guide
+                </Link>
               </div>
             </div>
           </section>

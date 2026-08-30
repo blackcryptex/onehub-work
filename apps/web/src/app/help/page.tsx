@@ -1,47 +1,12 @@
+import Link from "next/link";
+import type { Route } from "next";
+import { BookOpen, MessageCircle, Users } from "lucide-react";
 import { LandingHeader } from "@/components/layout/LandingHeader";
 import { Card } from "@/components/ui";
-import Link from "next/link";
-import { BookOpen, Video, FileText, Search, MessageCircle } from "lucide-react";
+import { getHelpCategories, HELP_ROLE_LABELS, HELP_ROLES, helpArticleHref, helpRoleHref } from "@/lib/help-content";
 
 export default function HelpPage() {
-  const categories = [
-    {
-      title: "Getting Started",
-      articles: [
-        "Creating your first event",
-        "Setting up your organization",
-        "Inviting team members",
-        "Understanding your dashboard",
-      ],
-    },
-    {
-      title: "Event Planning",
-      articles: [
-        "Budget management",
-        "Guest list & invitations",
-        "Vendor selection",
-        "Task & milestone tracking",
-      ],
-    },
-    {
-      title: "Contracts & Payments",
-      articles: [
-        "Creating AI contracts",
-        "Understanding held funds pending release",
-        "Processing payments",
-        "Managing proposals",
-      ],
-    },
-    {
-      title: "Vendor Marketplace",
-      articles: [
-        "Listing your services",
-        "Responding to requests",
-        "Managing bookings",
-        "Building your profile",
-      ],
-    },
-  ];
+  const categories = getHelpCategories();
 
   return (
     <>
@@ -50,72 +15,65 @@ export default function HelpPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-slate-900 mb-4">Help Center</h1>
           <p className="text-lg text-slate-600 mb-6">
-            Find answers, guides, and tutorials to help you get the most out of OneHub.
+            Step-by-step OneHub guides for planners, clients, vendors, venues, and admins.
           </p>
-          <div className="max-w-md mx-auto">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-              <input
-                type="search"
-                placeholder="Search for help..."
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
+        </div>
+
+        <section className="mb-12">
+          <div className="mb-4 flex items-center gap-2">
+            <Users className="h-5 w-5 text-indigo-600" />
+            <h2 className="text-2xl font-semibold text-slate-900">Choose your role</h2>
           </div>
-        </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {HELP_ROLES.map((role) => (
+              <Card key={role} className="p-5 transition-shadow hover:shadow-md">
+                <h3 className="text-lg font-semibold text-slate-900">I am {role === "admin" ? "an" : "a"} {HELP_ROLE_LABELS[role]}</h3>
+                <p className="mt-2 text-sm text-slate-600">Open the guide collection for this OneHub role.</p>
+                <Link href={helpRoleHref(role) as Route} className="mt-4 inline-flex text-sm font-semibold text-indigo-700 hover:underline">
+                  View {HELP_ROLE_LABELS[role]} guides →
+                </Link>
+              </Card>
+            ))}
+          </div>
+        </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <BookOpen className="w-10 h-10 text-indigo-600 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Documentation</h2>
-            <p className="text-slate-600 mb-4">Comprehensive guides covering all features and workflows.</p>
-            {/* TODO: Create /help/docs page for documentation */}
-            <Link href="/help" className="text-indigo-600 font-medium hover:underline">Browse Docs →</Link>
+        <section className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <Card className="p-6">
+            <BookOpen className="mb-4 h-10 w-10 text-indigo-600" />
+            <h2 className="text-xl font-semibold text-slate-900">Workflow guides</h2>
+            <p className="mt-2 text-slate-600">Browse real articles covering event setup, messaging, sourcing, proposals, contracts, payment readiness, tasks, crisis recovery, and admin oversight.</p>
+            <Link href={helpArticleHref("diy-create-event") as Route} className="mt-4 inline-flex font-medium text-indigo-700 hover:underline">
+              Start with event creation →
+            </Link>
           </Card>
-
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Video className="w-10 h-10 text-indigo-600 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Video Tutorials</h2>
-            <p className="text-slate-600 mb-4">Step-by-step video guides for visual learners.</p>
-            {/* TODO: Create /help/videos page for video tutorials */}
-            <Link href="/help" className="text-indigo-600 font-medium hover:underline">Watch Videos →</Link>
+          <Card className="p-6">
+            <MessageCircle className="mb-4 h-10 w-10 text-indigo-600" />
+            <h2 className="text-xl font-semibold text-slate-900">Need support?</h2>
+            <p className="mt-2 text-slate-600">Use the support page for contact options, or keep reading guides here for self-service workflow help.</p>
+            <Link href="/support" className="mt-4 inline-flex font-medium text-indigo-700 hover:underline">
+              Visit Support →
+            </Link>
           </Card>
+        </section>
 
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <FileText className="w-10 h-10 text-indigo-600 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">API Documentation</h2>
-            <p className="text-slate-600 mb-4">Technical documentation for developers and integrators.</p>
-            {/* TODO: Create /help/api page for API documentation */}
-            <Link href="/help" className="text-indigo-600 font-medium hover:underline">View API Docs →</Link>
-          </Card>
-
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <MessageCircle className="w-10 h-10 text-indigo-600 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Contact Support</h2>
-            <p className="text-slate-600 mb-4">Can’t find what you’re looking for? Our team is here to help.</p>
-            <Link href="/support" className="text-indigo-600 font-medium hover:underline">Get Support →</Link>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {categories.map((category, idx) => (
-            <Card key={idx} className="p-6">
-              <h2 className="text-xl font-semibold mb-4">{category.title}</h2>
-              <ul className="space-y-2">
-                {category.articles.map((article, articleIdx) => (
-                  <li key={articleIdx}>
-                    {/* TODO: Create individual help article pages at /help/[article-slug] */}
-                    <Link href="/help" className="text-slate-600 hover:text-indigo-600 hover:underline">
-                      {article}
+        <section className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          {categories.map(({ category, articles }) => (
+            <Card key={category} className="p-6">
+              <h2 className="text-xl font-semibold text-slate-900">{category}</h2>
+              <ul className="mt-4 space-y-3">
+                {articles.map((article) => (
+                  <li key={article.slug}>
+                    <Link href={helpArticleHref(article.slug) as Route} className="block rounded-lg border border-slate-200 p-3 hover:border-indigo-200 hover:bg-indigo-50">
+                      <span className="font-medium text-slate-900">{article.title}</span>
+                      <span className="mt-1 block text-sm text-slate-600">{article.summary}</span>
                     </Link>
                   </li>
                 ))}
               </ul>
             </Card>
           ))}
-        </div>
+        </section>
       </main>
     </>
   );
 }
-

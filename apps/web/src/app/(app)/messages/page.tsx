@@ -80,6 +80,9 @@ export default async function MessagesPage() {
         <p className="mt-2 max-w-3xl text-sm text-slate-600">
           Review client, vendor, venue, proposal, and internal planning threads connected to organizations you can access.
         </p>
+        <Link href="/help/articles/pro-planner-send-message" className="mt-3 inline-flex text-sm font-medium text-indigo-700 hover:text-indigo-900">
+          How to send a message →
+        </Link>
       </div>
 
       <section className="rounded-xl border bg-white">
