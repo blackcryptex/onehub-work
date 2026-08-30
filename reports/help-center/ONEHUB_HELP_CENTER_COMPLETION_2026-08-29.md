@@ -1,6 +1,6 @@
 # OneHub Help Center Completion Report — 2026-08-29
 
-Status: implementation report created by Forge for Sentinel review.
+Status: Forge implementation and final local packaging complete; ready for Sentinel review.
 
 ## Articles shipped
 
@@ -51,6 +51,11 @@ Passed locally through `apps/web/tests/help-copy-quality.test.ts`. Coverage bans
 - `pnpm run build` — passed.
 - `PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm exec playwright test e2e/help-center.spec.ts --project=chromium --reporter=line` — passed, 1 test.
 
+## Browser smoke artifact
+
+- Local artifact: `reports/help-center/help-center-smoke.png`.
+- Captured by `e2e/help-center.spec.ts` after the smoke opens `/help`, clicks the Pro Planner role guide, clicks the pro-planner message guide, clicks a related payment-readiness guide, opens the DIY role guide, clicks the vendor/venue sourcing guide, confirms no 404 responses on direct role/index navigations, and confirms the final guide page contains no banned placeholder/help copy.
+
 ## Protected/canonical Preview smoke result
 
 Not run by Forge from this implementation workspace. Sentinel should run the canonical protected Preview smoke after this implementation is available in the review/deploy lane.
@@ -61,4 +66,4 @@ Pending Sentinel verification.
 
 ## Known residuals
 
-None known at implementation report creation beyond Sentinel/canonical Preview verification still being pending.
+None known beyond Sentinel/canonical Preview verification still being pending.
