@@ -82,6 +82,10 @@ export function eventDetail(eventSlug: string): string {
   return `/events/${eventSlug}`;
 }
 
+export function eventSettings(eventSlug: string): string {
+  return `/events/${eventSlug}/settings`;
+}
+
 /**
  * Get the event budget route
  * Note: Uses /events route (route group (app) doesn't appear in URL)

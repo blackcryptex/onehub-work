@@ -4,8 +4,9 @@ import { Button } from "@/components/ui";
 import { Edit, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { Route } from "next";
 import type { Role } from "@onehub/types/src/roles";
-import { vaultDetail } from "@/lib/routes";
+import { eventSettings } from "@/lib/routes";
 
 interface EventActionsProps {
   /**
@@ -61,7 +62,7 @@ interface EventActionsProps {
  * It respects RBAC permissions and uses role-aware routing.
  */
 export function EventActions({
-  role,
+  role: _role,
   eventSlug,
   eventId,
   eventName,
@@ -109,9 +110,7 @@ export function EventActions({
   };
 
   const handleEdit = () => {
-    // Navigate to vault detail page (which serves as the edit view)
-    const vaultPath = vaultDetail(role, eventSlug);
-    router.push(vaultPath as any);
+    router.push(eventSettings(eventSlug) as Route);
   };
 
   // Don't render anything if user can't edit or delete
@@ -128,7 +127,7 @@ export function EventActions({
           onClick={handleEdit}
         >
           <Edit className="w-4 h-4 mr-1.5" />
-          {showLabels && "Edit"}
+          {showLabels && "Edit event details"}
         </Button>
       )}
       {canDelete && (

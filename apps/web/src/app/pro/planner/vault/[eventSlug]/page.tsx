@@ -28,7 +28,6 @@ import {
   Home,
   ListChecks,
   MapPin,
-  MoreHorizontal,
   Search,
   ShieldCheck,
   Star,
@@ -40,6 +39,7 @@ import {
 } from "lucide-react";
 import { GenerateProposalButton } from "@/components/proposals/GenerateProposalButton";
 import { EventActions } from "@/components/events/EventActions";
+import { EventMoreActions } from "@/components/events/EventMoreActions";
 import { ShareEventButton } from "@/components/events/ShareEventButton";
 import { StakeholdersSectionClient } from "@/components/vault/StakeholdersSectionClient";
 import { AiSourceVendorsVenuesPanel } from "@/components/vault/AiSourceVendorsVenuesPanel";
@@ -981,18 +981,21 @@ export default async function ProVaultDetailPage({
                       Back to Vault
                     </Link>
                   </Button>
-                  <Button size="sm" variant="secondary" aria-label="More event actions">
-                    <MoreHorizontal className="h-4 w-4" />
-                    More
-                  </Button>
                   <EventActions
                     role={user.role}
                     eventSlug={eventSlug}
                     eventId={event.id}
                     eventName={event.name}
-                    canEdit={false}
+                    canEdit={canManage}
                     canDelete={canDelete}
                     size="sm"
+                  />
+                  <EventMoreActions
+                    role={user.role}
+                    eventSlug={eventSlug}
+                    eventName={event.name}
+                    eventDate={event.startAt}
+                    eventLocation={eventLocation}
                   />
                   {!canDelete && (
                     <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-500">

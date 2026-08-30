@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui";
 import { requireAuthorizedEventBySlug } from "@/lib/event-access";
 import { EventSubpageHeader } from "../_components/EventSubpageHeader";
+import { EventDetailsEditForm } from "@/components/events/EventDetailsEditForm";
 
 export default async function EventSettings({ params }: { params: Promise<{ eventSlug: string }> }) {
   const resolvedParams = await params;
@@ -15,20 +16,13 @@ export default async function EventSettings({ params }: { params: Promise<{ even
         description="Review the event profile fields that drive planner and client-facing summaries."
       />
       <Card className="p-5">
-        <h2 className="text-lg font-semibold text-slate-900">Current settings workflow</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Edit event details</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Confirm core details in the Event Vault before sharing updates with clients or vendors. This MVP keeps settings review tied to the authorized event record instead of exposing incomplete edit controls.
+          Update the core event profile that drives dates, planner summaries, vendor context, client updates, and Event Vault planning records.
         </p>
-        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 p-3">
-            <dt className="font-medium text-slate-900">Event</dt>
-            <dd className="mt-1 text-slate-600">{event.name}</dd>
-          </div>
-          <div className="rounded-xl border border-slate-200 p-3">
-            <dt className="font-medium text-slate-900">Vault route</dt>
-            <dd className="mt-1 text-slate-600">/diy-planner/vault/{resolvedParams.eventSlug}</dd>
-          </div>
-        </dl>
+        <div className="mt-5">
+          <EventDetailsEditForm event={{ ...event, slug: resolvedParams.eventSlug }} />
+        </div>
       </Card>
     </div>
   );
