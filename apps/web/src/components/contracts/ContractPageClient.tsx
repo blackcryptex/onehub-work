@@ -14,6 +14,7 @@ import { PUBLIC_LEGAL_PAGES } from "@/lib/legal-surface";
 
 const PAYABLE_CONTRACT_STATUSES = new Set(["FULLY_SIGNED", "IN_PAYMENT"]);
 const CLOSED_CONTRACT_STATUSES = new Set(["FULLY_SIGNED", "ACTIVE", "COMPLETED"]);
+const SIGNABLE_CONTRACT_STATUSES = new Set(["OUT_FOR_SIGNATURE", "PARTIALLY_SIGNED"]);
 
 type ContractSignerSide = "buyer" | "seller" | "unknown";
 
@@ -46,11 +47,11 @@ function getContractReadinessCopy({
     case "DRAFT":
       return {
         label: fromProviderBackedProposal
-          ? "Draft agreement — ready to review and sign"
+          ? "Draft agreement — review before signature"
           : "Draft agreement",
         description: fromProviderBackedProposal
-          ? "This contract was generated from an accepted provider-backed proposal. Review the agreement terms, then each side can sign when ready. Payment stays locked until both sides have signed."
-          : "Review the agreement before signatures. Payment stays locked until the contract reaches a signed/payment-ready state.",
+          ? "This contract was generated from an accepted provider-backed proposal. It must be sent for signature before either side can sign. Payment stays locked until both sides have signed."
+          : "Review the agreement before it is sent for signature. Draft contracts cannot be signed, and payment stays locked until the contract reaches a signed/payment-ready state.",
         tone: "amber",
       };
     case "OUT_FOR_SIGNATURE":
@@ -120,6 +121,7 @@ export function ContractPageClient({
 }: ContractPageClientProps) {
   const [isEditing, setIsEditing] = useState(false);
   const canShowSignatureForm =
+    SIGNABLE_CONTRACT_STATUSES.has(contract.status) &&
     !CLOSED_CONTRACT_STATUSES.has(contract.status) &&
     !currentUserAlreadySigned;
   const fromProviderBackedProposal = Boolean(
@@ -147,6 +149,8 @@ export function ContractPageClient({
   const nextSignatureSides =
     contract.status === "FULLY_SIGNED" || contract.status === "IN_PAYMENT"
       ? []
+      : contract.status === "DRAFT"
+        ? ["Send for signature before either side signs"]
       : [
           !buyerSideSigned ? SIGNER_SIDE_LABELS.buyer : null,
           !sellerSideSigned ? SIGNER_SIDE_LABELS.seller : null,

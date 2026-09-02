@@ -77,18 +77,18 @@ function renderContract(overrides: Record<string, unknown> = {}, props: Record<s
 }
 
 describe("contract delivery and signature readiness clarity", () => {
-  it("presents provider-backed generated drafts as a safe agreement step and keeps payment locked", () => {
+  it("presents provider-backed generated drafts as review-only and keeps payment/signing locked", () => {
     renderContract();
 
-    expect(screen.getByText(/Status: Draft agreement — ready to review and sign \(DRAFT\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/generated from an accepted provider-backed proposal/i)).toBeInTheDocument();
+    expect(screen.getByText(/Status: Draft agreement — review before signature \(DRAFT\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/must be sent for signature before either side can sign/i)).toBeInTheDocument();
     expect(screen.getByText("Who signs next")).toBeInTheDocument();
-    expect(screen.getByText(/Planner\/client\/buyer side and Vendor\/venue\/seller side/i)).toBeInTheDocument();
+    expect(screen.getByText(/Send for signature before either side signs/i)).toBeInTheDocument();
     expect(screen.getByText("Payment gate")).toBeInTheDocument();
     expect(screen.getByText(/Payment locked until provider-backed proposal evidence, accepted proposal state, and both contract signatures are complete/i)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Enter payment/i })).not.toBeInTheDocument();
     expect(screen.queryByText("Payment panel ready")).not.toBeInTheDocument();
-    expect(screen.getByText("Signature form ready")).toBeInTheDocument();
+    expect(screen.queryByText("Signature form ready")).not.toBeInTheDocument();
   });
 
   it("explains the remaining side for partially signed contracts", () => {

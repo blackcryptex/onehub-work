@@ -6,6 +6,14 @@ import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } 
 import { resolveBookingClassification } from "@/lib/booking-classification";
 import { getLegalSurface } from "@/lib/legal-surface";
 
+const SIGNABLE_CONTRACT_STATUSES = new Set(["OUT_FOR_SIGNATURE", "PARTIALLY_SIGNED"]);
+
+function signableContractError(status: string) {
+  return status === "DRAFT"
+    ? "This contract is still a draft. Send it for signature before signing."
+    : "This contract is not in a signable state.";
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -84,6 +92,10 @@ export async function POST(
 
     if (!contract) {
       return NextResponse.json({ error: "Contract not found" }, { status: 404 });
+    }
+
+    if (!SIGNABLE_CONTRACT_STATUSES.has(contract.status)) {
+      return NextResponse.json({ error: signableContractError(contract.status) }, { status: 400 });
     }
 
     const canManageBuyerSide = canManageEvent(user, contract.proposal.event);

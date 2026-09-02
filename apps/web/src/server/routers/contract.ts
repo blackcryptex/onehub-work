@@ -9,6 +9,20 @@ import { canManageEvent, canViewCommercialContract, commercialContractAccessIncl
 import type { AppUser } from "@/lib/auth-helpers";
 import { canUserApproveContractChangeOrder } from "@/server/lib/event-financial-summary";
 
+const SIGNABLE_CONTRACT_STATUSES = new Set(["OUT_FOR_SIGNATURE", "PARTIALLY_SIGNED"]);
+
+function assertContractIsSignable(status: string): void {
+  if (!SIGNABLE_CONTRACT_STATUSES.has(status)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message:
+        status === "DRAFT"
+          ? "This contract is still a draft. Send it for signature before signing."
+          : "This contract is not in a signable state.",
+    });
+  }
+}
+
 /**
  * SECURITY: Authorization helper for contract access.
  * Determines if user can access a contract based on:
@@ -207,13 +221,21 @@ export const contractRouter = router({
         },
       },
     });
-    // Check if user is the signer OR can manage the event
+    assertContractIsSignable(signature.contract.status);
+
+    if (signature.signedAt) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "This signature has already been recorded",
+      });
+    }
+
+    // User must be the intended signer. Event managers cannot sign the opposite-party slot.
     const isSigner = signature.signerEmail.toLowerCase() === (user.email ?? "").toLowerCase();
-    const canManage = canManageEvent(user, signature.contract.proposal.event);
-    if (!isSigner && !canManage) {
+    if (!isSigner) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "You do not have permission to sign this contract",
+        message: "Only the intended signer can sign this contract signature",
       });
     }
     const contract = signature.contract;

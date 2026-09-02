@@ -144,9 +144,10 @@ describe("contract router commercial access", () => {
     getCurrentUser.mockResolvedValue(user("case-signer", "CLIENT", "signer@test.local"));
     prisma.signature.findUniqueOrThrow.mockResolvedValue(contract().signatures[0] ? {
       ...contract().signatures[0],
-      contract: contract(),
+      contract: contract({ status: "OUT_FOR_SIGNATURE" }),
     } : null);
     prisma.contract.findUniqueOrThrow.mockResolvedValue(contract({
+      status: "OUT_FOR_SIGNATURE",
       signatures: [{ id: "signature-1", signerId: "case-signer", signerEmail: "Signer@Test.Local", signedAt: new Date() }],
     }));
 
@@ -167,6 +168,7 @@ describe("contract router commercial access", () => {
       signerEmail: "seller-owner@test.local",
       signedAt: null,
       contract: contract({
+        status: "OUT_FOR_SIGNATURE",
         signatures: [
           { id: "signature-buyer", signerId: "buyer-member-1", signerEmail: "buyer@test.local", signedAt: new Date() },
           { id: "signature-seller-owner", signerId: null, signerEmail: "seller-owner@test.local", signedAt: null },
@@ -174,6 +176,7 @@ describe("contract router commercial access", () => {
       }),
     });
     prisma.contract.findUniqueOrThrow.mockResolvedValue(contract({
+      status: "OUT_FOR_SIGNATURE",
       signatures: [
         { id: "signature-buyer", signerId: "buyer-member-1", signerEmail: "buyer@test.local", signedAt: new Date() },
         { id: "signature-seller-owner", signerId: "seller-owner-1", signerEmail: "seller-owner@test.local", signedAt: new Date() },
@@ -197,6 +200,7 @@ describe("contract router commercial access", () => {
       signerEmail: "seller-member@test.local",
       signedAt: null,
       contract: contract({
+        status: "PARTIALLY_SIGNED",
         signatures: [
           { id: "signature-buyer", signerId: "buyer-owner-1", signerEmail: "buyer@test.local", signedAt: new Date() },
           { id: "signature-seller-member", signerId: null, signerEmail: "seller-member@test.local", signedAt: null },
@@ -204,6 +208,7 @@ describe("contract router commercial access", () => {
       }),
     });
     prisma.contract.findUniqueOrThrow.mockResolvedValue(contract({
+      status: "PARTIALLY_SIGNED",
       signatures: [
         { id: "signature-buyer", signerId: "buyer-owner-1", signerEmail: "buyer@test.local", signedAt: new Date() },
         { id: "signature-seller-member", signerId: "seller-member-1", signerEmail: "seller-member@test.local", signedAt: new Date() },
@@ -217,6 +222,37 @@ describe("contract router commercial access", () => {
       where: { id: "contract-1" },
       data: { status: "FULLY_SIGNED" },
     });
+  });
+
+  it("contract.sign blocks draft contracts before any signature mutation", async () => {
+    getCurrentUser.mockResolvedValue(user("case-signer", "CLIENT", "signer@test.local"));
+    prisma.signature.findUniqueOrThrow.mockResolvedValue({
+      ...contract().signatures[0],
+      contract: contract({ status: "DRAFT" }),
+    });
+
+    await expect(caller().sign({ signatureId: "signature-1", typedName: "Case Signer" })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "This contract is still a draft. Send it for signature before signing.",
+    });
+    expect(prisma.signature.update).not.toHaveBeenCalled();
+  });
+
+  it("contract.sign blocks buyer-side managers from signing another party signature row", async () => {
+    getCurrentUser.mockResolvedValue(user("buyer-member-1", "PRO_PLANNER", "buyer-member@test.local"));
+    prisma.signature.findUniqueOrThrow.mockResolvedValue({
+      id: "signature-seller-owner",
+      signerId: null,
+      signerEmail: "seller-owner@test.local",
+      signedAt: null,
+      contract: contract({ status: "OUT_FOR_SIGNATURE" }),
+    });
+
+    await expect(caller().sign({ signatureId: "signature-seller-owner", typedName: "Buyer Member" })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "Only the intended signer can sign this contract signature",
+    });
+    expect(prisma.signature.update).not.toHaveBeenCalled();
   });
 
   it("approveChangeOrder allows seller org members and blocks unrelated users", async () => {

@@ -3,6 +3,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 
+const SIGNABLE_CONTRACT_STATUSES = new Set(["OUT_FOR_SIGNATURE", "PARTIALLY_SIGNED"]);
+
+function signableContractError(status: string) {
+  return status === "DRAFT"
+    ? "This contract is still a draft. Send it for signature before signing."
+    : "This contract is not in a signable state.";
+}
+
 /**
  * POST /api/contracts/sign
  * Sign a contract (e-signature)
@@ -60,6 +68,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Contract not found" },
         { status: 404 }
+      );
+    }
+
+    if (!SIGNABLE_CONTRACT_STATUSES.has(contract.status)) {
+      return NextResponse.json(
+        { error: signableContractError(contract.status) },
+        { status: 400 }
       );
     }
 
@@ -166,8 +181,6 @@ export async function POST(request: NextRequest) {
       newStatus = "FULLY_SIGNED";
     } else if (plannerSigned || vendorSigned) {
       newStatus = "PARTIALLY_SIGNED";
-    } else if (contract.status === "DRAFT") {
-      newStatus = "OUT_FOR_SIGNATURE";
     }
 
     // Update contract status if changed
