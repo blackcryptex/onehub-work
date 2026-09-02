@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { createHmac, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { getGoogleOAuthCredentials, isGoogleAuthConfigured } from "@/lib/google.auth";
 
 type ImpersonationTransitionAction = "start" | "stop";
 
@@ -19,6 +20,7 @@ type ImpersonationSessionUpdate = {
 
 const IMPERSONATION_TRANSITION_TTL_SECONDS = 60;
 const FOUNDER_ADMIN_EMAIL = "marlon.smith35@gmail.com";
+const googleOAuthCredentials = getGoogleOAuthCredentials();
 
 function normalizeEmail(email?: string | null) {
   return email?.trim().toLowerCase() ?? "";
@@ -159,12 +161,12 @@ export const authConfig: NextAuthConfig = {
         }
       },
     }),
-    // Only add Google provider if credentials are configured
-    ...(process.env.GOOGLE_ID && process.env.GOOGLE_SECRET
+    // Only add Google provider if credentials are configured.
+    ...(isGoogleAuthConfigured()
       ? [
           Google({
-            clientId: process.env.GOOGLE_ID,
-            clientSecret: process.env.GOOGLE_SECRET,
+            clientId: googleOAuthCredentials.clientId!,
+            clientSecret: googleOAuthCredentials.clientSecret!,
             allowDangerousEmailAccountLinking: true,
             checks: ["pkce", "state"],
             authorization: {
@@ -271,33 +273,35 @@ export const authConfig: NextAuthConfig = {
         }
       }
       
-      // Store Google tokens for calendar access
+      // Store Google tokens server-side only for calendar access. Do not copy
+      // OAuth access/refresh tokens into the NextAuth JWT/session payload.
       if (account && account.provider === 'google') {
-        token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
-        token.expiresAt = account.expires_at;
-
         if (googleCalendarUser?.id && account.access_token) {
           const expiresAt = account.expires_at ? new Date(account.expires_at * 1000) : null;
           const email = googleCalendarUser.email || "";
 
-          await prisma.calendarAccount.upsert({
-            where: { userId_provider: { userId: googleCalendarUser.id, provider: "google" } },
-            create: {
-              userId: googleCalendarUser.id,
-              provider: "google",
-              email,
-              accessToken: account.access_token,
-              refreshToken: account.refresh_token || null,
-              expiresAt,
-            },
-            update: {
-              email,
-              accessToken: account.access_token,
-              refreshToken: account.refresh_token || undefined,
-              expiresAt,
-            },
-          });
+          try {
+            await prisma.calendarAccount.upsert({
+              where: { userId_provider: { userId: googleCalendarUser.id, provider: "google" } },
+              create: {
+                userId: googleCalendarUser.id,
+                provider: "google",
+                email,
+                accessToken: account.access_token,
+                refreshToken: account.refresh_token || null,
+                expiresAt,
+              },
+              update: {
+                email,
+                accessToken: account.access_token,
+                refreshToken: account.refresh_token || undefined,
+                expiresAt,
+              },
+            });
+          } catch {
+            // Calendar token persistence must fail safe without breaking core auth
+            // or writing OAuth token material to logs.
+          }
         }
       }
       

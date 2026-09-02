@@ -11,6 +11,7 @@ import {
   pushOneHubCalendarEvents,
   syncOneHubCalendarEventToGoogle,
 } from "@/lib/google.calendar";
+import { isGoogleAuthConfigured } from "@/lib/google.auth";
 
 export const dynamic = "force-dynamic";
 
@@ -128,7 +129,7 @@ async function createCalendarItem(formData: FormData) {
   });
 
   const googleAccount = await prisma.calendarAccount.findFirst({
-    where: { userId: user.id, provider: "google" },
+    where: { userId: user.id, provider: "google", accessToken: { not: null } },
     select: { id: true },
   });
 
@@ -229,10 +230,13 @@ export default async function CalendarPage({
     orderBy: { startAt: "asc" },
     take: 50,
   });
-  const googleAccount = await prisma.calendarAccount.findFirst({
-    where: { userId: user.id, provider: "google" },
-    select: { email: true, googleCalendarId: true },
-  });
+  const googleConfigured = isGoogleAuthConfigured();
+  const googleAccount = googleConfigured
+    ? await prisma.calendarAccount.findFirst({
+        where: { userId: user.id, provider: "google", accessToken: { not: null } },
+        select: { email: true, googleCalendarId: true },
+      })
+    : null;
   const notice = statusMessage(params);
   const error = errorMessage(params);
 
@@ -256,7 +260,11 @@ export default async function CalendarPage({
             Connect your own Google account. OneHub only syncs calendar records your account can access through your organizations.
           </p>
         </div>
-        {googleAccount ? (
+        {!googleConfigured ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            Google Calendar sync is not configured for this environment.
+          </div>
+        ) : googleAccount ? (
           <div className="space-y-4">
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
               Connected as {googleAccount.email}. {googleAccount.googleCalendarId ? "OneHub Google calendar is selected." : "Create or select the OneHub Google calendar before syncing."}

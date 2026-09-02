@@ -1,6 +1,7 @@
 // lib/google.calendar.ts
 import { google } from 'googleapis';
 import { prisma } from './prisma';
+import { getGoogleOAuthCredentials } from './google.auth';
 
 type GoogleEventPayload = {
   summary: string;
@@ -23,8 +24,7 @@ type OneHubCalendarEvent = {
 };
 
 function getOAuthConfig() {
-  const clientId = process.env.GOOGLE_ID || process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+  const { clientId, clientSecret } = getGoogleOAuthCredentials();
   const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL;
 
   if (!clientId || !clientSecret || !baseUrl) {
@@ -32,6 +32,18 @@ function getOAuthConfig() {
   }
 
   return { clientId, clientSecret, redirectUri: `${baseUrl.replace(/\/$/, '')}/api/auth/callback/google` };
+}
+
+export async function clearGoogleCalendarTokens(userId: string) {
+  await prisma.calendarAccount.updateMany({
+    where: { userId, provider: 'google' },
+    data: {
+      accessToken: null,
+      refreshToken: null,
+      expiresAt: null,
+      googleCalendarId: null,
+    },
+  });
 }
 
 function isoDate(value: Date) {
@@ -87,19 +99,36 @@ export async function getGoogleClient(userId: string) {
 
   if (account.expiresAt && account.expiresAt < new Date(Date.now() + 60_000)) {
     if (!account.refreshToken) {
+      await clearGoogleCalendarTokens(userId);
       throw new Error('Google Calendar token expired; reconnect Google Calendar');
     }
-    const { credentials } = await oauth2Client.refreshAccessToken();
+    let credentials: {
+      access_token?: string | null;
+      refresh_token?: string | null;
+      expiry_date?: number | null;
+    };
+    try {
+      ({ credentials } = await oauth2Client.refreshAccessToken());
+    } catch {
+      await clearGoogleCalendarTokens(userId);
+      throw new Error('Google Calendar token refresh failed; reconnect Google Calendar');
+    }
+
+    if (!credentials.access_token) {
+      await clearGoogleCalendarTokens(userId);
+      throw new Error('Google Calendar token refresh failed; reconnect Google Calendar');
+    }
+
     await prisma.calendarAccount.update({
       where: { id: account.id },
       data: {
-        accessToken: credentials.access_token || account.accessToken,
+        accessToken: credentials.access_token,
         refreshToken: credentials.refresh_token || account.refreshToken,
         expiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : account.expiresAt,
       },
     });
     oauth2Client.setCredentials({
-      access_token: credentials.access_token || account.accessToken,
+      access_token: credentials.access_token,
       refresh_token: credentials.refresh_token || account.refreshToken || undefined,
       expiry_date: credentials.expiry_date || account.expiresAt?.getTime(),
     });

@@ -12,14 +12,10 @@ export async function POST(_request: NextRequest) {
     const calendarId = await ensureOneHubCalendar(session.user.id);
 
     return NextResponse.json({ ok: true, calendarId });
-  } catch (error: unknown) {
-    console.error('Create calendar error:', error);
-    const message =
-      error instanceof Error && error.message
-        ? error.message
-        : 'Failed to create calendar';
+  } catch {
+    console.error('Create calendar error');
     return NextResponse.json(
-      { error: message },
+      { error: 'Failed to create calendar' },
       { status: 500 }
     );
   }

@@ -94,6 +94,8 @@ function inboxThread(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  process.env.GOOGLE_ID = "test-google-client-id";
+  process.env.GOOGLE_SECRET = "test-google-client-secret";
   getCurrentUser.mockResolvedValue({ id: "planner-1", role: "PRO_PLANNER", name: "Pro Planner" });
   auth.mockResolvedValue({ user: { id: "planner-1", role: "PRO_PLANNER" } });
   findOrganizations.mockResolvedValue([{ id: "org-1", name: "Atlas Events" }]);

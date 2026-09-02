@@ -28,9 +28,6 @@ declare module "next-auth/jwt" {
     role?: Role;
     realUserId?: string; // Original logged-in user's ID (admin when impersonating)
     actingUserId?: string; // ID of user being impersonated (if any)
-    accessToken?: string; // Google OAuth token
-    refreshToken?: string; // Google OAuth refresh token
-    expiresAt?: number; // Google OAuth token expiration
   }
 }
 

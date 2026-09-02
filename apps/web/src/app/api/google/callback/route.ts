@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import { isGoogleAuthConfigured } from '@/lib/google.auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,10 @@ export async function GET(_request: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) {
       return redirect('/signin');
+    }
+
+    if (!isGoogleAuthConfigured()) {
+      return redirect('/calendar?googleError=connect-failed');
     }
 
     // Get the account from NextAuth Account table
@@ -51,8 +56,8 @@ export async function GET(_request: NextRequest) {
     }
 
     return redirect('/calendar?googleConnected=1');
-  } catch (error) {
-    console.error('Google callback error:', error);
+  } catch {
+    console.error('Google callback error');
     return redirect('/calendar?googleError=connect-failed');
   }
 }

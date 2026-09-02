@@ -22,14 +22,10 @@ export async function GET(request: NextRequest) {
     const events = await listOverlayEvents(session.user.id, timeMin, timeMax);
 
     return NextResponse.json({ events });
-  } catch (error: unknown) {
-    console.error('Overlay events error:', error);
-    const message =
-      error instanceof Error && error.message
-        ? error.message
-        : 'Failed to fetch events';
+  } catch {
+    console.error('Overlay events error');
     return NextResponse.json(
-      { error: message },
+      { error: 'Failed to fetch events' },
       { status: 500 }
     );
   }

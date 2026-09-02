@@ -32,9 +32,8 @@ export async function POST(_request: NextRequest) {
     const result = await pushOneHubCalendarEvents(session.user.id, events);
 
     return NextResponse.json({ ok: result.failed === 0, ...result });
-  } catch (error: unknown) {
-    console.error('Sync push error:', error);
-    const message = error instanceof Error && error.message ? error.message : 'Failed to sync';
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    console.error('Sync push error');
+    return NextResponse.json({ error: 'Failed to sync' }, { status: 500 });
   }
 }
