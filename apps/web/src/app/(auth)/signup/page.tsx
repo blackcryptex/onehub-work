@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Input, Label, Card } from "@/components/ui";
 import Link from "next/link";
+import { sanitizeLocalRedirect } from "@/lib/safe-redirect";
+import type { Route } from "next";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -15,10 +17,11 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const createEvent = searchParams.get("createEvent") === "true";
   const roleParam = searchParams.get("role");
+  const inviteToken = searchParams.get("invite") || undefined;
   // Removed unused: setupParam, createDream
   // Support both callbackUrl (NextAuth standard) and redirect (legacy)
   // Default to /app which will route based on user role
-  const callbackUrl = searchParams.get("callbackUrl") || searchParams.get("redirect") || "/app";
+  const callbackUrl = sanitizeLocalRedirect(searchParams.get("callbackUrl") || searchParams.get("redirect"));
   const defaultRole = roleParam || "DIY_PLANNER";
 
   // Check for pending event data
@@ -37,7 +40,7 @@ export default function SignUpPage() {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name, role: defaultRole }),
+        body: JSON.stringify({ email, password, name, role: defaultRole, inviteToken }),
       });
 
       if (!response.ok) {
@@ -84,15 +87,8 @@ export default function SignUpPage() {
           sessionStorage.removeItem("pendingDreamEvent");
           router.push(`/event-dreamer/create?createDream=true&data=${encodeURIComponent(pendingDream)}`);
         } else {
-          const targetUrl = signInResult.url ?? callbackUrl;
-          let relativeUrl: string;
-          try {
-            const urlObj = new URL(targetUrl, window.location.origin);
-            relativeUrl = urlObj.pathname + urlObj.search + urlObj.hash;
-          } catch {
-            relativeUrl = targetUrl;
-          }
-          router.push(relativeUrl as any);
+          const relativeUrl = sanitizeLocalRedirect(signInResult.url ?? callbackUrl, callbackUrl);
+          router.push(relativeUrl as Route);
         }
         router.refresh();
       } else {
@@ -114,6 +110,11 @@ export default function SignUpPage() {
         {createEvent && (
           <p className="mt-2 text-sm text-indigo-600">
             {"After creating your account, we'll save your event and you can start planning!"}
+          </p>
+        )}
+        {inviteToken && (
+          <p className="mt-2 text-sm text-indigo-600">
+            Create your account with the email that received this invite to join the team.
           </p>
         )}
         <form className="mt-4 space-y-3" onSubmit={onSubmit}>

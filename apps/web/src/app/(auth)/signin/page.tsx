@@ -5,6 +5,7 @@ import { getCsrfToken, signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Button, Label, Card } from "@/components/ui";
 import Link from "next/link";
+import { sanitizeLocalRedirect } from "@/lib/safe-redirect";
 
 type AuthProvidersResponse = Record<string, { id?: string; name?: string }> | null;
 
@@ -19,7 +20,7 @@ export default function SignInPage() {
   const [csrfToken, setCsrfToken] = useState("");
   // Support both callbackUrl (NextAuth standard) and redirect (legacy)
   // Default to /app which will route based on user role
-  const callbackUrl = searchParams.get("callbackUrl") || searchParams.get("redirect") || "/app";
+  const callbackUrl = sanitizeLocalRedirect(searchParams.get("callbackUrl") || searchParams.get("redirect"));
   const createEvent = searchParams.get("createEvent") === "true";
   const authError = searchParams.get("error");
   const [origin, setOrigin] = useState("");
@@ -73,7 +74,7 @@ export default function SignInPage() {
     setIsLoading(true);
 
     const targetPath = createEvent ? "/events/new?createEvent=true" : callbackUrl;
-    const targetUrl = origin && targetPath.startsWith("/") ? `${origin}${targetPath}` : targetPath;
+    const targetUrl = origin ? `${origin}${targetPath}` : targetPath;
 
     try {
       const result = await signIn("credentials", {
@@ -93,14 +94,7 @@ export default function SignInPage() {
       let nextUrl = targetPath;
 
       if (result.url) {
-        try {
-          const resolved = new URL(result.url, origin || window.location.origin);
-          if (resolved.origin === (origin || window.location.origin)) {
-            nextUrl = `${resolved.pathname}${resolved.search}${resolved.hash}`;
-          }
-        } catch {
-          nextUrl = targetPath;
-        }
+        nextUrl = sanitizeLocalRedirect(result.url, targetPath);
       }
 
       window.location.assign(nextUrl);
@@ -116,7 +110,7 @@ export default function SignInPage() {
     setIsGoogleLoading(true);
 
     const targetPath = createEvent ? "/events/new?createEvent=true" : callbackUrl;
-    const targetUrl = origin && targetPath.startsWith("/") ? `${origin}${targetPath}` : targetPath;
+    const targetUrl = origin ? `${origin}${targetPath}` : targetPath;
 
     try {
       await signIn("google", { callbackUrl: targetUrl });
