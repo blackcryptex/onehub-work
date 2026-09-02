@@ -272,68 +272,83 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    await recordAcceptance({
-      actorId: userId,
-      actorRole: (session.user as any).role || "CLIENT",
-      orgId: contract.event.orgId,
-      grossAmountCents: amount,
-      legalSurface: getLegalSurface("payment", bookingClassification),
-      legalVersion: acceptance.legalVersion,
-      sourceSurface: "payment.checkout",
-      requestContextId: request.headers.get("x-request-id") || undefined,
-      proposalId: contract.proposalId,
-      contractId: contract.id,
-      paymentIntentId: paymentIntent.id,
-      bookingClassificationInput: {
-        proposal: {
-          bookingClassification: (contract.proposal as any).bookingClassification,
-          listingId: contract.proposal.listingId,
-        },
-        event: { org: { type: (contract.event as any)?.org?.type } },
-      },
-      metadata: {
-        requiredVersion: CURRENT_ACCEPTANCE_VERSIONS.payment,
-        milestoneId: targetMilestone?.id ?? null,
-        amountCents: amount,
-      },
-    });
-
     const idempotencyKey = replacingExistingPaymentIntent
       ? `payment-intent:${paymentIntent.id}:replacement:redirects-never:v1`
       : targetMilestone
         ? `contract:${contract.id}:milestone:${targetMilestone.id}:amount:${amount}:redirects-never:v1`
         : `contract:${contract.id}:full:${amount}:redirects-never:v1`;
 
-    const stripeIntent = await stripe.paymentIntents.create(
-      {
-        amount: feeProfile.totalChargeAmountCents,
-        currency: contract.proposal.currency.toLowerCase(),
+    let stripeIntent: Awaited<ReturnType<typeof stripe.paymentIntents.create>> | null = null;
+    try {
+      await recordAcceptance({
+        actorId: userId,
+        actorRole: (session.user as any).role || "CLIENT",
+        orgId: contract.event.orgId,
+        grossAmountCents: amount,
+        legalSurface: getLegalSurface("payment", bookingClassification),
+        legalVersion: acceptance.legalVersion,
+        sourceSurface: "payment.checkout",
+        requestContextId: request.headers.get("x-request-id") || undefined,
+        proposalId: contract.proposalId,
+        contractId: contract.id,
+        paymentIntentId: paymentIntent.id,
+        bookingClassificationInput: {
+          proposal: {
+            bookingClassification: (contract.proposal as any).bookingClassification,
+            listingId: contract.proposal.listingId,
+          },
+          event: { org: { type: (contract.event as any)?.org?.type } },
+        },
         metadata: {
-          contractId: contract.id,
-          proposalId: contract.proposalId,
-          escrowAccountId: escrowAccount.id,
-          milestoneId: targetMilestone?.id || "",
-          payerId: userId,
-          payeeId: payeeUserId,
-          paymentIntentId: paymentIntent.id,
-          bookingClassification,
-          feeProfileJson: JSON.stringify(feeProfile),
+          requiredVersion: CURRENT_ACCEPTANCE_VERSIONS.payment,
+          milestoneId: targetMilestone?.id ?? null,
+          amountCents: amount,
         },
-        automatic_payment_methods: {
-          enabled: true,
-          allow_redirects: "never",
-        },
-      },
-      { idempotencyKey }
-    );
+      });
 
-    await prisma.paymentIntent.update({
-      where: { id: paymentIntent.id },
-      data: {
-        stripeIntentId: stripeIntent.id,
-        status: stripeIntent.status === "processing" ? "PROCESSING" : "REQUIRES_PAYMENT",
-      },
-    });
+      stripeIntent = await stripe.paymentIntents.create(
+        {
+          amount: feeProfile.totalChargeAmountCents,
+          currency: contract.proposal.currency.toLowerCase(),
+          metadata: {
+            contractId: contract.id,
+            proposalId: contract.proposalId,
+            escrowAccountId: escrowAccount.id,
+            milestoneId: targetMilestone?.id || "",
+            payerId: userId,
+            payeeId: payeeUserId,
+            paymentIntentId: paymentIntent.id,
+            bookingClassification,
+            feeProfileJson: JSON.stringify(feeProfile),
+          },
+          automatic_payment_methods: {
+            enabled: true,
+            allow_redirects: "never",
+          },
+        },
+        { idempotencyKey }
+      );
+
+      await prisma.paymentIntent.update({
+        where: { id: paymentIntent.id },
+        data: {
+          stripeIntentId: stripeIntent.id,
+          status: stripeIntent.status === "processing" ? "PROCESSING" : "REQUIRES_PAYMENT",
+        },
+      });
+    } catch (checkoutSetupError) {
+      if (stripeIntent && stripeIntent.status !== "succeeded" && stripeIntent.status !== "canceled") {
+        await stripe.paymentIntents.cancel(stripeIntent.id).catch(() => null);
+      }
+      await prisma.paymentIntent.update({
+        where: { id: paymentIntent.id },
+        data: {
+          ...(stripeIntent ? { stripeIntentId: stripeIntent.id } : {}),
+          status: "CANCELLED",
+        },
+      }).catch(() => null);
+      throw checkoutSetupError;
+    }
 
     if (!escrowAccount.stripeIntent) {
       await prisma.escrowAccount.update({

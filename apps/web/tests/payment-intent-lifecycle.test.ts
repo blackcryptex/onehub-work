@@ -351,6 +351,46 @@ describe("payment intent lifecycle guardrails", () => {
     );
   });
 
+  it("cancels the local intent when checkout setup fails before Stripe creates an intent", async () => {
+    stripe.paymentIntents.create.mockRejectedValueOnce(new Error("stripe unavailable"));
+
+    const response = await createIntentPOST(request({
+      contractId: "contract-1",
+      milestoneId: "milestone-1",
+      acceptance: { legalVersion: "payment-v1" },
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body).toEqual({ error: "Failed to create payment intent" });
+    expect(prisma.paymentIntent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ status: "REQUIRES_PAYMENT" }),
+    });
+    expect(prisma.paymentIntent.update).toHaveBeenCalledWith({
+      where: { id: "pi-local-new" },
+      data: { status: "CANCELLED" },
+    });
+  });
+
+  it("cancels the Stripe intent and local state when local checkout persistence fails", async () => {
+    prisma.paymentIntent.update.mockRejectedValueOnce(new Error("db unavailable"));
+
+    const response = await createIntentPOST(request({
+      contractId: "contract-1",
+      milestoneId: "milestone-1",
+      acceptance: { legalVersion: "payment-v1" },
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body).toEqual({ error: "Failed to create payment intent" });
+    expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith("pi_stripe_new");
+    expect(prisma.paymentIntent.update).toHaveBeenLastCalledWith({
+      where: { id: "pi-local-new" },
+      data: { stripeIntentId: "pi_stripe_new", status: "CANCELLED" },
+    });
+  });
+
   it("blocks payment intent creation before an accepted provider-backed proposal is attached", async () => {
     prisma.contract.findUnique.mockResolvedValue({
       ...contract,
