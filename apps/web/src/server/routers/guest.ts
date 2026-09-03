@@ -1,18 +1,44 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { router, publicProcedure } from "@/server/trpc";
+import { db } from "@/server/db";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { recordActivity } from "@/server/lib/activity";
 import { sendOutboundEmail } from "@/lib/outbound";
 import { randomBytes } from "crypto";
 import { submitGuestRsvp } from "@/lib/guest-rsvp";
+import { requireEventAccess } from "@/server/lib/access";
 
 export const guestRouter = router({
-  list: publicProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
-    const event = await prisma.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { guestLists: { include: { guests: { include: { group: true, seat: true, invitations: true } } } } } });
-    const guestList = event.guestLists;
-    if (!guestList) return [];
-    return guestList.guests;
+  list: protectedProcedure.input(z.object({ eventId: z.string() })).query(async ({ input, ctx }) => {
+    await requireEventAccess(ctx.user, input.eventId);
+    const guestLists = await db.guestList.findMany({
+      where: { eventId: input.eventId },
+      include: {
+        guests: {
+          include: {
+            group: true,
+            seat: true,
+            invitations: { select: { id: true, eventId: true, guestId: true, sentAt: true, respondedAt: true, channel: true } },
+          },
+        },
+      },
+    });
+    return guestLists.flatMap((guestList) =>
+      guestList.guests.map((guest) => ({
+        ...guest,
+        invitations: guest.invitations
+          ? {
+              id: guest.invitations.id,
+              eventId: guest.invitations.eventId,
+              guestId: guest.invitations.guestId,
+              sentAt: guest.invitations.sentAt,
+              respondedAt: guest.invitations.respondedAt,
+              channel: guest.invitations.channel,
+            }
+          : null,
+      }))
+    );
   }),
 
   createMany: publicProcedure.input(z.object({

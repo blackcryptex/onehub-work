@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { isOrgMember, canManageEvent, canViewEvent, canEditEvent, canDeleteEvent, isPlanner } from "@/lib/rbac";
+import { isOrgMember, canViewEvent, canEditEvent, isPlanner } from "@/lib/rbac";
 import { recordActivity } from "@/server/lib/activity";
+import { forbidden } from "@/server/lib/access";
 import type { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
-import { trackError } from "@/lib/errorTracker";
+
 
 const createSchema = z.object({
   orgSlug: z.string(),
@@ -59,14 +60,15 @@ export const eventRouter = router({
     
     return ev;
   }),
-  list: publicProcedure.input(z.object({ orgSlug: z.string(), status: z.enum(["PLANNING","ACTIVE","ON_HOLD","COMPLETED","CANCELED"]).optional(), q: z.string().optional(), cursor: z.string().optional(), limit: z.number().min(1).max(100).default(20) })).query(async ({ input }) => {
-    const user = await getCurrentUser();
-    const org = await db.organization.findUnique({ where: { slug: input.orgSlug } });
+  list: protectedProcedure.input(z.object({ orgSlug: z.string(), status: z.enum(["PLANNING","ACTIVE","ON_HOLD","COMPLETED","CANCELED"]).optional(), q: z.string().optional(), cursor: z.string().optional(), limit: z.number().min(1).max(100).default(20) })).query(async ({ input, ctx }) => {
+    const user = ctx.user;
+    const org = await db.organization.findUnique({ where: { slug: input.orgSlug }, include: { members: true } });
     if (!org) return { items: [], nextCursor: undefined };
+    if (!isOrgMember(user, org)) throw forbidden();
     
     // Planner isolation: planners only see events they created
     const where: Prisma.EventWhereInput = { orgId: org.id };
-    if (user && isPlanner(user)) {
+    if (isPlanner(user)) {
       // Planner can only see their own events
       where.createdById = user.id;
     }
