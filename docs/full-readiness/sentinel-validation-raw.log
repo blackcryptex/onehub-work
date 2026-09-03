@@ -1,0 +1,1558 @@
+===== COMMAND: pwd && git status --short && git branch --show-current && git rev-parse HEAD =====
+START: 2026-09-02T21:07:09Z
+/root/.hermes/workspaces/onehub/repo
+?? docs/full-readiness/
+atlas/slice7-canonical-deploy
+970cc473745e5aa8ec09bf310f200212b181ac0c
+EXIT: 0
+END: 2026-09-02T21:07:09Z
+
+===== COMMAND: node -v && pnpm -v =====
+START: 2026-09-02T21:07:09Z
+v24.14.0
+9.0.0
+EXIT: 0
+END: 2026-09-02T21:07:10Z
+
+===== COMMAND: route/test inventory =====
+START: 2026-09-02T21:07:10Z
+route_file_count=163
+ROUTE apps/web/src/app/(app)/admin/abuse/page.tsx
+ROUTE apps/web/src/app/(app)/admin/execution/page.tsx
+ROUTE apps/web/src/app/(app)/admin/overview/page.tsx
+ROUTE apps/web/src/app/(app)/admin/users/page.tsx
+ROUTE apps/web/src/app/(app)/admin/verification/detail/page.tsx
+ROUTE apps/web/src/app/(app)/admin/verification/disputes/[id]/page.tsx
+ROUTE apps/web/src/app/(app)/admin/verification/holdbacks/[id]/page.tsx
+ROUTE apps/web/src/app/(app)/admin/verification/overrides/[id]/page.tsx
+ROUTE apps/web/src/app/(app)/admin/verification/page.tsx
+ROUTE apps/web/src/app/(app)/admin/verification/payouts/[id]/page.tsx
+ROUTE apps/web/src/app/(app)/admin/verification/refunds/[id]/page.tsx
+ROUTE apps/web/src/app/(app)/billing/connect/page.tsx
+ROUTE apps/web/src/app/(app)/billing/payouts/page.tsx
+ROUTE apps/web/src/app/(app)/calendar/page.tsx
+ROUTE apps/web/src/app/(app)/client/events/[eventSlug]/page.tsx
+ROUTE apps/web/src/app/(app)/contracts/[id]/page.tsx
+ROUTE apps/web/src/app/(app)/disputes/page.tsx
+ROUTE apps/web/src/app/(app)/error.tsx
+ROUTE apps/web/src/app/(app)/events/[eventSlug]/budget/page.tsx
+ROUTE apps/web/src/app/(app)/events/[eventSlug]/checklists/page.tsx
+ROUTE apps/web/src/app/(app)/events/[eventSlug]/guests/page.tsx
+ROUTE apps/web/src/app/(app)/events/[eventSlug]/milestones/page.tsx
+ROUTE apps/web/src/app/(app)/events/[eventSlug]/page.tsx
+ROUTE apps/web/src/app/(app)/events/[eventSlug]/payments/page.tsx
+ROUTE apps/web/src/app/(app)/events/[eventSlug]/proposals/new/page.tsx
+ROUTE apps/web/src/app/(app)/events/[eventSlug]/seating/page.tsx
+ROUTE apps/web/src/app/(app)/events/[eventSlug]/settings/page.tsx
+ROUTE apps/web/src/app/(app)/events/[eventSlug]/tasks/page.tsx
+ROUTE apps/web/src/app/(app)/layout.tsx
+ROUTE apps/web/src/app/(app)/marketplace/manage/page.tsx
+ROUTE apps/web/src/app/(app)/messages/[threadId]/page.tsx
+ROUTE apps/web/src/app/(app)/messages/page.tsx
+ROUTE apps/web/src/app/(app)/notifications/page.tsx
+ROUTE apps/web/src/app/(app)/proposals/[id]/fund/page.tsx
+ROUTE apps/web/src/app/(app)/proposals/[id]/page.tsx
+ROUTE apps/web/src/app/(app)/requests/page.tsx
+ROUTE apps/web/src/app/(app)/vault/[eventSlug]/page.tsx
+ROUTE apps/web/src/app/(app)/vault/page.tsx
+ROUTE apps/web/src/app/(auth)/error.tsx
+ROUTE apps/web/src/app/(auth)/loading.tsx
+ROUTE apps/web/src/app/(auth)/not-found.tsx
+ROUTE apps/web/src/app/(auth)/signin/page.tsx
+ROUTE apps/web/src/app/(auth)/signout/page.tsx
+ROUTE apps/web/src/app/(auth)/signup/page.tsx
+ROUTE apps/web/src/app/api/acceptance/route.ts
+ROUTE apps/web/src/app/api/admin/holdbacks/route.ts
+ROUTE apps/web/src/app/api/admin/holdbacks/verification/route.ts
+ROUTE apps/web/src/app/api/admin/impersonate/route.ts
+ROUTE apps/web/src/app/api/admin/override-history/route.ts
+ROUTE apps/web/src/app/api/admin/stop-impersonate/route.ts
+ROUTE apps/web/src/app/api/admin/users/role/route.ts
+ROUTE apps/web/src/app/api/ai/source-vendors-venues/route.ts
+ROUTE apps/web/src/app/api/auth/[...nextauth]/route.ts
+ROUTE apps/web/src/app/api/auth/error/route.ts
+ROUTE apps/web/src/app/api/auth/signup/route.ts
+ROUTE apps/web/src/app/api/bookings/request/route.ts
+ROUTE apps/web/src/app/api/contracts/[id]/route.ts
+ROUTE apps/web/src/app/api/contracts/[id]/sign/route.ts
+ROUTE apps/web/src/app/api/contracts/from-proposal/route.ts
+ROUTE apps/web/src/app/api/contracts/sign/route.ts
+ROUTE apps/web/src/app/api/diy/events/route.ts
+ROUTE apps/web/src/app/api/dreams/create/route.ts
+ROUTE apps/web/src/app/api/e2e/payment/route.ts
+ROUTE apps/web/src/app/api/events/[eventSlug]/deposits/route.ts
+ROUTE apps/web/src/app/api/events/[eventSlug]/route.ts
+ROUTE apps/web/src/app/api/events/[eventSlug]/share/route.ts
+ROUTE apps/web/src/app/api/events/[eventSlug]/stakeholders/route.ts
+ROUTE apps/web/src/app/api/events/create/route.ts
+ROUTE apps/web/src/app/api/google/calendar/create-or-use/route.ts
+ROUTE apps/web/src/app/api/google/callback/route.ts
+ROUTE apps/web/src/app/api/google/connect/route.ts
+ROUTE apps/web/src/app/api/google/events/overlay/route.ts
+ROUTE apps/web/src/app/api/google/status/route.ts
+ROUTE apps/web/src/app/api/google/sync/pull/route.ts
+ROUTE apps/web/src/app/api/google/sync/push/route.ts
+ROUTE apps/web/src/app/api/health/route.ts
+ROUTE apps/web/src/app/api/invites/vendor/route.ts
+ROUTE apps/web/src/app/api/messages/[threadId]/route.ts
+ROUTE apps/web/src/app/api/notifications/[id]/read/route.ts
+ROUTE apps/web/src/app/api/notifications/route.ts
+ROUTE apps/web/src/app/api/orgs/create/route.ts
+ROUTE apps/web/src/app/api/payments/auto-build/route.ts
+ROUTE apps/web/src/app/api/payments/confirm/route.ts
+ROUTE apps/web/src/app/api/payments/create-intent/route.ts
+ROUTE apps/web/src/app/api/payments/deposits/auto/route.ts
+ROUTE apps/web/src/app/api/payments/lines/[id]/route.ts
+ROUTE apps/web/src/app/api/payments/lines/route.ts
+ROUTE apps/web/src/app/api/payments/mark-milestone-complete/route.ts
+ROUTE apps/web/src/app/api/payments/plan/from-accepted-proposals/route.ts
+ROUTE apps/web/src/app/api/payments/receipts/[id]/route.ts
+ROUTE apps/web/src/app/api/payments/release-milestone/route.ts
+ROUTE apps/web/src/app/api/pro-planner/availability/slots/route.ts
+ROUTE apps/web/src/app/api/pro-planner/clients/tasks/route.ts
+ROUTE apps/web/src/app/api/pro-planner/crisis/issues/route.ts
+ROUTE apps/web/src/app/api/pro-planner/files/notes/route.ts
+ROUTE apps/web/src/app/api/pro-planner/team/invites/route.ts
+ROUTE apps/web/src/app/api/pro-planner/timeline/milestones/route.ts
+ROUTE apps/web/src/app/api/pro-planner/vendors/relationships/route.ts
+ROUTE apps/web/src/app/api/proposals/[id]/approve/route.ts
+ROUTE apps/web/src/app/api/proposals/[id]/route.ts
+ROUTE apps/web/src/app/api/proposals/generate/route.ts
+ROUTE apps/web/src/app/api/providers/leads/[id]/route.ts
+ROUTE apps/web/src/app/api/providers/profile/route.ts
+ROUTE apps/web/src/app/api/refund-requests/route.ts
+ROUTE apps/web/src/app/api/rsvp/[token]/route.ts
+ROUTE apps/web/src/app/api/shortlist/add/route.ts
+ROUTE apps/web/src/app/api/shortlist/route.ts
+ROUTE apps/web/src/app/api/stripe/webhook/route.ts
+ROUTE apps/web/src/app/api/users/invite-client/route.ts
+ROUTE apps/web/src/app/api/users/search/route.ts
+ROUTE apps/web/src/app/api/vendor-venue/check-profile/route.ts
+ROUTE apps/web/src/app/api/vendors/search/route.ts
+ROUTE apps/web/src/app/api/vendors/search-external/route.ts
+ROUTE apps/web/src/app/app/admin/overview/page.tsx
+ROUTE apps/web/src/app/app/billing/connect/page.tsx
+ROUTE apps/web/src/app/app/contracts/[id]/page.tsx
+ROUTE apps/web/src/app/app/contracts/page.tsx
+ROUTE apps/web/src/app/app/layout.tsx
+ROUTE apps/web/src/app/app/page.tsx
+ROUTE apps/web/src/app/app/proposals/[id]/page.tsx
+ROUTE apps/web/src/app/app/proposals/page.tsx
+ROUTE apps/web/src/app/app/requests/page.tsx
+ROUTE apps/web/src/app/app/vault/[eventSlug]/page.tsx
+ROUTE apps/web/src/app/app/vault/page.tsx
+ROUTE apps/web/src/app/diy-planner/page.tsx
+ROUTE apps/web/src/app/diy-planner/vault/[eventSlug]/page.tsx
+ROUTE apps/web/src/app/diy-planner/vault/page.tsx
+ROUTE apps/web/src/app/error.tsx
+ROUTE apps/web/src/app/event-dreamer/create/page.tsx
+ROUTE apps/web/src/app/event-vault/[eventSlug]/page.tsx
+ROUTE apps/web/src/app/event-vault/layout.tsx
+ROUTE apps/web/src/app/event-vault/page.tsx
+ROUTE apps/web/src/app/events/new/page.tsx
+ROUTE apps/web/src/app/explore/vendors/page.tsx
+ROUTE apps/web/src/app/features/page.tsx
+ROUTE apps/web/src/app/help/articles/[slug]/page.tsx
+ROUTE apps/web/src/app/help/page.tsx
+ROUTE apps/web/src/app/help/roles/[role]/page.tsx
+ROUTE apps/web/src/app/layout.tsx
+ROUTE apps/web/src/app/legal/booking-classification/page.tsx
+ROUTE apps/web/src/app/legal/disputes/page.tsx
+ROUTE apps/web/src/app/legal/fees/page.tsx
+ROUTE apps/web/src/app/legal/payments/page.tsx
+ROUTE apps/web/src/app/legal/refunds/page.tsx
+ROUTE apps/web/src/app/loading.tsx
+ROUTE apps/web/src/app/marketplace/[slug]/page.tsx
+ROUTE apps/web/src/app/marketplace/page.tsx
+ROUTE apps/web/src/app/not-found.tsx
+ROUTE apps/web/src/app/page.tsx
+ROUTE apps/web/src/app/privacy/page.tsx
+ROUTE apps/web/src/app/pro/planner/page.tsx
+ROUTE apps/web/src/app/pro/planner/vault/[eventSlug]/page.tsx
+ROUTE apps/web/src/app/pro/planner/vault/page.tsx
+ROUTE apps/web/src/app/professional-planner/setup/page.tsx
+ROUTE apps/web/src/app/providers/onboarding/page.tsx
+ROUTE apps/web/src/app/providers/start/page.tsx
+ROUTE apps/web/src/app/rsvp/[token]/page.tsx
+ROUTE apps/web/src/app/support/page.tsx
+ROUTE apps/web/src/app/terms/page.tsx
+ROUTE apps/web/src/app/vendor/dashboard/page.tsx
+ROUTE apps/web/src/app/vendor-venue/setup/page.tsx
+ROUTE apps/web/src/app/vendor-venue-ads/page.tsx
+ROUTE apps/web/src/app/venue/dashboard/page.tsx
+test_file_count=86
+TEST apps/web/src/lib/__tests__/budget-allocation.test.ts
+TEST apps/web/src/lib/__tests__/runtime-route-safety.test.ts
+TEST apps/web/src/lib/parsers/__tests__/budget.test.ts
+TEST apps/web/src/lib/parsers/__tests__/eventType.test.ts
+TEST apps/web/src/lib/vendors/__tests__/category.test.ts
+TEST apps/web/tests/admin-founder-user-role-route.test.ts
+TEST apps/web/tests/admin-impersonate-button.test.tsx
+TEST apps/web/tests/admin-overview-workflow.test.tsx
+TEST apps/web/tests/ai-source-fallback-truthfulness.test.tsx
+TEST apps/web/tests/app-client-events-visibility.test.tsx
+TEST apps/web/tests/auth-session-impersonation-security.test.ts
+TEST apps/web/tests/availability.test.ts
+TEST apps/web/tests/booking-request-provider-proposal.test.ts
+TEST apps/web/tests/contract-from-provider-backed-proposal.test.ts
+TEST apps/web/tests/contract-readiness-clarity.test.tsx
+TEST apps/web/tests/contract-router-access.test.ts
+TEST apps/web/tests/dashboard-core-routes.test.tsx
+TEST apps/web/tests/dashboard-placeholder-slice3.test.tsx
+TEST apps/web/tests/diy-planner-cockpit.test.tsx
+TEST apps/web/tests/diy-planner-route-continuity.test.tsx
+TEST apps/web/tests/event-deposits-disabled.test.ts
+TEST apps/web/tests/event-details-edit-actions.test.tsx
+TEST apps/web/tests/event-financial-summary.test.ts
+TEST apps/web/tests/event-logistics-summary.test.ts
+TEST apps/web/tests/event-rbac-helper.test.ts
+TEST apps/web/tests/event-route-helper.test.ts
+TEST apps/web/tests/events-access-route-security.test.ts
+TEST apps/web/tests/events-create-security.test.ts
+TEST apps/web/tests/events-edit-router-security.test.ts
+TEST apps/web/tests/events-share-security.test.ts
+TEST apps/web/tests/events-stakeholders-security.test.ts
+TEST apps/web/tests/google-calendar-mapping.test.ts
+TEST apps/web/tests/google-token-protection.test.ts
+TEST apps/web/tests/guest-rsvp-api.test.ts
+TEST apps/web/tests/help-article-page.test.tsx
+TEST apps/web/tests/help-center-page.test.tsx
+TEST apps/web/tests/help-content.test.ts
+TEST apps/web/tests/help-contextual-links.test.ts
+TEST apps/web/tests/help-copy-quality.test.ts
+TEST apps/web/tests/help-link-integrity.test.ts
+TEST apps/web/tests/help-role-page.test.tsx
+TEST apps/web/tests/homepage-real-paths.test.tsx
+TEST apps/web/tests/invite-router-protection.test.ts
+TEST apps/web/tests/marketplace-provider-actionability.test.tsx
+TEST apps/web/tests/outbound-delivery.test.ts
+TEST apps/web/tests/payment-auto-build-provider-evidence.test.ts
+TEST apps/web/tests/payment-blocking-helpers.test.ts
+TEST apps/web/tests/payment-e2e-route-safety.test.ts
+TEST apps/web/tests/payment-intent-lifecycle.test.ts
+TEST apps/web/tests/payment-lines-guardrails.test.ts
+TEST apps/web/tests/payment-readiness-copy.test.tsx
+TEST apps/web/tests/payment-receipts-audit.test.ts
+TEST apps/web/tests/payment-refund-review-effects.test.ts
+TEST apps/web/tests/payment-release-guardrails.test.ts
+TEST apps/web/tests/phase5-comms-accountability.test.ts
+TEST apps/web/tests/phase7-crisis-workflow.test.ts
+TEST apps/web/tests/prisma-runtime-url.test.ts
+TEST apps/web/tests/private-pilot-readiness-hardening.test.tsx
+TEST apps/web/tests/pro-planner-dashboard-buildout.test.tsx
+TEST apps/web/tests/pro-planner-event-workspace-polish.test.tsx
+TEST apps/web/tests/proposal-provider-handoff.test.tsx
+TEST apps/web/tests/proposal-router-access.test.ts
+TEST apps/web/tests/proposal-trpc-accept-guard.test.ts
+TEST apps/web/tests/rating.test.ts
+TEST apps/web/tests/rolebadge.test.tsx
+TEST apps/web/tests/safe-redirect.test.ts
+TEST apps/web/tests/security-main-blockers.test.ts
+TEST apps/web/tests/seed-safety.test.ts
+TEST apps/web/tests/sensitive-log-hygiene.test.ts
+TEST apps/web/tests/signin-google-provider-ui.test.tsx
+TEST apps/web/tests/signup-invite-protection.test.ts
+TEST apps/web/tests/stripe-webhook-idempotency.test.ts
+TEST apps/web/tests/users-search-role-security.test.ts
+TEST apps/web/tests/vendor-dashboard-workflow.test.tsx
+TEST apps/web/tests/vendor-invite-outbound-route.test.ts
+TEST apps/web/tests/venue-dashboard-workflow.test.tsx
+TEST apps/web/tests/w5-admin-trust-review-summary.test.ts
+TEST apps/web/tests/w5-billing-router-guardrails.test.ts
+TEST apps/web/tests/w5-disputes-contextual-prefill.test.ts
+TEST apps/web/tests/w5-mark-complete-copy.test.ts
+TEST apps/web/tests/w5-payment-review-copy.test.tsx
+TEST apps/web/tests/w5-payment-route-continuity.test.ts
+TEST packages/types/tests/budget.test.ts
+TEST packages/types/tests/rbac.test.ts
+TEST packages/ui/tests/BudgetTable.test.tsx
+TEST packages/ui/tests/Stars.test.tsx
+EXIT: 0
+END: 2026-09-02T21:07:10Z
+
+===== COMMAND: curl -I -L --max-time 20 https://www.1hubevents.com =====
+START: 2026-09-02T21:07:10Z
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+HTTP/2 200 
+age: 0
+cache-control: private, no-cache, no-store, max-age=0, must-revalidate
+content-type: text/html; charset=utf-8
+date: Wed, 02 Sep 2026 21:07:10 GMT
+link: </_next/static/media/e4af272ccee01ff0-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/css/021e62e5cc1dfb99.css>; rel=preload; as="style"
+server: Vercel
+strict-transport-security: max-age=63072000
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+x-matched-path: /
+x-powered-by: Next.js
+x-vercel-cache: MISS
+x-vercel-id: iad1::iad1::q8h65-1788383230328-40e2768ffd27
+
+EXIT: 0
+END: 2026-09-02T21:07:10Z
+
+===== COMMAND: curl -L --max-time 20 https://www.1hubevents.com | python3 -c 'import sys; data=sys.stdin.read(); print(len(data)); print(data[:500])' =====
+START: 2026-09-02T21:07:10Z
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 38981    0 38981    0     0   389k      0 --:--:-- --:--:-- --:--:--  392k
+38953
+<!DOCTYPE html><html lang="en" class="h-full __variable_f367f3"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_next/static/css/021e62e5cc1dfb99.css" data-precedence="next"/><link rel="preload" as="script" fetchPriority="low" href="/_next/static/chunks/webpack-ee3daea2f1f3e6db.js"/><script src="/_next/static/chunks/ee7818ef-4a94a98bae8ba4f6.js" async=""></script><script src="/_next/static/chunks/8694-4b2e71a318bbad4
+EXIT: 0
+END: 2026-09-02T21:07:10Z
+
+===== COMMAND: secret/log hygiene inventory =====
+START: 2026-09-02T21:07:10Z
+scanned_files=704
+secret=195
+token=393
+password=139
+private_key=0
+console.log=79
+console.error=162
+EXIT: 0
+END: 2026-09-02T21:07:11Z
+
+===== COMMAND: pnpm run typecheck =====
+START: 2026-09-02T21:07:11Z
+
+> onehub@0.1.0 typecheck /root/.hermes/workspaces/onehub/repo
+> tsc --noEmit
+
+EXIT: 0
+END: 2026-09-02T21:07:17Z
+
+===== COMMAND: pnpm run test =====
+START: 2026-09-02T21:07:17Z
+
+> onehub@0.1.0 test /root/.hermes/workspaces/onehub/repo
+> vitest run --config apps/web/vitest.config.ts
+
+
+ RUN  v4.1.10 /root/.hermes/workspaces/onehub/repo
+
+
+ Test Files  86 passed (86)
+      Tests  455 passed (455)
+   Start at  21:07:18
+   Duration  173.30s (transform 4.24s, setup 10.26s, import 16.05s, tests 14.61s, environment 106.50s)
+
+EXIT: 0
+END: 2026-09-02T21:10:12Z
+
+===== COMMAND: pnpm run lint =====
+START: 2026-09-02T21:10:12Z
+
+> onehub@0.1.0 lint /root/.hermes/workspaces/onehub/repo
+> eslint .
+
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/admin/users/page.tsx
+  34:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/admin/verification/detail/page.tsx
+  13:78   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:73   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:60   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:170  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:49   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:50   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:57   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:44   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/admin/verification/disputes/[id]/page.tsx
+  15:36   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:67   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:166  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:63   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:74   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/admin/verification/holdbacks/[id]/page.tsx
+  15:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/admin/verification/overrides/[id]/page.tsx
+  14:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:62   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:57   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:66   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:191  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:75   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/admin/verification/page.tsx
+   31:36   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   49:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   68:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   89:94   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:104  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:104  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  154:102  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  156:109  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/admin/verification/payouts/[id]/page.tsx
+  18:67   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:57   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:36   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:64   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:335  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/admin/verification/refunds/[id]/page.tsx
+  17:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:73  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/disputes/page.tsx
+  26:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  63:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/requests/page.tsx
+  89:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  89:81  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/vault/[eventSlug]/page.tsx
+   42:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  256:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  257:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  258:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  300:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  301:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  315:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  546:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  546:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  561:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  561:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  565:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  565:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  566:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  567:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  620:81  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  623:81  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  626:85  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  658:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  658:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  710:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/(app)/vault/page.tsx
+  130:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/admin/override-history/route.ts
+  22:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/ai/source-vendors-venues/route.ts
+  160:24  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  215:60  warning  'index' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/contracts/[id]/sign/route.ts
+  190:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  193:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/contracts/from-proposal/route.ts
+   38:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  144:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/events/[eventSlug]/stakeholders/route.ts
+  114:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/events/create/route.ts
+   65:24  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+   75:34  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  104:10  warning  'mapVendor' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  170:37  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  171:48  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  175:58  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  176:37  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  182:25  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  186:25  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  361:31  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/health/route.ts
+  23:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/payments/confirm/route.ts
+  36:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/payments/create-intent/route.ts
+   69:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  159:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  285:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  297:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  300:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/payments/receipts/[id]/route.ts
+  20:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/payments/release-milestone/route.ts
+   56:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  175:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  376:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  439:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/proposals/[id]/approve/route.ts
+  108:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/proposals/generate/route.ts
+   85:7   warning  'vendorOrg' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  179:39  warning  Unexpected any. Specify a different type                                              @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/stripe/webhook/route.ts
+  21:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/vendor-venue/check-profile/route.ts
+  7:27  warning  'request' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/vendors/search-external/route.ts
+  2:10  warning  'VendorSearchFilters' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/api/vendors/search/route.ts
+  38:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/app/page.tsx
+   35:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   49:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   62:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  169:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  195:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/diy-planner/vault/[eventSlug]/page.tsx
+  315:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  316:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  329:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  533:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  533:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  547:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  547:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  551:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  551:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  552:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  553:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  641:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  641:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  691:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/diy-planner/vault/page.tsx
+   98:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  231:32  warning  HTML entity, `'` , must be escaped        react/no-unescaped-entities
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/event-dreamer/create/page.tsx
+  41:64  warning  Unexpected any. Specify a different type                                                                                  @typescript-eslint/no-explicit-any
+  53:5   warning  React Hook useCallback has a missing dependency: 'session?.user?.role'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/event-vault/[eventSlug]/page.tsx
+  8:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/events/new/page.tsx
+    6:59  warning  'UserPlus' is defined but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+  164:58  warning  Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  170:32  warning  Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  177:6   warning  React Hook useCallback has a missing dependency: 'validateForm'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  366:44  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  366:62  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  366:65  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  366:80  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  366:83  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  366:99  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  487:40  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  487:48  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  487:51  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  487:59  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  487:62  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  487:71  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  487:74  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+  487:88  warning  HTML entity, `"` , must be escaped                                                                                 react/no-unescaped-entities
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/explore/vendors/page.tsx
+   39:40  warning  Unexpected any. Specify a different type                                                                                                           @typescript-eslint/no-explicit-any
+  116:6   warning  React Hook useEffect has missing dependencies: 'filters', 'performSearch', and 'searchParams'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  124:70  warning  Unexpected any. Specify a different type                                                                                                           @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/pro/planner/vault/[eventSlug]/page.tsx
+   155:44   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   464:34   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   492:47   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   909:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   932:50   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   968:49   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   969:43   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   979:50   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1133:54   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1162:50   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1250:47   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1265:237  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1364:70   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1394:85   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1489:48   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1489:81   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/pro/planner/vault/page.tsx
+   95:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  228:32  warning  HTML entity, `'` , must be escaped        react/no-unescaped-entities
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/professional-planner/setup/page.tsx
+  75:37  warning  Unexpected any. Specify a different type                                                                                           @typescript-eslint/no-explicit-any
+  92:6   warning  React Hook useEffect has missing dependencies: 'handleCreateOrg' and 'router'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/providers/onboarding/page.tsx
+    11:3   warning  'MapPin' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   289:70  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   326:66  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1247:57  warning  HTML entity, `'` , must be escaped                                        react/no-unescaped-entities
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/providers/start/page.tsx
+  84:60  warning  HTML entity, `'` , must be escaped  react/no-unescaped-entities
+  99:60  warning  HTML entity, `'` , must be escaped  react/no-unescaped-entities
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/app/vendor/dashboard/page.tsx
+  108:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/contracts/ContractPageClient.tsx
+  104:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  140:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  262:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  302:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/contracts/GenerateContractButton.tsx
+  49:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/contracts/SignContractButton.tsx
+  43:13  warning  'result' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/diy-planner/Dashboard.tsx
+  176:65   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  547:113  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/events/ClientIntakeStep.tsx
+  5:31  warning  'Check' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/events/ManageStakeholders.tsx
+  3:20  warning  'useEffect' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  5:28  warning  'X' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/layout/Footer.tsx
+  54:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/layout/RoleBadge.tsx
+  1:8  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/notifications/NotificationDropdown.tsx
+  137:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/payments/ProPlannerPaymentPanel.tsx
+  151:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  225:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/payments/VendorPaymentPanel.tsx
+  186:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/proposals/GenerateProposalButton.tsx
+  56:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/components/proposals/ProposalPageClient.tsx
+   24:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  120:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:67  warning  HTML entity, `'` , must be escaped        react/no-unescaped-entities
+  142:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  157:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  225:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/lib/acceptance.ts
+  34:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  62:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  80:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/lib/admin-override.ts
+   74:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/lib/dispute-case.ts
+   30:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   43:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   52:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   87:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  119:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  264:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/lib/health.ts
+  29:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  38:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/lib/holdback.ts
+   16:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   20:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   31:8   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   35:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   70:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   85:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   93:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  198:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  208:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  300:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  304:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  305:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  316:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  325:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/lib/payments/confirm-payment.ts
+   69:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   95:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  163:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  250:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  262:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  277:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  299:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/lib/rbac.ts
+  680:3  warning  'redirectTo' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/lib/refund-request.ts
+   30:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   43:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   52:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   87:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  155:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  372:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  398:85  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  411:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  479:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  489:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/server/lib/activity.ts
+  30:8  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/server/routers/admin.ts
+  120:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  163:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/server/routers/dispute.ts
+  71:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  77:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/server/routers/event.ts
+  5:23  warning  'canManageEvent' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  5:67  warning  'canDeleteEvent' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  9:10  warning  'trackError' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/server/routers/org.ts
+  6:10  warning  'isOrgAdminOrOwner' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/server/routers/proposal.ts
+  8:10  warning  'trackError' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/src/server/routers/shortlist.ts
+   49:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  100:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  124:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/tests/ai-source-fallback-truthfulness.test.tsx
+  14:9  warning  'React' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/apps/web/tests/event-financial-summary.test.ts
+    5:72  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    7:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   89:8   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:90  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:91  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:85  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/tests/guest-rsvp-api.test.ts
+  9:8  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/apps/web/tests/rolebadge.test.tsx
+  1:8  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/e2e/health.spec.ts
+   80:11  warning  'generateButton' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  161:13  warning  'link' is assigned a value but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/AIHintsPanel.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/ActivityList.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/AvailabilityCalendar.tsx
+  3:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/BudgetTable.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/Button.tsx
+  38:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/CalendarView.tsx
+  20:40  warning  'mode' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/DisputeBadge.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/GuestTable.tsx
+  16:48  warning  'onUpdate' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/KPIStat.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/LineItemsTable.tsx
+  3:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/ListingFilters.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  3:34  warning  'onFilterChange' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  3:81  warning  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/MapPane.tsx
+  3:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/MediaGrid.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/MilestoneTimeline.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/Money.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/PriceTier.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/RSVPBadge.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/Stars.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/Stepper.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/Timeline.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/TotalsSummary.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/packages/ui/src/components/TrendSparkline.tsx
+  1:13  warning  'React' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/root/.hermes/workspaces/onehub/repo/scripts/seed.ts
+    1:30  warning  'OrgRole' is defined but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+    1:39  warning  'OrgType' is defined but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+    1:48  warning  'TaskStatus' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+    1:60  warning  'TaskPriority' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+    1:74  warning  'BudgetCategory' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+    1:90  warning  'EventType' is defined but never used. Allowed unused vars must match /^_/u                 @typescript-eslint/no-unused-vars
+   79:9   warning  'weddingTemplate' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  225:9   warning  'venue2' is assigned a value but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  396:9   warning  'contract1' is assigned a value but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  440:9   warning  'thread1' is assigned a value but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+
+✖ 331 problems (0 errors, 331 warnings)
+
+EXIT: 0
+END: 2026-09-02T21:10:36Z
+
+===== COMMAND: pnpm run build =====
+START: 2026-09-02T21:10:36Z
+
+> onehub@0.1.0 build /root/.hermes/workspaces/onehub/repo
+> NODE_OPTIONS=--max-old-space-size=4096 pnpm db:generate && NODE_OPTIONS=--max-old-space-size=4096 pnpm -C apps/web build
+
+
+> onehub@0.1.0 db:generate /root/.hermes/workspaces/onehub/repo
+> prisma generate --schema apps/web/prisma/schema.prisma
+
+Prisma schema loaded from apps/web/prisma/schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to ./node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client in 1.30s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Help us improve the Prisma ORM for everyone. Share your feedback in a short 2-min survey: https://pris.ly/orm/survey/release-5-22
+
+
+> @onehub/web@0.1.0 build /root/.hermes/workspaces/onehub/repo/apps/web
+> prisma generate --schema prisma/schema.prisma && next build
+
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to ./../../node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client in 1.19s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Curious about the SQL queries Prisma ORM generates? Optimize helps you enhance your visibility: https://pris.ly/tip-2-optimize
+
+   ▲ Next.js 15.5.21
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 39.0s
+   Linting and checking validity of types ...
+
+ ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+
+./src/app/(app)/admin/users/page.tsx
+34:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(app)/admin/verification/detail/page.tsx
+13:78  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+14:73  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+21:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+21:170  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+22:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+23:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+24:57  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+25:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+26:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(app)/admin/verification/disputes/[id]/page.tsx
+15:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+18:67  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+18:166  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+19:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+21:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+22:74  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(app)/admin/verification/holdbacks/[id]/page.tsx
+15:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+18:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+19:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+21:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+22:75  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(app)/admin/verification/overrides/[id]/page.tsx
+14:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+17:62  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+18:57  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+19:66  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+19:191  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+21:75  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(app)/admin/verification/page.tsx
+31:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+49:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+68:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+89:94  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+105:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+152:104  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+153:104  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+154:102  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+156:109  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(app)/admin/verification/payouts/[id]/page.tsx
+18:67  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+19:57  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+20:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+21:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+22:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+23:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+23:335  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(app)/admin/verification/refunds/[id]/page.tsx
+17:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+20:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+21:62  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+23:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+24:73  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(app)/disputes/page.tsx
+26:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+63:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(app)/requests/page.tsx
+89:59  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+89:81  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(app)/vault/[eventSlug]/page.tsx
+42:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+256:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+257:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+258:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+300:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+301:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+315:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+546:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+546:75  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+561:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+561:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+565:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+565:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+566:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+567:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+620:81  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+623:81  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+626:85  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+658:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+658:65  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+710:74  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(app)/vault/page.tsx
+130:74  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/admin/override-history/route.ts
+22:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/ai/source-vendors-venues/route.ts
+160:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+215:60  Warning: 'index' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/contracts/[id]/sign/route.ts
+190:54  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+193:57  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/contracts/from-proposal/route.ts
+38:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+132:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+144:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+152:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+201:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/events/[eventSlug]/stakeholders/route.ts
+114:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/events/create/route.ts
+65:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+75:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+104:10  Warning: 'mapVendor' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+170:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+171:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+175:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+176:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+182:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+186:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+361:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/health/route.ts
+23:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/payments/confirm/route.ts
+36:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/payments/create-intent/route.ts
+69:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+116:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+159:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+285:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+297:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+300:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/payments/receipts/[id]/route.ts
+20:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/payments/release-milestone/route.ts
+56:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+175:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+376:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+439:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/proposals/[id]/approve/route.ts
+108:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+111:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/proposals/generate/route.ts
+85:7  Warning: 'vendorOrg' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+179:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/stripe/webhook/route.ts
+21:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/vendor-venue/check-profile/route.ts
+7:27  Warning: 'request' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/vendors/search/route.ts
+38:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+52:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/vendors/search-external/route.ts
+2:10  Warning: 'VendorSearchFilters' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/app/page.tsx
+35:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+49:41  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+62:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+169:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+195:66  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/diy-planner/vault/[eventSlug]/page.tsx
+315:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+316:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+329:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+533:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+533:75  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+547:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+547:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+551:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+551:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+552:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+553:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+641:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+641:65  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+691:74  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/diy-planner/vault/page.tsx
+98:74  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+231:32  Warning: HTML entity, `'` , must be escaped.  react/no-unescaped-entities
+
+./src/app/event-dreamer/create/page.tsx
+41:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+53:5  Warning: React Hook useCallback has a missing dependency: 'session?.user?.role'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/event-vault/[eventSlug]/page.tsx
+8:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/events/new/page.tsx
+6:59  Warning: 'UserPlus' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+164:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+170:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+177:6  Warning: React Hook useCallback has a missing dependency: 'validateForm'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+366:44  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+366:62  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+366:65  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+366:80  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+366:83  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+366:99  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+487:40  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+487:48  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+487:51  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+487:59  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+487:62  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+487:71  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+487:74  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+487:88  Warning: HTML entity, `"` , must be escaped.  react/no-unescaped-entities
+
+./src/app/explore/vendors/page.tsx
+39:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+116:6  Warning: React Hook useEffect has missing dependencies: 'filters', 'performSearch', and 'searchParams'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+124:70  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/pro/planner/vault/[eventSlug]/page.tsx
+155:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+464:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+492:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+909:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+932:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+968:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+969:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+979:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1133:54  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1162:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1250:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1265:237  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1364:70  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1394:85  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1489:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1489:81  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/pro/planner/vault/page.tsx
+95:74  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+228:32  Warning: HTML entity, `'` , must be escaped.  react/no-unescaped-entities
+
+./src/app/professional-planner/setup/page.tsx
+75:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+92:6  Warning: React Hook useEffect has missing dependencies: 'handleCreateOrg' and 'router'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/providers/onboarding/page.tsx
+11:3  Warning: 'MapPin' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+289:70  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+326:66  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1247:57  Warning: HTML entity, `'` , must be escaped.  react/no-unescaped-entities
+
+./src/app/providers/start/page.tsx
+84:60  Warning: HTML entity, `'` , must be escaped.  react/no-unescaped-entities
+99:60  Warning: HTML entity, `'` , must be escaped.  react/no-unescaped-entities
+
+./src/app/vendor/dashboard/page.tsx
+108:70  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+110:14  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+114:70  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/contracts/ContractPageClient.tsx
+104:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+140:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+146:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+192:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+262:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+302:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/contracts/GenerateContractButton.tsx
+49:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/contracts/SignContractButton.tsx
+43:13  Warning: 'result' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/diy-planner/Dashboard.tsx
+176:65  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+547:113  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/events/ClientIntakeStep.tsx
+5:31  Warning: 'Check' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/events/ManageStakeholders.tsx
+3:20  Warning: 'useEffect' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+5:28  Warning: 'X' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/layout/Footer.tsx
+54:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/layout/RoleBadge.tsx
+1:8  Warning: 'React' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/notifications/NotificationDropdown.tsx
+137:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/payments/ProPlannerPaymentPanel.tsx
+151:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+225:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/payments/VendorPaymentPanel.tsx
+186:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/proposals/GenerateProposalButton.tsx
+56:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/proposals/ProposalPageClient.tsx
+24:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+81:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+120:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+132:67  Warning: HTML entity, `'` , must be escaped.  react/no-unescaped-entities
+142:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+157:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+225:65  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/acceptance.ts
+34:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+62:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+80:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/admin-override.ts
+74:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+113:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/dispute-case.ts
+30:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+43:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+52:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+87:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+119:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+138:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+186:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+264:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/health.ts
+29:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+38:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/holdback.ts
+16:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+20:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+31:8  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+35:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+70:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+85:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+93:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+104:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+139:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+141:17  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+198:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+208:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+300:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+304:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+305:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+316:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+325:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/payments/confirm-payment.ts
+69:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+95:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+126:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+163:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+201:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+250:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+262:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+277:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+299:41  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/rbac.ts
+680:3  Warning: 'redirectTo' is assigned a value but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/refund-request.ts
+30:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+43:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+52:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+87:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+155:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+165:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+372:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+398:85  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+411:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+479:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+489:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/lib/activity.ts
+30:8  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/routers/admin.ts
+120:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+137:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+163:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/routers/dispute.ts
+71:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+77:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/routers/event.ts
+5:23  Warning: 'canManageEvent' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+5:67  Warning: 'canDeleteEvent' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+9:10  Warning: 'trackError' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/routers/org.ts
+6:10  Warning: 'isOrgAdminOrOwner' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/routers/proposal.ts
+8:10  Warning: 'trackError' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/routers/shortlist.ts
+49:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+100:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+111:14  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+124:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/114) ...
+   Generating static pages (28/114) 
+   Generating static pages (56/114) 
+   Generating static pages (85/114) 
+ ✓ Generating static pages (114/114)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                        Size  First Load JS
+┌ ƒ /                                           2.14 kB         115 kB
+├ ƒ /_not-found                                   344 B         103 kB
+├ ƒ /admin/abuse                                  227 B         106 kB
+├ ƒ /admin/execution                              194 B         106 kB
+├ ƒ /admin/overview                               227 B         106 kB
+├ ƒ /admin/users                                2.48 kB         115 kB
+├ ƒ /admin/verification                           194 B         106 kB
+├ ƒ /admin/verification/detail                    344 B         103 kB
+├ ƒ /admin/verification/disputes/[id]             194 B         106 kB
+├ ƒ /admin/verification/holdbacks/[id]            194 B         106 kB
+├ ƒ /admin/verification/overrides/[id]            194 B         106 kB
+├ ƒ /admin/verification/payouts/[id]              194 B         106 kB
+├ ƒ /admin/verification/refunds/[id]              194 B         106 kB
+├ ƒ /api/acceptance                               344 B         103 kB
+├ ƒ /api/admin/holdbacks                          344 B         103 kB
+├ ƒ /api/admin/holdbacks/verification             344 B         103 kB
+├ ƒ /api/admin/impersonate                        344 B         103 kB
+├ ƒ /api/admin/override-history                   344 B         103 kB
+├ ƒ /api/admin/stop-impersonate                   344 B         103 kB
+├ ƒ /api/admin/users/role                         344 B         103 kB
+├ ƒ /api/ai/source-vendors-venues                 344 B         103 kB
+├ ƒ /api/auth/[...nextauth]                       344 B         103 kB
+├ ƒ /api/auth/error                               344 B         103 kB
+├ ƒ /api/auth/signup                              344 B         103 kB
+├ ƒ /api/bookings/request                         344 B         103 kB
+├ ƒ /api/contracts/[id]                           344 B         103 kB
+├ ƒ /api/contracts/[id]/sign                      344 B         103 kB
+├ ƒ /api/contracts/from-proposal                  344 B         103 kB
+├ ƒ /api/contracts/sign                           344 B         103 kB
+├ ƒ /api/diy/events                               344 B         103 kB
+├ ƒ /api/dreams/create                            344 B         103 kB
+├ ƒ /api/e2e/payment                              344 B         103 kB
+├ ƒ /api/events/[eventSlug]                       344 B         103 kB
+├ ƒ /api/events/[eventSlug]/deposits              344 B         103 kB
+├ ƒ /api/events/[eventSlug]/share                 344 B         103 kB
+├ ƒ /api/events/[eventSlug]/stakeholders          344 B         103 kB
+├ ƒ /api/events/create                            344 B         103 kB
+├ ƒ /api/google/calendar/create-or-use            344 B         103 kB
+├ ƒ /api/google/callback                          344 B         103 kB
+├ ƒ /api/google/connect                           344 B         103 kB
+├ ƒ /api/google/events/overlay                    344 B         103 kB
+├ ƒ /api/google/status                            344 B         103 kB
+├ ƒ /api/google/sync/pull                         344 B         103 kB
+├ ƒ /api/google/sync/push                         344 B         103 kB
+├ ƒ /api/health                                   344 B         103 kB
+├ ƒ /api/invites/vendor                           344 B         103 kB
+├ ƒ /api/messages/[threadId]                      344 B         103 kB
+├ ƒ /api/notifications                            344 B         103 kB
+├ ƒ /api/notifications/[id]/read                  344 B         103 kB
+├ ƒ /api/orgs/create                              344 B         103 kB
+├ ƒ /api/payments/auto-build                      344 B         103 kB
+├ ƒ /api/payments/confirm                         344 B         103 kB
+├ ƒ /api/payments/create-intent                   344 B         103 kB
+├ ƒ /api/payments/deposits/auto                   344 B         103 kB
+├ ƒ /api/payments/lines                           344 B         103 kB
+├ ƒ /api/payments/lines/[id]                      344 B         103 kB
+├ ƒ /api/payments/mark-milestone-complete         344 B         103 kB
+├ ƒ /api/payments/plan/from-accepted-proposals    344 B         103 kB
+├ ƒ /api/payments/receipts/[id]                   344 B         103 kB
+├ ƒ /api/payments/release-milestone               344 B         103 kB
+├ ƒ /api/pro-planner/availability/slots           344 B         103 kB
+├ ƒ /api/pro-planner/clients/tasks                344 B         103 kB
+├ ƒ /api/pro-planner/crisis/issues                344 B         103 kB
+├ ƒ /api/pro-planner/files/notes                  344 B         103 kB
+├ ƒ /api/pro-planner/team/invites                 344 B         103 kB
+├ ƒ /api/pro-planner/timeline/milestones          344 B         103 kB
+├ ƒ /api/pro-planner/vendors/relationships        344 B         103 kB
+├ ƒ /api/proposals/[id]                           344 B         103 kB
+├ ƒ /api/proposals/[id]/approve                   344 B         103 kB
+├ ƒ /api/proposals/generate                       344 B         103 kB
+├ ƒ /api/providers/leads/[id]                     344 B         103 kB
+├ ƒ /api/providers/profile                        344 B         103 kB
+├ ƒ /api/refund-requests                          344 B         103 kB
+├ ƒ /api/rsvp/[token]                             344 B         103 kB
+├ ƒ /api/shortlist                                344 B         103 kB
+├ ƒ /api/shortlist/add                            344 B         103 kB
+├ ƒ /api/stripe/webhook                           344 B         103 kB
+├ ƒ /api/users/invite-client                      344 B         103 kB
+├ ƒ /api/users/search                             344 B         103 kB
+├ ƒ /api/vendor-venue/check-profile               344 B         103 kB
+├ ƒ /api/vendors/search                           344 B         103 kB
+├ ƒ /api/vendors/search-external                  344 B         103 kB
+├ ƒ /app                                          221 B         109 kB
+├ ƒ /app/admin/overview                           344 B         103 kB
+├ ƒ /app/billing/connect                          227 B         106 kB
+├ ƒ /app/contracts                                344 B         103 kB
+├ ƒ /app/contracts/[id]                           344 B         103 kB
+├ ƒ /app/proposals                                344 B         103 kB
+├ ƒ /app/proposals/[id]                           344 B         103 kB
+├ ƒ /app/requests                                 344 B         103 kB
+├ ƒ /app/vault                                    255 B         109 kB
+├ ƒ /app/vault/[eventSlug]                        254 B         118 kB
+├ ƒ /billing/connect                              227 B         106 kB
+├ ƒ /billing/payouts                              227 B         106 kB
+├ ƒ /calendar                                     255 B         109 kB
+├ ƒ /client/events/[eventSlug]                  1.76 kB         112 kB
+├ ƒ /contracts/[id]                               43 kB         153 kB
+├ ƒ /disputes                                     255 B         109 kB
+├ ƒ /diy-planner                                32.4 kB         153 kB
+├ ƒ /diy-planner/vault                            255 B         109 kB
+├ ƒ /diy-planner/vault/[eventSlug]                254 B         118 kB
+├ ƒ /event-dreamer/create                       4.55 kB         118 kB
+├ ƒ /event-vault                                  344 B         103 kB
+├ ƒ /event-vault/[eventSlug]                      344 B         103 kB
+├ ƒ /events/[eventSlug]                           227 B         106 kB
+├ ƒ /events/[eventSlug]/budget                    255 B         109 kB
+├ ƒ /events/[eventSlug]/checklists                255 B         109 kB
+├ ƒ /events/[eventSlug]/guests                    255 B         109 kB
+├ ƒ /events/[eventSlug]/milestones                133 B         114 kB
+├ ƒ /events/[eventSlug]/payments                  132 B         114 kB
+├ ƒ /events/[eventSlug]/proposals/new           1.77 kB         108 kB
+├ ƒ /events/[eventSlug]/seating                   227 B         106 kB
+├ ƒ /events/[eventSlug]/settings                1.75 kB         111 kB
+├ ƒ /events/[eventSlug]/tasks                     344 B         103 kB
+├ ƒ /events/new                                 6.95 kB         120 kB
+├ ƒ /explore/vendors                            5.32 kB         118 kB
+├ ƒ /features                                    1.7 kB         115 kB
+├ ƒ /help                                        1.7 kB         115 kB
+├ ● /help/articles/[slug]                       1.63 kB         115 kB
+├   ├ /help/articles/pro-planner-send-message
+├   ├ /help/articles/diy-create-event
+├   ├ /help/articles/pro-planner-create-event
+├   └ [+10 more paths]
+├ ● /help/roles/[role]                          1.63 kB         115 kB
+├   ├ /help/roles/pro-planner
+├   ├ /help/roles/diy-planner
+├   ├ /help/roles/vendor
+├   └ [+3 more paths]
+├ ƒ /legal/booking-classification                 344 B         103 kB
+├ ƒ /legal/disputes                               344 B         103 kB
+├ ƒ /legal/fees                                   344 B         103 kB
+├ ƒ /legal/payments                               344 B         103 kB
+├ ƒ /legal/refunds                                344 B         103 kB
+├ ƒ /marketplace                                 1.7 kB         115 kB
+├ ƒ /marketplace/[slug]                         4.65 kB         118 kB
+├ ƒ /marketplace/manage                           255 B         109 kB
+├ ƒ /messages                                     194 B         106 kB
+├ ƒ /messages/[threadId]                         1.4 kB         111 kB
+├ ƒ /notifications                                194 B         106 kB
+├ ƒ /privacy                                    1.67 kB         115 kB
+├ ƒ /pro/planner                                21.5 kB         142 kB
+├ ƒ /pro/planner/vault                            255 B         109 kB
+├ ƒ /pro/planner/vault/[eventSlug]              3.85 kB         125 kB
+├ ƒ /professional-planner/setup                  3.6 kB         117 kB
+├ ƒ /proposals/[id]                             5.42 kB         115 kB
+├ ƒ /proposals/[id]/fund                          255 B         109 kB
+├ ƒ /providers/onboarding                       7.65 kB         121 kB
+├ ƒ /providers/start                            2.19 kB         112 kB
+├ ƒ /requests                                     255 B         109 kB
+├ ƒ /rsvp/[token]                               1.17 kB         108 kB
+├ ƒ /signin                                     2.02 kB         115 kB
+├ ƒ /signout                                      598 B         110 kB
+├ ƒ /signup                                     2.03 kB         112 kB
+├ ƒ /support                                     1.7 kB         115 kB
+├ ƒ /terms                                        344 B         103 kB
+├ ƒ /vault                                        255 B         109 kB
+├ ƒ /vault/[eventSlug]                            254 B         118 kB
+├ ƒ /vendor-venue-ads                            1.7 kB         115 kB
+├ ƒ /vendor-venue/setup                           664 B         103 kB
+├ ƒ /vendor/dashboard                              7 kB         128 kB
+└ ƒ /venue/dashboard                            5.48 kB         123 kB
++ First Load JS shared by all                    102 kB
+  ├ chunks/8694-4b2e71a318bbad49.js               46 kB
+  ├ chunks/ee7818ef-4a94a98bae8ba4f6.js         54.2 kB
+  └ other shared chunks (total)                 2.08 kB
+
+
+ƒ Middleware                                    45.8 kB
+
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
+EXIT: 0
+END: 2026-09-02T21:14:29Z
+
+===== COMMAND: pnpm run stabilize =====
+START: 2026-09-02T21:14:29Z
+
+> onehub@0.1.0 stabilize /root/.hermes/workspaces/onehub/repo
+> bash scripts/stabilization/checks.sh
+
+Running OneHub Stabilization Checks...
+✅ No Prisma import in components
+✅ No prisma usage in components
+✅ No 'as any' in services
+⚠️  Prisma imports remain in app/server route layer (legacy warning)
+⚠️  Prisma usage remains in app/server route layer (legacy warning)
+⚠️  'as any' remains in API routes (legacy warning)
+⚠️  'as any' remains in routers (legacy warning)
+
+✅ All blocking stabilization checks passed.
+EXIT: 0
+END: 2026-09-02T21:14:30Z
+
+===== COMMAND: git status --short after gates =====
+START: 2026-09-02T21:14:30Z
+?? docs/full-readiness/
+EXIT: 0
+END: 2026-09-02T21:14:30Z
+
