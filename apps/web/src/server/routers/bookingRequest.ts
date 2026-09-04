@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
-import { auth } from "@/lib/auth";
+import { router, protectedProcedure } from "@/server/trpc";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner } from "@/lib/rbac";
 import { recordActivity } from "@/server/lib/activity";
@@ -13,10 +12,8 @@ import {
 } from "@/server/lib/booking-request-workflow";
 
 export const bookingRequestRouter = router({
-  create: publicProcedure.input(z.object({ orgSlug: z.string(), eventId: z.string(), listingId: z.string(), startAt: z.date(), endAt: z.date(), guests: z.number().int().optional(), message: z.string().optional(), contact: z.object({ name: z.string(), email: z.string().email(), phone: z.string().optional() }) })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
+  create: protectedProcedure.input(z.object({ orgSlug: z.string(), eventId: z.string(), listingId: z.string(), startAt: z.date(), endAt: z.date(), guests: z.number().int().optional(), message: z.string().optional(), contact: z.object({ name: z.string(), email: z.string().email(), phone: z.string().optional() }) })).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user.id;
     const org = await db.organization.findUnique({ where: { slug: input.orgSlug } });
     if (!org) throw new Error("Org not found");
     const ev = await db.event.findUniqueOrThrow({ where: { id: input.eventId } });
@@ -43,7 +40,7 @@ export const bookingRequestRouter = router({
     }
     return req;
   }),
-  listForListing: publicProcedure.input(z.object({ listingId: z.string() })).query(async ({ input }) => {
+  listForListing: protectedProcedure.input(z.object({ listingId: z.string() })).query(async ({ input }) => {
     const listing = await db.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { org: { include: { members: true } } } });
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
@@ -59,11 +56,11 @@ export const bookingRequestRouter = router({
     if (!isOrgAdminOrOwner(ctx.user, org, membership)) throw new Error("Forbidden");
     return db.bookingRequest.findMany({ where: { orgId: org.id }, include: { listing: true, event: true }, orderBy: { createdAt: "desc" } });
   }),
-  setStatus: publicProcedure.input(z.object({ id: z.string(), status: z.enum(providerBookingStatusValues) })).mutation(async ({ input }) => {
+  setStatus: protectedProcedure.input(z.object({ id: z.string(), status: z.enum(providerBookingStatusValues) })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     return setProviderBookingRequestStatus({ db, id: input.id, status: input.status, user });
   }),
-  quote: publicProcedure.input(z.object({ id: z.string(), quoteCents: z.number().int().nonnegative(), note: z.string().optional() })).mutation(async ({ input }) => {
+  quote: protectedProcedure.input(z.object({ id: z.string(), quoteCents: z.number().int().nonnegative(), note: z.string().optional() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     return submitProviderQuoteForBookingRequest({ db, id: input.id, quoteCents: input.quoteCents, note: input.note, user });
   }),

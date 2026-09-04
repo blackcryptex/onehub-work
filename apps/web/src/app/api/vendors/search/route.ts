@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { VendorSearchFilters, VendorSearchResults, InternalVendorResult } from "@/lib/types.vendor-search";
 import { z } from "zod";
+import { checkRateLimit } from "@/server/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,13 @@ const searchFiltersSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded ? forwarded.split(",")[0]?.trim() : request.headers.get("x-real-ip");
+    const limit = checkRateLimit(`vendor-search:${ip || "unknown"}`, { windowMs: 60_000, maxRequests: 60 });
+    if (!limit.allowed) {
+      return NextResponse.json({ error: "Too many vendor searches", retryAfter: Math.ceil((limit.resetAt - Date.now()) / 1000) }, { status: 429 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     
     // Parse and validate filters

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
+import { router, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { resolveContractTemplate } from "@/server/lib/contracts";
 import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
@@ -122,7 +122,7 @@ export const contractRouter = router({
     return resolveContractTemplate(template, { EVENT_NAME: contract.proposal.event.name });
   }),
   // SECURITY: permission check - user must be able to manage the event
-  sendForSignature: publicProcedure.input(z.object({
+  sendForSignature: protectedProcedure.input(z.object({
     contractId: z.string(),
     signers: z.array(z.object({ name: z.string(), email: z.string().email() })),
   })).mutation(async ({ input }) => {
@@ -179,7 +179,7 @@ export const contractRouter = router({
     return { success: true };
   }),
   // SECURITY: permission check - user must be the signer (email matches) OR be able to manage the event
-  sign: publicProcedure.input(z.object({
+  sign: protectedProcedure.input(z.object({
     signatureId: z.string(),
     typedName: z.string(),
     ip: z.string().optional(),
@@ -322,7 +322,7 @@ export const contractRouter = router({
     return updatedSignature;
   }),
   // SECURITY: permission check - user must be able to manage the event
-  addChangeOrder: publicProcedure.input(z.object({
+  addChangeOrder: protectedProcedure.input(z.object({
     contractId: z.string(),
     title: z.string(),
     bodyMd: z.string(),
@@ -386,7 +386,7 @@ export const contractRouter = router({
     return changeOrder;
   }),
   // SECURITY: permission check - user must be buyer/seller OR be able to manage the event
-  approveChangeOrder: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  approveChangeOrder: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) {
       throw new TRPCError({

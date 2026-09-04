@@ -21,9 +21,8 @@ const createSchema = z.object({
 });
 
 export const eventRouter = router({
-  create: publicProcedure.input(createSchema).mutation(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+  create: protectedProcedure.input(createSchema).mutation(async ({ input, ctx }) => {
+    const user = ctx.user;
     const org = await db.organization.findUnique({ where: { slug: input.orgSlug }, include: { members: true } });
     if (!org) throw new Error("Org not found");
     // Centralized permission check: see apps/web/src/lib/rbac.ts
@@ -95,9 +94,8 @@ export const eventRouter = router({
     if (!canViewEvent(user, ev)) throw new Error("Forbidden");
     return ev;
   }),
-  update: publicProcedure.input(z.object({ eventId: z.string(), data: z.object({ name: z.string().optional(), objective: z.string().optional(), description: z.string().optional(), startAt: z.date().optional(), endAt: z.date().optional(), guestTarget: z.number().int().optional() }) })).mutation(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+  update: protectedProcedure.input(z.object({ eventId: z.string(), data: z.object({ name: z.string().optional(), objective: z.string().optional(), description: z.string().optional(), startAt: z.date().optional(), endAt: z.date().optional(), guestTarget: z.number().int().optional() }) })).mutation(async ({ input, ctx }) => {
+    const user = ctx.user;
     const ev0 = await db.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
     // Centralized permission check with planner isolation: see apps/web/src/lib/rbac.ts
     if (!canEditEvent(user, ev0)) throw new Error("Forbidden");
@@ -131,9 +129,8 @@ export const eventRouter = router({
 
     return ev;
   }),
-  setStatus: publicProcedure.input(z.object({ eventId: z.string(), status: z.enum(["PLANNING","ACTIVE","ON_HOLD","COMPLETED","CANCELED"]) })).mutation(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+  setStatus: protectedProcedure.input(z.object({ eventId: z.string(), status: z.enum(["PLANNING","ACTIVE","ON_HOLD","COMPLETED","CANCELED"]) })).mutation(async ({ input, ctx }) => {
+    const user = ctx.user;
     const ev0 = await db.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
     // Centralized permission check with planner isolation: see apps/web/src/lib/rbac.ts
     if (!canEditEvent(user, ev0)) throw new Error("Forbidden");

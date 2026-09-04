@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner, canEditListing } from "@/lib/rbac";
 import { recordActivity } from "@/server/lib/activity";
@@ -20,7 +20,7 @@ const createSchema = z.object({
 });
 
 export const listingRouter = router({
-  create: publicProcedure.input(createSchema).mutation(async ({ input }) => {
+  create: protectedProcedure.input(createSchema).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const org = await db.organization.findUnique({ where: { slug: input.orgSlug }, include: { members: true } });
@@ -56,7 +56,7 @@ export const listingRouter = router({
     await recordActivity({ orgId: org.id, actorId: user.id, action: "LISTING_CREATED", target: listing.id });
     return listing;
   }),
-  update: publicProcedure.input(z.object({ listingId: z.string(), data: z.object({ title: z.string().optional(), description: z.string().optional(), category: z.enum(["VENUE_SPACE","CATERING","DECOR_FLORAL","ENTERTAINMENT","PHOTO_VIDEO","TRANSPORT","STAFFING","PLANNING_SERVICES","RENTALS","OTHER"]).optional(), priceTier: z.number().int().min(1).max(5).optional() }).partial() })).mutation(async ({ input }) => {
+  update: protectedProcedure.input(z.object({ listingId: z.string(), data: z.object({ title: z.string().optional(), description: z.string().optional(), category: z.enum(["VENUE_SPACE","CATERING","DECOR_FLORAL","ENTERTAINMENT","PHOTO_VIDEO","TRANSPORT","STAFFING","PLANNING_SERVICES","RENTALS","OTHER"]).optional(), priceTier: z.number().int().min(1).max(5).optional() }).partial() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const listing = await db.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { org: { include: { members: true } } } });
@@ -72,7 +72,7 @@ export const listingRouter = router({
     if (!org) return [];
     return db.listing.findMany({ where: { orgId: org.id }, include: { tags: true, gallery: { take: 1 } } });
   }),
-  addTag: publicProcedure.input(z.object({ listingId: z.string(), value: z.string() })).mutation(async ({ input }) => {
+  addTag: protectedProcedure.input(z.object({ listingId: z.string(), value: z.string() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const listing = await db.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { org: { include: { members: true } } } });
@@ -80,7 +80,7 @@ export const listingRouter = router({
     if (!canEditListing(user, listing)) throw new Error("Forbidden");
     return db.listingTag.create({ data: { listingId: input.listingId, value: input.value } });
   }),
-  removeTag: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  removeTag: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const tag = await db.listingTag.findUniqueOrThrow({ where: { id: input.id }, include: { listing: { include: { org: { include: { members: true } } } } } });
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
@@ -89,7 +89,7 @@ export const listingRouter = router({
     await db.listingTag.delete({ where: { id: input.id } });
     return true;
   }),
-  addMedia: publicProcedure.input(z.object({ listingId: z.string(), url: z.string().url(), caption: z.string().optional() })).mutation(async ({ input }) => {
+  addMedia: protectedProcedure.input(z.object({ listingId: z.string(), url: z.string().url(), caption: z.string().optional() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const listing = await db.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { org: { include: { members: true } } } });
@@ -97,7 +97,7 @@ export const listingRouter = router({
     if (!canEditListing(user, listing)) throw new Error("Forbidden");
     return db.media.create({ data: { listingId: input.listingId, url: input.url, caption: input.caption } });
   }),
-  removeMedia: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  removeMedia: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const media = await db.media.findUniqueOrThrow({ where: { id: input.id }, include: { listing: { include: { org: { include: { members: true } } } } } });
     if (!media.listing) throw new Error("Not a listing media");
     const user = await getCurrentUser();

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
+import { router, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner } from "@/lib/rbac";
@@ -24,13 +24,13 @@ const orgSettingsPartial = z.object({
 });
 
 export const settingsRouter = router({
-  getUserSettings: publicProcedure.query(async () => {
+  getUserSettings: protectedProcedure.query(async () => {
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
     if (!userId) throw new Error("Unauthorized");
     return db.userSettings.findUnique({ where: { userId } });
   }),
-  updateUserSettings: publicProcedure.input(userSettingsPartial).mutation(async ({ input }) => {
+  updateUserSettings: protectedProcedure.input(userSettingsPartial).mutation(async ({ input }) => {
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
     if (!userId) throw new Error("Unauthorized");
@@ -45,7 +45,7 @@ export const settingsRouter = router({
     if (!isOrgAdminOrOwner(ctx.user, org, mem)) throw forbidden();
     return db.orgSettings.findUnique({ where: { orgId: input.orgId } });
   }),
-  updateOrgSettings: publicProcedure.input(z.object({ orgId: z.string(), data: orgSettingsPartial })).mutation(async ({ input }) => {
+  updateOrgSettings: protectedProcedure.input(z.object({ orgId: z.string(), data: orgSettingsPartial })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const org = await db.organization.findUnique({ where: { id: input.orgId }, include: { members: true } });

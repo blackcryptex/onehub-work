@@ -2,12 +2,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { db } from "@/server/db";
 import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
-import { auth } from "@/lib/auth";
 import { recordActivity } from "@/server/lib/activity";
 import { sendOutboundEmail } from "@/lib/outbound";
 import { randomBytes } from "crypto";
 import { submitGuestRsvp } from "@/lib/guest-rsvp";
-import { requireEventAccess } from "@/server/lib/access";
+import { requireEventAccess, requireEventEditAccess } from "@/server/lib/access";
 
 export const guestRouter = router({
   list: protectedProcedure.input(z.object({ eventId: z.string() })).query(async ({ input, ctx }) => {
@@ -41,7 +40,7 @@ export const guestRouter = router({
     );
   }),
 
-  createMany: publicProcedure.input(z.object({
+  createMany: protectedProcedure.input(z.object({
     eventId: z.string(),
     rows: z.array(z.object({
       firstName: z.string(),
@@ -53,13 +52,8 @@ export const guestRouter = router({
       tags: z.array(z.string()).optional(),
       side: z.string().optional(),
     })),
-  })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const event = await prisma.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
-    const membership = event.org.members.find((m) => m.userId === userId);
-    if (!membership) throw new Error("Forbidden");
+  })).mutation(async ({ input, ctx }) => {
+    const event = await requireEventEditAccess(ctx.user, input.eventId);
     let guestList = await prisma.guestList.findUnique({ where: { eventId: input.eventId } });
     if (!guestList) {
       guestList = await prisma.guestList.create({ data: { eventId: input.eventId, title: "Guest List" } });
@@ -90,11 +84,11 @@ export const guestRouter = router({
       })),
     });
     await prisma.guestList.update({ where: { id: guestList.id }, data: { invited: { increment: guests.count } } });
-    await recordActivity({ orgId: event.orgId, eventId: input.eventId, actorId: userId, action: "GUESTS_IMPORTED", target: guestList.id, meta: { count: guests.count } });
+    await recordActivity({ orgId: event.orgId, eventId: input.eventId, actorId: ctx.user.id, action: "GUESTS_IMPORTED", target: guestList.id, meta: { count: guests.count } });
     return { count: guests.count };
   }),
 
-  update: publicProcedure.input(z.object({
+  update: protectedProcedure.input(z.object({
     guestId: z.string(),
     firstName: z.string().optional(),
     lastName: z.string().optional(),
@@ -107,39 +101,26 @@ export const guestRouter = router({
     status: z.enum(["PENDING", "ACCEPTED", "DECLINED", "WAITLIST"]).optional(),
     dietary: z.string().optional(),
     notes: z.string().optional(),
-  })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const guest = await prisma.guest.findUniqueOrThrow({ where: { id: input.guestId }, include: { guestList: { include: { event: { include: { org: { include: { members: true } } } } } } } });
-    const membership = guest.guestList.event.org.members.find((m) => m.userId === userId);
-    if (!membership) throw new Error("Forbidden");
+  })).mutation(async ({ input, ctx }) => {
+    const guest = await prisma.guest.findUniqueOrThrow({ where: { id: input.guestId }, include: { guestList: { select: { eventId: true } } } });
+    await requireEventEditAccess(ctx.user, guest.guestList.eventId);
     const { guestId, ...data } = input;
     return prisma.guest.update({ where: { id: guestId }, data: { ...data, tags: data.tags as unknown as string[] } });
   }),
 
-  remove: publicProcedure.input(z.object({ guestId: z.string() })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const guest = await prisma.guest.findUniqueOrThrow({ where: { id: input.guestId }, include: { guestList: { include: { event: { include: { org: { include: { members: true } } } } } } } });
-    const membership = guest.guestList.event.org.members.find((m) => m.userId === userId);
-    if (!membership) throw new Error("Forbidden");
+  remove: protectedProcedure.input(z.object({ guestId: z.string() })).mutation(async ({ input, ctx }) => {
+    const guest = await prisma.guest.findUniqueOrThrow({ where: { id: input.guestId }, include: { guestList: { select: { id: true, eventId: true } } } });
+    await requireEventEditAccess(ctx.user, guest.guestList.eventId);
     await prisma.guest.delete({ where: { id: input.guestId } });
     await prisma.guestList.update({ where: { id: guest.guestListId }, data: { invited: { decrement: 1 } } });
     return { success: true };
   }),
 
-  invite: publicProcedure.input(z.object({
+  invite: protectedProcedure.input(z.object({
     guestIds: z.array(z.string()).optional(),
     eventId: z.string(),
-  })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const event = await prisma.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
-    const membership = event.org.members.find((m) => m.userId === userId);
-    if (!membership) throw new Error("Forbidden");
+  })).mutation(async ({ input, ctx }) => {
+    const event = await requireEventEditAccess(ctx.user, input.eventId);
     const guestList = await prisma.guestList.findUniqueOrThrow({ where: { eventId: input.eventId }, include: { guests: true } });
     const guests = input.guestIds ? guestList.guests.filter((g) => input.guestIds!.includes(g.id)) : guestList.guests;
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
@@ -180,7 +161,7 @@ export const guestRouter = router({
     await recordActivity({
       orgId: event.orgId,
       eventId: input.eventId,
-      actorId: userId,
+      actorId: ctx.user.id,
       action: delivered > 0 ? "INVITATIONS_SENT" : "INVITATIONS_PREPARED",
       target: guestList.id,
       meta: { prepared, delivered, notConfigured, failed },

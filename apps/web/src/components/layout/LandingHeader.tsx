@@ -21,6 +21,8 @@ function dashboardHrefForRole(user: LandingHeaderUser) {
       return "/vendor/dashboard";
     case "VENUE":
       return "/venue/dashboard";
+    case "EVENT_DREAMER":
+      return "/event-dreamer/create";
     case "CLIENT":
       return "/app";
     default:
@@ -167,13 +169,15 @@ export function LandingHeader({ currentUser = null }: { currentUser?: LandingHea
         {/* Right: Search and Auth */}
         <div className="flex items-center gap-4">
           {/* Search */}
-          <div className="hidden md:flex">
+          <form action="/marketplace" method="get" className="hidden md:flex" role="search">
             <input
               type="search"
-              placeholder="Search..."
+              name="keyword"
+              placeholder="Search vendors, venues, or services"
+              aria-label="Search vendors, venues, or services"
               className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
-          </div>
+          </form>
 
           {isAuthenticated ? (
             <>

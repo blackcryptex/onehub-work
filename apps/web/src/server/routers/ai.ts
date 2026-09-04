@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import type { Prisma, ListingCategory } from "@prisma/client";
 
 export const aiRouter = router({
-  suggestChecklist: publicProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
+  suggestChecklist: protectedProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
     if (!userId) throw new Error("Unauthorized");
@@ -24,7 +24,7 @@ export const aiRouter = router({
     return { suggestions };
   }),
 
-  suggestVendors: publicProcedure.input(z.object({
+  suggestVendors: protectedProcedure.input(z.object({
     eventId: z.string(),
     category: z.string().optional(),
   })).query(async ({ input }) => {
@@ -52,7 +52,7 @@ export const aiRouter = router({
     return { listings };
   }),
 
-  draftMessage: publicProcedure.input(z.object({
+  draftMessage: protectedProcedure.input(z.object({
     context: z.object({
       type: z.enum(["negotiation", "reminder", "thank_you", "follow_up"]),
       proposalId: z.string().optional(),

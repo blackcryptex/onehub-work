@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
+import { router, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { auth as _auth } from "@/lib/auth";
 import { getStripeOrThrow } from "@/server/lib/stripe";
@@ -114,7 +114,7 @@ export const billingRouter = router({
     });
   }),
   // SECURITY: permission check - user must be able to manage the event
-  refundMilestone: publicProcedure.input(z.object({
+  refundMilestone: protectedProcedure.input(z.object({
     milestoneId: z.string(),
     amountCents: z.number().int().optional(),
     reason: z.string().min(10),

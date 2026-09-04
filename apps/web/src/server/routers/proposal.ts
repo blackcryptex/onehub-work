@@ -1,12 +1,9 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
+import { router, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
-import { auth } from "@/lib/auth";
 import { recordActivity, ACTIVITY_ACTIONS } from "@/server/lib/activity";
 import { logger } from "@/lib/logger";
-import { trackError } from "@/lib/errorTracker";
-import { getCurrentUser } from "@/lib/auth-helpers";
 import { canSendProposal, canManageEvent, canViewCommercialProposal, commercialProposalAccessInclude } from "@/lib/rbac";
 import {
   PROVIDER_BACKED_PROPOSAL_ERROR,
@@ -31,7 +28,7 @@ const milestoneSchema = z.object({
 });
 
 export const proposalRouter = router({
-  create: publicProcedure.input(z.object({
+  create: protectedProcedure.input(z.object({
     eventId: z.string(),
     listingId: z.string().optional(),
     title: z.string().min(2),
@@ -40,10 +37,8 @@ export const proposalRouter = router({
     milestones: z.array(milestoneSchema),
     terms: z.string().optional(),
     currency: z.string().default("USD"),
-  })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
+  })).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user.id;
     const ev = await prisma.event.findUniqueOrThrow({ where: { id: input.eventId } });
     const mem = await prisma.membership.findFirst({ where: { userId, orgId: ev.orgId } });
     if (!mem) throw new Error("Forbidden");
@@ -128,17 +123,8 @@ export const proposalRouter = router({
     return updated;
   }),
   // SECURITY: permission check - user must be able to manage the event
-  accept: publicProcedure.input(z.object({ proposalId: z.string() })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Authentication required",
-      });
-    }
+  accept: protectedProcedure.input(z.object({ proposalId: z.string() })).mutation(async ({ input, ctx }) => {
+    const user = ctx.user;
     const proposal = await prisma.proposal.findUniqueOrThrow({
       where: { id: input.proposalId },
       include: {
@@ -193,11 +179,11 @@ export const proposalRouter = router({
       },
     });
     const updated = await prisma.proposal.update({ where: { id: input.proposalId }, data: { status: "ACCEPTED" } });
-    await recordActivity({ orgId: proposal.orgId, eventId: proposal.eventId, actorId: userId, action: "PROPOSAL_ACCEPTED", target: proposal.id });
+    await recordActivity({ orgId: proposal.orgId, eventId: proposal.eventId, actorId: user.id, action: "PROPOSAL_ACCEPTED", target: proposal.id });
     
     // Structured logging
     logger.info({
-      userId,
+      userId: user.id,
       orgId: proposal.orgId,
       eventId: proposal.eventId,
       proposalId: proposal.id,
@@ -207,16 +193,9 @@ export const proposalRouter = router({
     return updated;
   }),
   // SECURITY: permission check - user must be able to manage the event
-  reject: publicProcedure.input(z.object({ proposalId: z.string() })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Authentication required",
-      });
-    }
+  reject: protectedProcedure.input(z.object({ proposalId: z.string() })).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user.id;
+    const user = ctx.user;
     const proposal = await prisma.proposal.findUniqueOrThrow({
       where: { id: input.proposalId },
       include: {

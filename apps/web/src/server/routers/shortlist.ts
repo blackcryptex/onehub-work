@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, protectedProcedure } from "@/server/trpc";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canManageEvent } from "@/lib/rbac";
 import { recordActivity } from "@/server/lib/activity";
 
 export const shortlistRouter = router({
   // List all shortlist items for an event
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ eventId: z.string() }))
     .query(async ({ input }) => {
       const user = await getCurrentUser();
@@ -50,7 +50,7 @@ export const shortlistRouter = router({
     }),
 
   // Add a listing to the shortlist
-  add: publicProcedure
+  add: protectedProcedure
     .input(
       z.object({
         eventId: z.string(),
@@ -135,7 +135,7 @@ export const shortlistRouter = router({
     }),
 
   // Remove a listing from the shortlist
-  remove: publicProcedure
+  remove: protectedProcedure
     .input(
       z.object({
         eventId: z.string(),
@@ -187,7 +187,7 @@ export const shortlistRouter = router({
     }),
 
   // Check if a listing is shortlisted
-  isShortlisted: publicProcedure
+  isShortlisted: protectedProcedure
     .input(
       z.object({
         eventId: z.string(),

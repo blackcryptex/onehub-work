@@ -40,7 +40,7 @@ export function SignContractButton({
         throw new Error(data.error || "Failed to sign contract");
       }
 
-      const result = await response.json();
+      await response.json();
       setSigned(true);
 
       if (onSigned) {

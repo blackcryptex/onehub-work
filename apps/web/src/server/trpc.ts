@@ -16,7 +16,7 @@ export const protectedProcedure = t.procedure.use(async ({ next, ctx }) => {
   if (!user) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
-      message: "Authentication required",
+      message: "Unauthorized",
     });
   }
   return next({

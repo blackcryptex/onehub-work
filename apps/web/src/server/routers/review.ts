@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner, isAdmin } from "@/lib/rbac";
 import { recordActivity } from "@/server/lib/activity";
 
 export const reviewRouter = router({
-  create: publicProcedure.input(z.object({ listingId: z.string(), rating: z.number().int().min(1).max(5), title: z.string().optional(), body: z.string().optional() })).mutation(async ({ input }) => {
+  create: protectedProcedure.input(z.object({ listingId: z.string(), rating: z.number().int().min(1).max(5), title: z.string().optional(), body: z.string().optional() })).mutation(async ({ input }) => {
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
     if (!userId) throw new Error("Unauthorized");
@@ -27,7 +27,7 @@ export const reviewRouter = router({
     }
     return { items, nextCursor };
   }),
-  flag: publicProcedure.input(z.object({ id: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => {
+  flag: protectedProcedure.input(z.object({ id: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => {
     const review = await db.review.findUniqueOrThrow({ where: { id: input.id }, include: { listing: { include: { org: { include: { members: true } } } } } });
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");

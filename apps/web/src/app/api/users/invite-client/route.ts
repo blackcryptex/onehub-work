@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { randomBytes } from "crypto";
+import { checkRateLimit } from "@/server/lib/rateLimit";
 
 const inviteClientSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -21,6 +22,11 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const limit = checkRateLimit(`client-invite:${user.id}`, { windowMs: 60_000, maxRequests: 10 });
+    if (!limit.allowed) {
+      return NextResponse.json({ error: "Too many client invites", retryAfter: Math.ceil((limit.resetAt - Date.now()) / 1000) }, { status: 429 });
     }
 
     // Only planners can invite clients

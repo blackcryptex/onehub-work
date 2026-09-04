@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
+import { router, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { isOrgMember } from "@/lib/rbac";
 import { requireEventAccess } from "@/server/lib/access";
@@ -100,7 +100,7 @@ export const calendarRouter = router({
 
   sync: router({
     google: router({
-      connect: publicProcedure.mutation(async () => {
+      connect: protectedProcedure.mutation(async () => {
         const session = await auth();
         const userId = session?.user?.id as string | undefined;
         if (!userId) throw new Error("Unauthorized");
@@ -108,7 +108,7 @@ export const calendarRouter = router({
         console.log("[STUB] Google Calendar connect for user", userId);
         return { url: "https://accounts.google.com/oauth/authorize?client_id=...&redirect_uri=...&scope=https://www.googleapis.com/auth/calendar" };
       }),
-      pull: publicProcedure.input(z.object({ accountId: z.string() })).mutation(async ({ input }) => {
+      pull: protectedProcedure.input(z.object({ accountId: z.string() })).mutation(async ({ input }) => {
         const session = await auth();
         const userId = session?.user?.id as string | undefined;
         if (!userId) throw new Error("Unauthorized");
@@ -118,7 +118,7 @@ export const calendarRouter = router({
         console.log("[STUB] Pulling events from Google Calendar for account", input.accountId);
         return { count: 0 };
       }),
-      push: publicProcedure.input(z.object({ accountId: z.string(), eventIds: z.array(z.string()) })).mutation(async ({ input }) => {
+      push: protectedProcedure.input(z.object({ accountId: z.string(), eventIds: z.array(z.string()) })).mutation(async ({ input }) => {
         const session = await auth();
         const userId = session?.user?.id as string | undefined;
         if (!userId) throw new Error("Unauthorized");
@@ -130,7 +130,7 @@ export const calendarRouter = router({
       }),
     }),
     outlook: router({
-      connect: publicProcedure.mutation(async () => {
+      connect: protectedProcedure.mutation(async () => {
         const session = await auth();
         const userId = session?.user?.id as string | undefined;
         if (!userId) throw new Error("Unauthorized");
@@ -138,7 +138,7 @@ export const calendarRouter = router({
         console.log("[STUB] Outlook Calendar connect for user", userId);
         return { url: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=...&redirect_uri=...&scope=https://graph.microsoft.com/Calendars.ReadWrite" };
       }),
-      pull: publicProcedure.input(z.object({ accountId: z.string() })).mutation(async ({ input }) => {
+      pull: protectedProcedure.input(z.object({ accountId: z.string() })).mutation(async ({ input }) => {
         const session = await auth();
         const userId = session?.user?.id as string | undefined;
         if (!userId) throw new Error("Unauthorized");
@@ -147,7 +147,7 @@ export const calendarRouter = router({
         console.log("[STUB] Pulling events from Outlook Calendar for account", input.accountId);
         return { count: 0 };
       }),
-      push: publicProcedure.input(z.object({ accountId: z.string(), eventIds: z.array(z.string()) })).mutation(async ({ input }) => {
+      push: protectedProcedure.input(z.object({ accountId: z.string(), eventIds: z.array(z.string()) })).mutation(async ({ input }) => {
         const session = await auth();
         const userId = session?.user?.id as string | undefined;
         if (!userId) throw new Error("Unauthorized");

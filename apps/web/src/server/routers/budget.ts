@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, protectedProcedure } from "@/server/trpc";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canViewBudget, canEditBudget } from "@/lib/rbac";
 import { getEventFinancialSummary } from "@/server/lib/event-financial-summary";
 
 export const budgetRouter = router({
-  create: publicProcedure.input(z.object({ eventId: z.string(), category: z.enum(["VENUE","CATERING","DECOR","ENTERTAINMENT","PHOTO_VIDEO","TRANSPORT","STAFF","MARKETING","MISC"]), label: z.string(), plannedCents: z.number().int().nonnegative().default(0), actualCents: z.number().int().nonnegative().default(0), vendorName: z.string().optional(), notes: z.string().optional() })).mutation(async ({ input }) => {
+  create: protectedProcedure.input(z.object({ eventId: z.string(), category: z.enum(["VENUE","CATERING","DECOR","ENTERTAINMENT","PHOTO_VIDEO","TRANSPORT","STAFF","MARKETING","MISC"]), label: z.string(), plannedCents: z.number().int().nonnegative().default(0), actualCents: z.number().int().nonnegative().default(0), vendorName: z.string().optional(), notes: z.string().optional() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const event = await db.event.findUnique({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
@@ -15,7 +15,7 @@ export const budgetRouter = router({
     if (!canEditBudget(user, event)) throw new Error("Forbidden");
     return db.budgetLine.create({ data: input });
   }),
-  update: publicProcedure.input(z.object({ id: z.string(), data: z.object({ category: z.enum(["VENUE","CATERING","DECOR","ENTERTAINMENT","PHOTO_VIDEO","TRANSPORT","STAFF","MARKETING","MISC"]).optional(), label: z.string().optional(), plannedCents: z.number().int().nonnegative().optional(), actualCents: z.number().int().nonnegative().optional(), vendorName: z.string().optional(), notes: z.string().optional() }) })).mutation(async ({ input }) => {
+  update: protectedProcedure.input(z.object({ id: z.string(), data: z.object({ category: z.enum(["VENUE","CATERING","DECOR","ENTERTAINMENT","PHOTO_VIDEO","TRANSPORT","STAFF","MARKETING","MISC"]).optional(), label: z.string().optional(), plannedCents: z.number().int().nonnegative().optional(), actualCents: z.number().int().nonnegative().optional(), vendorName: z.string().optional(), notes: z.string().optional() }) })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const budgetLine = await db.budgetLine.findUnique({ where: { id: input.id }, include: { event: { include: { org: { include: { members: true } } } } } });
@@ -24,7 +24,7 @@ export const budgetRouter = router({
     if (!canEditBudget(user, budgetLine.event)) throw new Error("Forbidden");
     return db.budgetLine.update({ where: { id: input.id }, data: input.data });
   }),
-  delete: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const budgetLine = await db.budgetLine.findUnique({ where: { id: input.id }, include: { event: { include: { org: { include: { members: true } } } } } });
@@ -33,7 +33,7 @@ export const budgetRouter = router({
     if (!canEditBudget(user, budgetLine.event)) throw new Error("Forbidden");
     return db.budgetLine.delete({ where: { id: input.id } });
   }),
-  list: publicProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
+  list: protectedProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const event = await db.event.findUnique({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
@@ -45,7 +45,7 @@ export const budgetRouter = router({
     const variance = totals.actual - totals.planned;
     return { lines, totals, variance };
   }),
-  summary: publicProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
+  summary: protectedProcedure.input(z.object({ eventId: z.string() })).query(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const summary = await getEventFinancialSummary({ eventId: input.eventId, actor: user });

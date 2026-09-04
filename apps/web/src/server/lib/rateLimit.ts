@@ -77,8 +77,9 @@ export function withRateLimit(
   }
 ) {
   return async (req: Request, handler: (req: Request) => Promise<Response>): Promise<Response> => {
-    // Check if rate limiting is enabled
-    if (process.env.RATE_LIMIT_ENABLED !== "true") {
+    // Rate limiting is enabled by default for sensitive endpoints. Set
+    // RATE_LIMIT_ENABLED=false only in isolated local test harnesses.
+    if (process.env.RATE_LIMIT_ENABLED === "false") {
       return handler(req);
     }
 

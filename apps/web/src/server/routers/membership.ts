@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
-import { getCurrentUser } from "@/lib/auth-helpers";
+import { router, protectedProcedure } from "@/server/trpc";
 import { isOrgAdminOrOwner } from "@/lib/rbac";
 import { recordAudit } from "@/server/lib/audit";
 import { forbidden, notFound } from "@/server/lib/access";
@@ -40,28 +39,22 @@ export const membershipRouter = router({
         : null,
     }));
   }),
-  removeMember: publicProcedure.input(z.object({ orgId: z.string(), userId: z.string() })).mutation(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+  removeMember: protectedProcedure.input(z.object({ orgId: z.string(), userId: z.string() })).mutation(async ({ input, ctx }) => {
     const org = await db.organization.findUnique({ where: { id: input.orgId }, include: { members: true } });
-    if (!org) throw new Error("Org not found");
-    // Centralized permission check: see apps/web/src/lib/rbac.ts
-    const mem = org.members.find((m) => m.userId === user.id);
-    if (!isOrgAdminOrOwner(user, org, mem)) throw new Error("Forbidden");
+    if (!org) throw notFound("Org not found");
+    const mem = org.members.find((m) => m.userId === ctx.user.id);
+    if (!isOrgAdminOrOwner(ctx.user, org, mem)) throw forbidden();
     await db.membership.delete({ where: { userId_orgId: { userId: input.userId, orgId: input.orgId } } });
-    await recordAudit({ actorId: user.id, orgId: input.orgId, action: "member.remove", target: input.userId });
+    await recordAudit({ actorId: ctx.user.id, orgId: input.orgId, action: "member.remove", target: input.userId });
     return true;
   }),
-  setMemberRole: publicProcedure.input(z.object({ orgId: z.string(), userId: z.string(), role: z.enum(["OWNER","ADMIN","MEMBER","VIEWER"]) })).mutation(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+  setMemberRole: protectedProcedure.input(z.object({ orgId: z.string(), userId: z.string(), role: z.enum(["OWNER","ADMIN","MEMBER","VIEWER"]) })).mutation(async ({ input, ctx }) => {
     const org = await db.organization.findUnique({ where: { id: input.orgId }, include: { members: true } });
-    if (!org) throw new Error("Org not found");
-    // Centralized permission check: see apps/web/src/lib/rbac.ts
-    const mem = org.members.find((m) => m.userId === user.id);
-    if (!isOrgAdminOrOwner(user, org, mem)) throw new Error("Forbidden");
+    if (!org) throw notFound("Org not found");
+    const mem = org.members.find((m) => m.userId === ctx.user.id);
+    if (!isOrgAdminOrOwner(ctx.user, org, mem)) throw forbidden();
     const updated = await db.membership.update({ where: { userId_orgId: { userId: input.userId, orgId: input.orgId } }, data: { role: input.role } });
-    await recordAudit({ actorId: user.id, orgId: input.orgId, action: "member.role.set", target: input.userId, metadata: { role: input.role } });
+    await recordAudit({ actorId: ctx.user.id, orgId: input.orgId, action: "member.role.set", target: input.userId, metadata: { role: input.role } });
     return updated;
   }),
 });

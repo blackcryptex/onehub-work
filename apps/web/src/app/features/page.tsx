@@ -18,7 +18,7 @@ export default function FeaturesPage() {
     {
       icon: FileText,
       title: "AI-Powered Contracts",
-      description: "Generate professional contracts automatically. AI ensures all terms are clear, fair, and legally sound.",
+      description: "Prepare structured agreement drafts for review. OneHub keeps contract readiness clear, but legal review remains a private-pilot guardrail.",
     },
     {
       icon: DollarSign,
@@ -33,7 +33,7 @@ export default function FeaturesPage() {
     {
       icon: Shield,
       title: "Held Funds Protection",
-      description: "Secure payments with held funds pending release. Funds are held safely until services are delivered to your satisfaction.",
+      description: "Track guarded payment readiness and admin-reviewed release/refund states. Live money stays behind explicit approval and provider/legal checks.",
     },
     {
       icon: Zap,

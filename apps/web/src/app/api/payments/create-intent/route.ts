@@ -8,6 +8,20 @@ import { resolveFeeProfile } from "@/lib/fee-profile";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
 import { getLegalSurface } from "@/lib/legal-surface";
 import { hasProviderSubmittedEvidence } from "@/lib/provider-backed-proposal";
+import { checkRateLimit } from "@/server/lib/rateLimit";
+
+function paymentRateLimitKey(request: NextRequest, userId: string) {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0]?.trim() : request.headers.get("x-real-ip");
+  return `payment-intent:${userId}:${ip || "unknown"}`;
+}
+
+function tooManyPaymentAttempts(resetAt: number) {
+  return NextResponse.json(
+    { error: "Too many payment attempts", retryAfter: Math.ceil((resetAt - Date.now()) / 1000) },
+    { status: 429 }
+  );
+}
 
 type PaymentReadySignature = { signedAt?: Date | string | null; signerId?: string | null };
 type PaymentReadyContract = {
@@ -60,6 +74,9 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = session.user.id as string;
+    const limit = checkRateLimit(paymentRateLimitKey(request, userId), { windowMs: 60_000, maxRequests: 30 });
+    if (!limit.allowed) return tooManyPaymentAttempts(limit.resetAt);
+
     const body = await request.json();
     const { contractId, milestoneId, amountCents, acceptance } = createIntentSchema.parse(body);
     if (acceptance.legalVersion !== CURRENT_ACCEPTANCE_VERSIONS.payment) {

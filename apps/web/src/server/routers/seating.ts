@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
-import { auth } from "@/lib/auth";
+import { router, protectedProcedure } from "@/server/trpc";
 import { recordActivity } from "@/server/lib/activity";
-import { requireEventAccess } from "@/server/lib/access";
+import { requireEventAccess, requireEventEditAccess } from "@/server/lib/access";
 
 export const seatingRouter = router({
   getPlan: protectedProcedure.input(z.object({ eventId: z.string() })).query(async ({ input, ctx }) => {
@@ -15,38 +14,29 @@ export const seatingRouter = router({
     return plan;
   }),
 
-  createPlan: publicProcedure.input(z.object({
+  createPlan: protectedProcedure.input(z.object({
     eventId: z.string(),
     title: z.string().optional(),
-  })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const event = await db.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
-    const membership = event.org.members.find((m) => m.userId === userId);
-    if (!membership) throw new Error("Forbidden");
+  })).mutation(async ({ input, ctx }) => {
+    const event = await requireEventEditAccess(ctx.user, input.eventId);
     const plan = await db.seatingPlan.upsert({
       where: { eventId: input.eventId },
       create: { eventId: input.eventId, title: input.title ?? "Main Floor" },
       update: { title: input.title ?? "Main Floor" },
     });
-    await recordActivity({ orgId: event.orgId, eventId: input.eventId, actorId: userId, action: "SEATING_PLAN_CREATED", target: plan.id });
+    await recordActivity({ orgId: event.orgId, eventId: input.eventId, actorId: ctx.user.id, action: "SEATING_PLAN_CREATED", target: plan.id });
     return plan;
   }),
 
-  createTable: publicProcedure.input(z.object({
+  createTable: protectedProcedure.input(z.object({
     seatingPlanId: z.string(),
     name: z.string(),
     capacity: z.number().int().min(1),
     x: z.number().int().optional(),
     y: z.number().int().optional(),
-  })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const plan = await db.seatingPlan.findUniqueOrThrow({ where: { id: input.seatingPlanId }, include: { event: { include: { org: { include: { members: true } } } } } });
-    const membership = plan.event.org.members.find((m) => m.userId === userId);
-    if (!membership) throw new Error("Forbidden");
+  })).mutation(async ({ input, ctx }) => {
+    const plan = await db.seatingPlan.findUniqueOrThrow({ where: { id: input.seatingPlanId }, select: { eventId: true } });
+    await requireEventEditAccess(ctx.user, plan.eventId);
     const table = await db.table.create({
       data: {
         seatingPlanId: input.seatingPlanId,
@@ -64,19 +54,15 @@ export const seatingRouter = router({
     return { ...table, seats };
   }),
 
-  updateTable: publicProcedure.input(z.object({
+  updateTable: protectedProcedure.input(z.object({
     tableId: z.string(),
     name: z.string().optional(),
     capacity: z.number().int().min(1).optional(),
     x: z.number().int().optional(),
     y: z.number().int().optional(),
-  })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const table = await db.table.findUniqueOrThrow({ where: { id: input.tableId }, include: { seatingPlan: { include: { event: { include: { org: { include: { members: true } } } } } } } });
-    const membership = table.seatingPlan.event.org.members.find((m) => m.userId === userId);
-    if (!membership) throw new Error("Forbidden");
+  })).mutation(async ({ input, ctx }) => {
+    const table = await db.table.findUniqueOrThrow({ where: { id: input.tableId }, include: { seatingPlan: { select: { eventId: true } } } });
+    await requireEventEditAccess(ctx.user, table.seatingPlan.eventId);
     const { tableId, capacity, ...data } = input;
     if (capacity !== undefined && capacity !== table.capacity) {
       const currentSeats = await db.seat.count({ where: { tableId } });
@@ -94,47 +80,37 @@ export const seatingRouter = router({
     return db.table.update({ where: { id: tableId }, data });
   }),
 
-  deleteTable: publicProcedure.input(z.object({ tableId: z.string() })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const table = await db.table.findUniqueOrThrow({ where: { id: input.tableId }, include: { seatingPlan: { include: { event: { include: { org: { include: { members: true } } } } } } } });
-    const membership = table.seatingPlan.event.org.members.find((m) => m.userId === userId);
-    if (!membership) throw new Error("Forbidden");
+  deleteTable: protectedProcedure.input(z.object({ tableId: z.string() })).mutation(async ({ input, ctx }) => {
+    const table = await db.table.findUniqueOrThrow({ where: { id: input.tableId }, include: { seatingPlan: { select: { eventId: true } } } });
+    await requireEventEditAccess(ctx.user, table.seatingPlan.eventId);
     await db.table.delete({ where: { id: input.tableId } });
     return { success: true };
   }),
 
-  assignSeat: publicProcedure.input(z.object({
+  assignSeat: protectedProcedure.input(z.object({
     guestId: z.string(),
     seatId: z.string().nullable(),
-  })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const guest = await db.guest.findUniqueOrThrow({ where: { id: input.guestId }, include: { guestList: { include: { event: { include: { org: { include: { members: true } } } } } } } });
-    const membership = guest.guestList.event.org.members.find((m) => m.userId === userId);
-    if (!membership) throw new Error("Forbidden");
+  })).mutation(async ({ input, ctx }) => {
+    const guest = await db.guest.findUniqueOrThrow({
+      where: { id: input.guestId },
+      include: { guestList: { select: { eventId: true, event: { select: { orgId: true } } } } },
+    });
+    await requireEventEditAccess(ctx.user, guest.guestList.eventId);
     if (input.seatId) {
       const _seat = await db.seat.findUniqueOrThrow({ where: { id: input.seatId } });
       await db.guest.update({ where: { id: input.guestId }, data: { seatId: input.seatId } });
-      await recordActivity({ orgId: guest.guestList.event.orgId, eventId: guest.guestList.eventId, actorId: userId, action: "SEAT_ASSIGNED", target: input.guestId, meta: { seatId: input.seatId } });
+      await recordActivity({ orgId: guest.guestList.event.orgId, eventId: guest.guestList.eventId, actorId: ctx.user.id, action: "SEAT_ASSIGNED", target: input.guestId, meta: { seatId: input.seatId } });
     } else {
       await db.guest.update({ where: { id: input.guestId }, data: { seatId: null } });
     }
     return { success: true };
   }),
 
-  autoAssign: publicProcedure.input(z.object({
+  autoAssign: protectedProcedure.input(z.object({
     eventId: z.string(),
     strategy: z.enum(["RANDOM", "BY_GROUP", "BY_SIDE"]).optional(),
-  })).mutation(async ({ input }) => {
-    const session = await auth();
-    const userId = session?.user?.id as string | undefined;
-    if (!userId) throw new Error("Unauthorized");
-    const event = await db.event.findUniqueOrThrow({ where: { id: input.eventId }, include: { org: { include: { members: true } } } });
-    const membership = event.org.members.find((m) => m.userId === userId);
-    if (!membership) throw new Error("Forbidden");
+  })).mutation(async ({ input, ctx }) => {
+    const event = await requireEventEditAccess(ctx.user, input.eventId);
     const plan = await db.seatingPlan.findUnique({ where: { eventId: input.eventId }, include: { tables: { include: { seats: true } } } });
     if (!plan) throw new Error("Seating plan not found");
     const guestList = await db.guestList.findUnique({ where: { eventId: input.eventId }, include: { guests: { where: { status: "ACCEPTED" } } } });
@@ -148,7 +124,7 @@ export const seatingRouter = router({
       await db.guest.update({ where: { id: guest.id }, data: { seatId: seat.id } });
       assigned++;
     }
-    await recordActivity({ orgId: event.orgId, eventId: input.eventId, actorId: userId, action: "SEATS_AUTO_ASSIGNED", target: plan.id, meta: { strategy: input.strategy ?? "RANDOM", count: assigned } });
+    await recordActivity({ orgId: event.orgId, eventId: input.eventId, actorId: ctx.user.id, action: "SEATS_AUTO_ASSIGNED", target: plan.id, meta: { strategy: input.strategy ?? "RANDOM", count: assigned } });
     return { assigned };
   }),
 });

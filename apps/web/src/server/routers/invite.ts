@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
-import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner } from "@/lib/rbac";
 import { sendOutboundEmail } from "@/lib/outbound";
 import { recordAudit } from "@/server/lib/audit";
@@ -14,9 +13,8 @@ function normalizeEmail(email?: string | null) {
 }
 
 export const inviteRouter = router({
-  createInvite: publicProcedure.input(z.object({ orgId: z.string(), email: z.string().email(), role: z.enum(["OWNER","ADMIN","MEMBER","VIEWER"]).default("MEMBER") })).mutation(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+  createInvite: protectedProcedure.input(z.object({ orgId: z.string(), email: z.string().email(), role: z.enum(["OWNER","ADMIN","MEMBER","VIEWER"]).default("MEMBER") })).mutation(async ({ input, ctx }) => {
+    const user = ctx.user;
     const org = await db.organization.findUnique({ where: { id: input.orgId }, include: { members: true } });
     if (!org) throw new Error("Org not found");
     // Centralized permission check: see apps/web/src/lib/rbac.ts
@@ -40,9 +38,8 @@ export const inviteRouter = router({
     await recordAudit({ actorId: user.id, orgId: input.orgId, action: "invite.create", target: invite.id, metadata: { email: input.email } });
     return { ...invite, acceptPath, delivery };
   }),
-  getInvites: publicProcedure.input(z.object({ orgId: z.string() })).query(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
+  getInvites: protectedProcedure.input(z.object({ orgId: z.string() })).query(async ({ input, ctx }) => {
+    const user = ctx.user;
     const org = await db.organization.findUnique({ where: { id: input.orgId }, include: { members: true } });
     if (!org) throw new TRPCError({ code: "NOT_FOUND", message: "Org not found" });
     const mem = org.members.find((m) => m.userId === user.id);
@@ -52,9 +49,8 @@ export const inviteRouter = router({
       select: { id: true, orgId: true, email: true, role: true, expiresAt: true, accepted: true, createdAt: true },
     });
   }),
-  revokeInvite: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
-    const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+  revokeInvite: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input, ctx }) => {
+    const user = ctx.user;
     const inv = await db.invite.findUniqueOrThrow({ where: { id: input.id }, include: { org: { include: { members: true } } } });
     // Centralized permission check: see apps/web/src/lib/rbac.ts
     const mem = inv.org.members.find((m) => m.userId === user.id);

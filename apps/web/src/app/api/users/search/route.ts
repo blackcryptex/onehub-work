@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { db } from "@/server/db";
+import { checkRateLimit } from "@/server/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,11 @@ export async function GET(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const limit = checkRateLimit(`user-search:${user.id}`, { windowMs: 60_000, maxRequests: 30 });
+    if (!limit.allowed) {
+      return NextResponse.json({ error: "Too many user searches", retryAfter: Math.ceil((limit.resetAt - Date.now()) / 1000) }, { status: 429 });
     }
 
     // Only planners can search for clients

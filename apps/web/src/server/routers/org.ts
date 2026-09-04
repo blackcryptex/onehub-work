@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { isOrgAdminOrOwner, isOrgOwner, canEditVendorOrgProfile } from "@/lib/rbac";
@@ -10,7 +10,7 @@ const createOrgSchema = z.object({ name: z.string().min(2), type: z.enum(["PLANN
 const updateOrgSchema = z.object({ id: z.string(), name: z.string().min(2).optional(), type: z.enum(["PLANNER","VENDOR","VENUE","CLIENT_AGENCY"]).optional(), settings: z.object({ locale: z.string().optional(), timezone: z.string().optional(), currency: z.string().optional(), legalEntity: z.string().optional(), billingEmail: z.string().email().optional() }).optional() });
 
 export const orgRouter = router({
-  createOrg: publicProcedure.input(createOrgSchema).mutation(async ({ input, ctx: _ctx }) => {
+  createOrg: protectedProcedure.input(createOrgSchema).mutation(async ({ input, ctx: _ctx }) => {
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
     if (!userId) throw new Error("Unauthorized");
@@ -19,7 +19,7 @@ export const orgRouter = router({
     await recordAudit({ actorId: userId, orgId: org.id, action: "org.create", target: org.id });
     return org;
   }),
-  getMyOrgs: publicProcedure.query(async () => {
+  getMyOrgs: protectedProcedure.query(async () => {
     const session = await auth();
     const userId = session?.user?.id as string | undefined;
     if (!userId) return [];
@@ -28,7 +28,7 @@ export const orgRouter = router({
   getOrgBySlug: publicProcedure.input(z.object({ slug: z.string() })).query(({ input }) => {
     return db.organization.findUnique({ where: { slug: input.slug } });
   }),
-  updateOrg: publicProcedure.input(updateOrgSchema).mutation(async ({ input }) => {
+  updateOrg: protectedProcedure.input(updateOrgSchema).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const org = await db.organization.findUnique({ where: { id: input.id }, include: { members: true } });
@@ -40,7 +40,7 @@ export const orgRouter = router({
     await recordAudit({ actorId: user.id, orgId: updatedOrg.id, action: "org.update", target: updatedOrg.id, metadata: input.settings });
     return updatedOrg;
   }),
-  deleteOrg: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  deleteOrg: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const org = await db.organization.findUnique({ where: { id: input.id } });

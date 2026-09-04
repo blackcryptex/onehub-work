@@ -15,7 +15,7 @@ async function requireEditableSlot(user: NonNullable<Awaited<ReturnType<typeof g
 }
 
 export const availabilityRouter = router({
-  setSlots: publicProcedure.input(z.object({ listingId: z.string(), slots: z.array(z.object({ startAt: z.date(), endAt: z.date(), status: z.enum(["AVAILABLE","HOLD","BOOKED","UNAVAILABLE"]).optional() })) })).mutation(async ({ input }) => {
+  setSlots: protectedProcedure.input(z.object({ listingId: z.string(), slots: z.array(z.object({ startAt: z.date(), endAt: z.date(), status: z.enum(["AVAILABLE","HOLD","BOOKED","UNAVAILABLE"]).optional() })) })).mutation(async ({ input }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const listing = await db.listing.findUniqueOrThrow({ where: { id: input.listingId }, include: { org: { include: { members: true } } } });

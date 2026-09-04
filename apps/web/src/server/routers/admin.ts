@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { router, publicProcedure } from "@/server/trpc";
+import { router, protectedProcedure } from "@/server/trpc";
 import { auth } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { canAccessDashboard } from "@/lib/rbac";
@@ -34,7 +34,7 @@ async function requireAdmin() {
 
 export const adminRouter = router({
   metrics: router({
-    daily: publicProcedure.input(z.object({
+    daily: protectedProcedure.input(z.object({
       from: z.date(),
       to: z.date(),
     })).query(async ({ input }) => {
@@ -47,7 +47,7 @@ export const adminRouter = router({
   }),
 
   abuse: router({
-    report: publicProcedure.input(z.object({
+    report: protectedProcedure.input(z.object({
       targetType: z.string(),
       targetId: z.string(),
       reason: z.string().min(1),
@@ -64,7 +64,7 @@ export const adminRouter = router({
         },
       });
     }),
-    update: publicProcedure.input(z.object({
+    update: protectedProcedure.input(z.object({
       id: z.string(),
       status: z.enum(["OPEN", "IN_REVIEW", "RESOLVED", "DISMISSED"]).optional(),
       notes: z.string().optional(),
@@ -73,7 +73,7 @@ export const adminRouter = router({
       const { id, ...data } = input;
       return prisma.abuseReport.update({ where: { id }, data });
     }),
-    list: publicProcedure.input(z.object({
+    list: protectedProcedure.input(z.object({
       status: z.enum(["OPEN", "IN_REVIEW", "RESOLVED", "DISMISSED"]).optional(),
       cursor: z.string().optional(),
       limit: z.number().min(1).max(100).default(20),
@@ -98,7 +98,7 @@ export const adminRouter = router({
   }),
 
   bookingClassification: router({
-    getProposalContext: publicProcedure.input(z.object({
+    getProposalContext: protectedProcedure.input(z.object({
       proposalId: z.string(),
     })).query(async ({ input }) => {
       await requireAdmin();
@@ -130,7 +130,7 @@ export const adminRouter = router({
   }),
 
   refundRequests: router({
-    list: publicProcedure.input(z.object({
+    list: protectedProcedure.input(z.object({
       status: z.enum(["OPEN", "APPROVED", "DENIED", "CANCELED"]).optional(),
     }).optional()).query(async ({ input }) => {
       await requireAdmin();
@@ -139,7 +139,7 @@ export const adminRouter = router({
         orderBy: { createdAt: "desc" },
       });
     }),
-    review: publicProcedure.input(z.object({
+    review: protectedProcedure.input(z.object({
       refundRequestId: z.string(),
       decision: z.enum(["APPROVED", "DENIED"]),
       decisionReason: z.string().min(3),
@@ -156,7 +156,7 @@ export const adminRouter = router({
         platformFeeTreatment: input.platformFeeTreatment,
       });
     }),
-    getVerification: publicProcedure.input(z.object({
+    getVerification: protectedProcedure.input(z.object({
       refundRequestId: z.string(),
     })).query(async ({ input }) => {
       await requireAdmin();
@@ -167,7 +167,7 @@ export const adminRouter = router({
   }),
 
   users: router({
-    list: publicProcedure.input(z.object({
+    list: protectedProcedure.input(z.object({
       cursor: z.string().optional(),
       limit: z.number().min(1).max(100).default(20),
       q: z.string().optional(), // Search query
@@ -204,7 +204,7 @@ export const adminRouter = router({
   }),
 
   impersonation: router({
-    start: publicProcedure.input(z.object({
+    start: protectedProcedure.input(z.object({
       targetUserId: z.string(),
     })).mutation(async ({ input }) => {
       // Require admin access (check real admin, not impersonated user)
@@ -237,7 +237,7 @@ export const adminRouter = router({
       };
     }),
     
-    stop: publicProcedure.mutation(async () => {
+    stop: protectedProcedure.mutation(async () => {
       // Require admin access (check real admin, not impersonated user)
       await requireAdmin();
       

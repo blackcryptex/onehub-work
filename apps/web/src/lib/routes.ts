@@ -148,7 +148,7 @@ export function dashboard(role: Role | undefined): string {
     case "VENUE":
       return "/venue/dashboard";
     case "EVENT_DREAMER":
-      return "/event-dreamer";
+      return "/event-dreamer/create";
     case "CLIENT":
       return "/app";
     default:

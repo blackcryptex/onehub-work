@@ -5,6 +5,20 @@ import { prisma } from "@/lib/prisma";
 import { acceptanceInputSchema, CURRENT_ACCEPTANCE_VERSIONS, recordAcceptance } from "@/lib/acceptance";
 import { resolveBookingClassification } from "@/lib/booking-classification";
 import { getLegalSurface } from "@/lib/legal-surface";
+import { checkRateLimit } from "@/server/lib/rateLimit";
+
+function contractSignRateLimitKey(request: NextRequest, contractId: string, userId: string) {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0]?.trim() : request.headers.get("x-real-ip");
+  return `contract-sign:${contractId}:${userId}:${ip || "unknown"}`;
+}
+
+function tooManyContractSignAttempts(resetAt: number) {
+  return NextResponse.json(
+    { error: "Too many contract signing attempts", retryAfter: Math.ceil((resetAt - Date.now()) / 1000) },
+    { status: 429 }
+  );
+}
 
 const SIGNABLE_CONTRACT_STATUSES = new Set(["OUT_FOR_SIGNATURE", "PARTIALLY_SIGNED"]);
 
@@ -25,6 +39,9 @@ export async function POST(
     }
 
     const resolvedParams = await params;
+    const limit = checkRateLimit(contractSignRateLimitKey(request, resolvedParams.id, user.id), { windowMs: 60_000, maxRequests: 10 });
+    if (!limit.allowed) return tooManyContractSignAttempts(limit.resetAt);
+
     const body = await request.json();
     const { signerName, signerEmail } = body;
     const acceptance = acceptanceInputSchema.parse(body.acceptance);
@@ -116,38 +133,30 @@ export async function POST(
       (s) => s.signerEmail.toLowerCase() === signerEmail.toLowerCase()
     );
 
-    if (existingSignature && existingSignature.signedAt) {
+    if (!existingSignature) {
+      return NextResponse.json(
+        { error: "Only an intended signer row can sign this contract" },
+        { status: 403 }
+      );
+    }
+
+    if (existingSignature.signedAt) {
       return NextResponse.json(
         { error: "You have already signed this contract" },
         { status: 400 }
       );
     }
 
-    // Create or update signature
-    let signature;
-    if (existingSignature) {
-      signature = await prisma.signature.update({
-        where: { id: existingSignature.id },
-        data: {
-          signerId: user.id,
-          signerName,
-          signerEmail,
-          signedAt: new Date(),
-          method: "ELECTRONIC",
-        },
-      });
-    } else {
-      signature = await prisma.signature.create({
-        data: {
-          contractId: contract.id,
-          signerId: user.id,
-          signerName,
-          signerEmail,
-          signedAt: new Date(),
-          method: "ELECTRONIC",
-        },
-      });
-    }
+    const signature = await prisma.signature.update({
+      where: { id: existingSignature.id },
+      data: {
+        signerId: user.id,
+        signerName,
+        signerEmail,
+        signedAt: new Date(),
+        method: "ELECTRONIC",
+      },
+    });
 
     // Update contract status based on true dual-party execution
     const buyerMemberIds = new Set([

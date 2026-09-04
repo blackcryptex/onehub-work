@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { db } from "@/server/db";
 import type { AppUser } from "@/lib/auth-helpers";
 import { isAdmin } from "@/lib/auth-helpers";
-import { canManageEvent, canViewEvent, isOrgMember } from "@/lib/rbac";
+import { canEditEvent, canManageEvent, canViewEvent, isOrgMember } from "@/lib/rbac";
 
 /**
  * Shared resource-level authorization helpers for tRPC routers.
@@ -70,6 +70,16 @@ export async function requireEventManageAccess(user: AppUser, eventId: string) {
   });
   if (!event) throw notFound("Event not found");
   if (!canManageEvent(user, event)) throw forbidden();
+  return event;
+}
+
+export async function requireEventEditAccess(user: AppUser, eventId: string) {
+  const event = await db.event.findUnique({
+    where: { id: eventId },
+    include: eventAccessInclude,
+  });
+  if (!event) throw notFound("Event not found");
+  if (!canEditEvent(user, event)) throw forbidden();
   return event;
 }
 
