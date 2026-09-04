@@ -126,6 +126,15 @@ function createE2eMockStripe() {
         };
       },
     },
+    balance: {
+      async retrieve() {
+        return {
+          object: "balance",
+          available: [{ amount: 0, currency: "usd", source_types: { card: 0 } }],
+          pending: [],
+        };
+      },
+    },
   } as unknown as Stripe;
 }
 
